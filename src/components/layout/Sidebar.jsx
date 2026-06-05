@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, LayoutDashboard, Image, Edit3, Gift, Share2, Settings, LogOut } from 'lucide-react'
+import { Heart, LayoutDashboard, Image, Edit3, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
@@ -8,8 +8,6 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Image, label: 'Templates', path: '/templates' },
   { icon: Edit3, label: 'Editor', path: '/editor' },
-  { icon: Gift, label: 'Presentes', path: '/editor?tab=gifts' },
-  { icon: Share2, label: 'Compartilhar', path: '/editor?tab=share' },
   { icon: Settings, label: 'Configurações', path: '/dashboard?tab=settings' },
 ]
 

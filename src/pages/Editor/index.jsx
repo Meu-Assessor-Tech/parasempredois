@@ -1,12 +1,11 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { useWedding } from '../../context/WeddingContext'
-import { mockGifts } from '../../data/mockGifts'
 import { templateConfigs } from '../../data/templateConfigs'
 
 const TABS = [
@@ -17,12 +16,35 @@ const TABS = [
 ]
 
 const COLORS = [
-  { label: 'Areia', value: '#8B6F5E' },
-  { label: 'Rosa', value: '#C4858E' },
-  { label: 'Sage', value: '#7A9A7A' },
-  { label: 'Azul', value: '#6B8CAE' },
-  { label: 'Preto', value: '#1A1A1A' },
-  { label: 'Dourado', value: '#B8922A' },
+  // Neutros & clássicos
+  { label: 'Areia',      value: '#8B6F5E' },
+  { label: 'Dourado',    value: '#B8922A' },
+  { label: 'Champagne',  value: '#C9A96E' },
+  { label: 'Marfim',     value: '#D4C5A9' },
+  { label: 'Cobre',      value: '#AD6F3B' },
+  { label: 'Preto',      value: '#1A1A1A' },
+  // Rosas & vermelhos
+  { label: 'Rosa Antigo',value: '#C4858E' },
+  { label: 'Rosé',       value: '#E8A598' },
+  { label: 'Blush',      value: '#F2C4CE' },
+  { label: 'Borgonha',   value: '#722F37' },
+  { label: 'Marsala',    value: '#964F4C' },
+  { label: 'Vermelho',   value: '#C0392B' },
+  // Verdes
+  { label: 'Sage',       value: '#7A9A7A' },
+  { label: 'Eucalipto',  value: '#44786A' },
+  { label: 'Oliva',      value: '#708238' },
+  { label: 'Verde Escuro',value: '#2D5A27' },
+  // Azuis & roxos
+  { label: 'Azul Serenity',value: '#92A8D1' },
+  { label: 'Azul Petróleo',value: '#2C5F6E' },
+  { label: 'Navy',       value: '#1B2A4A' },
+  { label: 'Lavanda',    value: '#967BB6' },
+  { label: 'Lilás',      value: '#B39BC8' },
+  { label: 'Ametista',   value: '#7B4EA6' },
+  // Terrosos
+  { label: 'Terracota',  value: '#C0714A' },
+  { label: 'Caramelo',   value: '#C17F4A' },
 ]
 
 function readFileAsDataURL(file) {
@@ -34,14 +56,86 @@ function readFileAsDataURL(file) {
   })
 }
 
+// ── Secure gift image processing ──────────────────────────────────────────────
+const GIFT_MAX_RAW_MB  = 10            // reject before even reading
+const GIFT_MAX_DIM     = 800           // max width or height after resize
+const GIFT_JPEG_Q      = 0.82          // compression quality
+const ALLOWED_MIME     = ['image/jpeg', 'image/png', 'image/webp']
+
+// Real-type check via magic bytes (prevents renamed files from sneaking through)
+async function checkMagicBytes(file) {
+  const buf  = await file.slice(0, 12).arrayBuffer()
+  const b    = new Uint8Array(buf)
+  const jpeg = b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF
+  const png  = b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47
+  const webp = b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46
+            && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50
+  return jpeg || png || webp
+}
+
+function resizeAndCompress(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let { naturalWidth: w, naturalHeight: h } = img
+      if (w > GIFT_MAX_DIM || h > GIFT_MAX_DIM) {
+        if (w >= h) { h = Math.round(h * GIFT_MAX_DIM / w); w = GIFT_MAX_DIM }
+        else        { w = Math.round(w * GIFT_MAX_DIM / h); h = GIFT_MAX_DIM }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width  = w
+      canvas.height = h
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      resolve(canvas.toDataURL('image/jpeg', GIFT_JPEG_Q))
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Não foi possível carregar a imagem.')) }
+    img.src = url
+  })
+}
+
+async function processGiftImage(file) {
+  if (!ALLOWED_MIME.includes(file.type))
+    throw new Error('Formato não suportado. Use JPEG, PNG ou WebP.')
+  if (file.size > GIFT_MAX_RAW_MB * 1024 * 1024)
+    throw new Error(`A imagem deve ter no máximo ${GIFT_MAX_RAW_MB} MB.`)
+  const valid = await checkMagicBytes(file)
+  if (!valid)
+    throw new Error('O arquivo não é uma imagem válida.')
+  return resizeAndCompress(file)
+}
+
 export default function Editor() {
   const { wedding, updateWedding, resetWedding } = useWedding()
-  const [activeTab, setActiveTab] = useState('content')
   const [previewMode, setPreviewMode] = useState('desktop')
   const [saved, setSaved] = useState(false)
+  const [previewKey, setPreviewKey] = useState(0)
   const coverInputRef = useRef(null)
   const galleryInputRef = useRef(null)
+  const debounceRef = useRef(null)
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const VALID_TABS = TABS.map(t => t.id)
+  const tabFromUrl = new URLSearchParams(location.search).get('tab')
+  const activeTab = VALID_TABS.includes(tabFromUrl) ? tabFromUrl : 'content'
+
+  const setActiveTab = (id) => {
+    const params = id === 'content' ? '' : `?tab=${id}`
+    navigate(`/editor${params}`, { replace: true })
+  }
+
+  // Debounced preview reload — fires 800ms after last change
+  const schedulePreviewReload = useCallback(() => {
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => setPreviewKey(k => k + 1), 800)
+  }, [])
+
+  const wrappedUpdate = useCallback((updates) => {
+    updateWedding(updates)
+    schedulePreviewReload()
+  }, [updateWedding, schedulePreviewReload])
 
   const cfg = templateConfigs[wedding.template] || templateConfigs.classic
 
@@ -54,7 +148,7 @@ export default function Editor() {
     const file = e.target.files[0]
     if (!file) return
     const dataUrl = await readFileAsDataURL(file)
-    updateWedding({ coverImage: dataUrl })
+    wrappedUpdate({ coverImage: dataUrl })
     e.target.value = ''
   }
 
@@ -62,12 +156,12 @@ export default function Editor() {
     const files = Array.from(e.target.files)
     if (!files.length) return
     const dataUrls = await Promise.all(files.map(readFileAsDataURL))
-    updateWedding({ galleryImages: [...wedding.galleryImages, ...dataUrls] })
+    wrappedUpdate({ galleryImages: [...wedding.galleryImages, ...dataUrls] })
     e.target.value = ''
   }
 
   const removeGalleryImage = (index) => {
-    updateWedding({ galleryImages: wedding.galleryImages.filter((_, i) => i !== index) })
+    wrappedUpdate({ galleryImages: wedding.galleryImages.filter((_, i) => i !== index) })
   }
 
   return (
@@ -131,29 +225,29 @@ export default function Editor() {
                   <Input
                     label="Nome da noiva"
                     value={wedding.brideName}
-                    onChange={e => updateWedding({ brideName: e.target.value })}
+                    onChange={e => wrappedUpdate({ brideName: e.target.value })}
                   />
                   <Input
                     label="Nome do noivo"
                     value={wedding.groomName}
-                    onChange={e => updateWedding({ groomName: e.target.value })}
+                    onChange={e => wrappedUpdate({ groomName: e.target.value })}
                   />
                   <Input
                     label="Data do casamento"
                     type="date"
                     value={wedding.date}
-                    onChange={e => updateWedding({ date: e.target.value })}
+                    onChange={e => wrappedUpdate({ date: e.target.value })}
                   />
                   <Input
                     label="Local da cerimônia"
                     value={wedding.venue}
-                    onChange={e => updateWedding({ venue: e.target.value })}
+                    onChange={e => wrappedUpdate({ venue: e.target.value })}
                   />
                   <div>
                     <label className="block text-sm font-medium text-stone-700 mb-1.5">Mensagem especial</label>
                     <textarea
                       value={wedding.message}
-                      onChange={e => updateWedding({ message: e.target.value })}
+                      onChange={e => wrappedUpdate({ message: e.target.value })}
                       rows={3}
                       className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-stone-400 focus:ring-2 focus:ring-stone-100 outline-none text-sm text-stone-900 placeholder-stone-400 transition-all resize-none"
                     />
@@ -162,10 +256,14 @@ export default function Editor() {
                     <label className="block text-sm font-medium text-stone-700 mb-1.5">Nossa história</label>
                     <textarea
                       value={wedding.story}
-                      onChange={e => updateWedding({ story: e.target.value })}
+                      onChange={e => wrappedUpdate({ story: e.target.value })}
                       rows={4}
                       className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-stone-400 focus:ring-2 focus:ring-stone-100 outline-none text-sm text-stone-900 placeholder-stone-400 transition-all resize-none"
                     />
+                  </div>
+
+                  <div className="pt-2 border-t border-stone-100">
+                    <SectionsEditor wedding={wedding} updateWedding={wrappedUpdate} />
                   </div>
                 </motion.div>
               )}
@@ -181,20 +279,33 @@ export default function Editor() {
                   </div>
 
                   <div>
-                    <h2 className="font-medium text-stone-900 text-sm mb-4">Cor principal</h2>
-                    <div className="grid grid-cols-3 gap-2">
+                    <h2 className="font-medium text-stone-900 text-sm mb-1">Cor de destaque</h2>
+                    <p className="text-[11px] text-stone-400 mb-3 leading-relaxed">
+                      Aparece nos botões de ação do site — "Presentear" e "Confirmar presença".
+                    </p>
+                    <div className="grid grid-cols-6 gap-2 mb-3">
                       {COLORS.map(color => (
                         <button
                           key={color.value}
-                          onClick={() => updateWedding({ primaryColor: color.value })}
-                          className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
-                            wedding.primaryColor === color.value ? 'border-stone-900' : 'border-stone-100 hover:border-stone-300'
+                          title={color.label}
+                          onClick={() => wrappedUpdate({ primaryColor: color.value })}
+                          className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                            wedding.primaryColor === color.value ? 'border-stone-900 scale-110' : 'border-transparent'
                           }`}
-                        >
-                          <div className="w-8 h-8 rounded-full" style={{ backgroundColor: color.value }} />
-                          <span className="text-xs text-stone-600">{color.label}</span>
-                        </button>
+                          style={{ backgroundColor: color.value }}
+                        />
                       ))}
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <label className="text-[11px] text-stone-500 flex-1">Cor personalizada</label>
+                      <input
+                        type="color"
+                        value={wedding.primaryColor}
+                        onChange={e => wrappedUpdate({ primaryColor: e.target.value })}
+                        className="w-8 h-8 rounded-full border border-stone-200 cursor-pointer p-0.5 bg-white"
+                        title="Escolher cor"
+                      />
+                      <span className="text-[11px] font-mono text-stone-400">{wedding.primaryColor}</span>
                     </div>
                   </div>
 
@@ -248,7 +359,7 @@ export default function Editor() {
                       variant="ghost"
                       size="sm"
                       fullWidth
-                      onClick={() => { if (confirm('Resetar todos os dados para o exemplo padrão?')) resetWedding() }}
+                      onClick={() => { if (confirm('Resetar todos os dados para o exemplo padrão?')) { resetWedding(); schedulePreviewReload() } }}
                       className="!text-red-400 hover:!text-red-600 hover:!bg-red-50"
                     >
                       Resetar dados
@@ -258,24 +369,7 @@ export default function Editor() {
               )}
 
               {activeTab === 'gifts' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="font-medium text-stone-900 text-sm">Lista de presentes</h2>
-                    <Button variant="outline" size="sm">
-                      <Plus size={14} /> Adicionar
-                    </Button>
-                  </div>
-                  {mockGifts.map(gift => (
-                    <div key={gift.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 bg-stone-50">
-                      <img src={gift.image} alt={gift.name} className="w-10 h-10 rounded-lg object-cover" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-stone-900 truncate">{gift.name}</p>
-                        <p className="text-xs text-stone-400">R$ {gift.price.toLocaleString('pt-BR')}</p>
-                      </div>
-                      {gift.purchased && <Check size={14} className="text-green-500 flex-shrink-0" />}
-                    </div>
-                  ))}
-                </motion.div>
+                <GiftsTab wedding={wedding} updateWedding={wrappedUpdate} />
               )}
 
               {activeTab === 'share' && (
@@ -308,51 +402,416 @@ export default function Editor() {
             </div>
           </div>
 
-          {/* Preview */}
+          {/* Preview — iframe rendering the real site */}
           <div className="flex-1 bg-stone-100 overflow-auto flex items-start justify-center p-6">
             <div className={`bg-white shadow-xl rounded-xl overflow-hidden transition-all duration-300 ${
-              previewMode === 'mobile' ? 'w-80' : 'w-full max-w-3xl'
-            }`}>
-              <div className="relative" style={{ height: previewMode === 'mobile' ? '560px' : '500px' }}>
-                <img src={wedding.coverImage} alt="Preview" className="w-full h-full object-cover" />
-                <div className={`absolute inset-0`} style={{ background: cfg.heroBg }} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-8">
-                  <p className={cfg.labelClass}>Save the Date</p>
-                  <h1 className={`${cfg.nameClass} text-white`} style={cfg.nameStyle}>
-                    {wedding.brideName} <span className={cfg.ampersandClass}>&</span> {wedding.groomName}
-                  </h1>
-                  <p className={cfg.dateClass}>
-                    {new Date(wedding.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                  </p>
-                  {cfg.messageClass !== 'hidden' && (
-                    <p className={cfg.messageClass}>"{wedding.message}"</p>
-                  )}
-                  <div
-                    className={`mt-8 px-6 py-3 text-sm font-semibold ${cfg.btnRadius}`}
-                    style={{ backgroundColor: wedding.primaryColor, color: 'white' }}
-                  >
-                    Confirmar Presença
-                  </div>
-                </div>
-              </div>
-              <div className={`px-6 py-8 text-center border-t ${cfg.altSectionBg} ${cfg.dividerDark}`}>
-                <p className={cfg.sectionLabelDarkClass}>Nossa História</p>
-                <h2 className={`${cfg.sectionHeadingDarkClass} text-2xl mb-3`}>Como nos conhecemos</h2>
-                <p className={`text-sm leading-relaxed line-clamp-3 opacity-60 ${cfg.altSectionText}`}>{wedding.story}</p>
-              </div>
-              {wedding.galleryImages.length > 0 && (
-                <div className="px-6 pb-6 grid grid-cols-3 gap-2">
-                  {wedding.galleryImages.slice(0, 6).map((img, i) => (
-                    <div key={i} className="aspect-square rounded-lg overflow-hidden">
-                      <img src={img} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                </div>
-              )}
+              previewMode === 'mobile' ? 'w-[390px]' : 'w-full max-w-4xl'
+            }`} style={{ height: previewMode === 'mobile' ? '780px' : '700px' }}>
+              <iframe
+                key={previewKey}
+                src={`/site/${wedding.slug}`}
+                title="Preview do site"
+                className="w-full h-full border-0"
+                style={previewMode === 'mobile' ? { transform: 'scale(1)', transformOrigin: 'top left' } : {}}
+              />
             </div>
           </div>
         </div>
       </main>
     </div>
+  )
+}
+
+// ── Sections Editor ────────────────────────────────────────────────────────
+
+const SECTION_PRESETS = [
+  { title: 'Dress Code',        content: 'Traje sugerido: passeio completo.' },
+  { title: 'Hospedagem',        content: 'Recomendamos o Hotel X, a 5 min do local.' },
+  { title: 'Transporte',        content: 'Haverá van saindo do hotel às 18h.' },
+  { title: 'Crianças',          content: 'O evento é para adultos. Agradecemos a compreensão.' },
+  { title: 'Cerimônia & Recepção', content: 'Cerimônia às 18h. Recepção a seguir no mesmo local.' },
+  { title: 'Menu',              content: 'Jantar completo com opções vegetarianas.' },
+]
+
+const EMPTY_SECTION = { title: '', content: '' }
+
+function SectionsEditor({ wedding, updateWedding }) {
+  const sections = wedding.sections ?? []
+  const [form, setForm] = useState(null)
+  const [errors, setErrors] = useState({})
+
+  const openNew = (preset = EMPTY_SECTION) => { setForm({ ...preset }); setErrors({}) }
+  const openEdit = (s) => { setForm({ ...s }); setErrors({}) }
+  const closeForm = () => { setForm(null); setErrors({}) }
+
+  const saveSection = () => {
+    const e = {}
+    if (!form.title.trim()) e.title = 'Obrigatório'
+    if (!form.content.trim()) e.content = 'Obrigatório'
+    if (Object.keys(e).length) { setErrors(e); return }
+    if (form.id) {
+      updateWedding({ sections: sections.map(s => s.id === form.id ? form : s) })
+    } else {
+      updateWedding({ sections: [...sections, { ...form, id: String(Date.now()) }] })
+    }
+    closeForm()
+  }
+
+  const deleteSection = (id) => {
+    if (!confirm('Remover esta seção?')) return
+    updateWedding({ sections: sections.filter(s => s.id !== id) })
+  }
+
+  const moveSection = (id, dir) => {
+    const idx = sections.findIndex(s => s.id === id)
+    const next = [...sections]
+    const swap = idx + dir
+    if (swap < 0 || swap >= next.length) return
+    ;[next[idx], next[swap]] = [next[swap], next[idx]]
+    updateWedding({ sections: next })
+  }
+
+  return (
+    <div className="space-y-4 pt-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-medium text-stone-900 text-sm">Seções extras</h2>
+          <p className="text-[11px] text-stone-400 mt-0.5">Dress code, hospedagem, transporte…</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => openNew()}>
+          <Plus size={14} /> Adicionar
+        </Button>
+      </div>
+
+      {/* Quick presets */}
+      {form === null && sections.length === 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] text-stone-400">Sugestões rápidas:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {SECTION_PRESETS.map(p => (
+              <button
+                key={p.title}
+                onClick={() => openNew(p)}
+                className="text-[11px] px-2.5 py-1 rounded-full border border-stone-200 text-stone-600 hover:border-stone-400 hover:bg-stone-50 transition-colors"
+              >
+                + {p.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Form */}
+      {form !== null && (
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-3">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs font-medium text-stone-700">{form.id ? 'Editar seção' : 'Nova seção'}</p>
+            <button onClick={closeForm} className="text-stone-400 hover:text-stone-600"><X size={14} /></button>
+          </div>
+          <div>
+            <input
+              placeholder="Título (ex: Dress Code) *"
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              className={`w-full px-3 py-2 text-sm rounded-lg border ${errors.title ? 'border-red-400' : 'border-stone-200'} focus:outline-none focus:border-stone-400`}
+            />
+            {errors.title && <p className="text-[11px] text-red-400 mt-0.5">{errors.title}</p>}
+          </div>
+          <div>
+            <textarea
+              placeholder="Conteúdo da seção *"
+              value={form.content}
+              onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+              rows={3}
+              className={`w-full px-3 py-2 text-sm rounded-lg border resize-none ${errors.content ? 'border-red-400' : 'border-stone-200'} focus:outline-none focus:border-stone-400`}
+            />
+            {errors.content && <p className="text-[11px] text-red-400 mt-0.5">{errors.content}</p>}
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button variant="primary" size="sm" fullWidth onClick={saveSection}>
+              <Check size={14} /> Salvar
+            </Button>
+            <Button variant="ghost" size="sm" onClick={closeForm}>Cancelar</Button>
+          </div>
+        </div>
+      )}
+
+      {/* List */}
+      {sections.map((s, i) => (
+        <div key={s.id} className="flex items-start gap-2 p-3 rounded-xl border border-stone-100 bg-stone-50">
+          <div className="flex flex-col gap-0.5 pt-0.5">
+            <button onClick={() => moveSection(s.id, -1)} disabled={i === 0} className="text-stone-300 hover:text-stone-600 disabled:opacity-20 transition-colors">
+              <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 2L11 8H1L6 2Z" fill="currentColor"/></svg>
+            </button>
+            <button onClick={() => moveSection(s.id, 1)} disabled={i === sections.length - 1} className="text-stone-300 hover:text-stone-600 disabled:opacity-20 transition-colors">
+              <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 10L1 4H11L6 10Z" fill="currentColor"/></svg>
+            </button>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-stone-900 truncate">{s.title}</p>
+            <p className="text-xs text-stone-400 line-clamp-2 mt-0.5">{s.content}</p>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-colors">
+              <Pencil size={13} />
+            </button>
+            <button onClick={() => deleteSection(s.id)} className="p-1.5 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors">
+              <Trash2 size={13} />
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {/* Add more presets when list not empty */}
+      {sections.length > 0 && form === null && (
+        <div className="flex flex-wrap gap-1.5">
+          {SECTION_PRESETS.filter(p => !sections.some(s => s.title === p.title)).map(p => (
+            <button
+              key={p.title}
+              onClick={() => openNew(p)}
+              className="text-[11px] px-2.5 py-1 rounded-full border border-stone-200 text-stone-500 hover:border-stone-400 hover:bg-stone-50 transition-colors"
+            >
+              + {p.title}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+
+const PHOTO_SUGGESTIONS = [
+  { label: 'Panelas',       url: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400' },
+  { label: 'Cafeteira',     url: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400' },
+  { label: 'Vinhos',        url: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400' },
+  { label: 'Jogo de Cama',  url: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400' },
+  { label: 'Toalhas',       url: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?w=400' },
+  { label: 'Viagem',        url: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=400' },
+  { label: 'Louças',        url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400' },
+  { label: 'Taças',         url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400' },
+  { label: 'Liquidificador',url: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400' },
+  { label: 'Micro-ondas',   url: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400' },
+  { label: 'Ar-cond.',      url: 'https://images.unsplash.com/photo-1625961332771-3f40b0e2bdcf?w=400' },
+  { label: 'Smart TV',      url: 'https://images.unsplash.com/photo-1461151304267-38535e780c79?w=400' },
+  { label: 'Batedeira',     url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400' },
+  { label: 'Churrasqueira', url: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400' },
+  { label: 'Decoração',     url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400' },
+  { label: 'Perfume',       url: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=400' },
+  { label: 'Flores',        url: 'https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=400' },
+  { label: 'Spa / Relax',   url: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400' },
+]
+
+function GiftsTab({ wedding, updateWedding }) {
+  const gifts = wedding.gifts ?? []
+  const [form, setForm] = useState(null)
+  const [errors, setErrors] = useState({})
+  const [imageLoading, setImageLoading] = useState(false)
+  const [imageError, setImageError] = useState('')
+  const imageInputRef = useRef(null)
+
+  const openNew = () => { setForm({ ...EMPTY_GIFT }); setErrors({}); setImageError('') }
+  const openEdit = (gift) => { setForm({ ...gift }); setErrors({}); setImageError('') }
+  const closeForm = () => { setForm(null); setErrors({}); setImageError('') }
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0]
+    e.target.value = ''
+    if (!file) return
+    setImageLoading(true)
+    setImageError('')
+    try {
+      const dataUrl = await processGiftImage(file)
+      setForm(f => ({ ...f, image: dataUrl }))
+    } catch (err) {
+      setImageError(err.message)
+    } finally {
+      setImageLoading(false)
+    }
+  }
+
+  const validate = (f) => {
+    const e = {}
+    if (!f.name.trim()) e.name = 'Obrigatório'
+    if (!f.price || isNaN(Number(f.price)) || Number(f.price) < 0) e.price = 'Valor inválido'
+    return e
+  }
+
+  const saveGift = () => {
+    const e = validate(form)
+    if (Object.keys(e).length) { setErrors(e); return }
+    const gift = { ...form, price: Number(form.price) }
+    if (gift.id) {
+      updateWedding({ gifts: gifts.map(g => g.id === gift.id ? gift : g) })
+    } else {
+      updateWedding({ gifts: [...gifts, { ...gift, id: String(Date.now()) }] })
+    }
+    closeForm()
+  }
+
+  const deleteGift = (id) => {
+    if (!confirm('Remover este presente?')) return
+    updateWedding({ gifts: gifts.filter(g => g.id !== id) })
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-medium text-stone-900 text-sm">Lista de presentes</h2>
+        <Button variant="outline" size="sm" onClick={openNew}>
+          <Plus size={14} /> Adicionar
+        </Button>
+      </div>
+
+      {form !== null && (
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-3">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs font-medium text-stone-700">{form.id ? 'Editar presente' : 'Novo presente'}</p>
+            <button onClick={closeForm} className="text-stone-400 hover:text-stone-600"><X size={14} /></button>
+          </div>
+          <div>
+            <input
+              placeholder="Nome do presente *"
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              className={`w-full px-3 py-2 text-sm rounded-lg border ${errors.name ? 'border-red-400' : 'border-stone-200'} focus:outline-none focus:border-stone-400`}
+            />
+            {errors.name && <p className="text-[11px] text-red-400 mt-0.5">{errors.name}</p>}
+          </div>
+          <input
+            placeholder="Loja / Fornecedor"
+            value={form.store}
+            onChange={e => setForm(f => ({ ...f, store: e.target.value }))}
+            className="w-full px-3 py-2 text-sm rounded-lg border border-stone-200 focus:outline-none focus:border-stone-400"
+          />
+          <div>
+            <input
+              placeholder="Valor (R$) *"
+              type="number"
+              min="0"
+              value={form.price}
+              onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+              className={`w-full px-3 py-2 text-sm rounded-lg border ${errors.price ? 'border-red-400' : 'border-stone-200'} focus:outline-none focus:border-stone-400`}
+            />
+            {errors.price && <p className="text-[11px] text-red-400 mt-0.5">{errors.price}</p>}
+          </div>
+          <input
+            placeholder="Categoria (ex: Cozinha)"
+            value={form.category}
+            onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+            className="w-full px-3 py-2 text-sm rounded-lg border border-stone-200 focus:outline-none focus:border-stone-400"
+          />
+          <div className="space-y-2">
+            <p className="text-[11px] text-stone-500 font-medium">Foto — sugestões rápidas</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {PHOTO_SUGGESTIONS.map(s => (
+                <button
+                  key={s.url}
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, image: s.url }))}
+                  className={`relative rounded-lg overflow-hidden aspect-square border-2 transition-all ${
+                    form.image === s.url ? 'border-stone-900 scale-[0.97]' : 'border-transparent hover:border-stone-300'
+                  }`}
+                >
+                  <img src={s.url} alt={s.label} className="w-full h-full object-cover" />
+                  <div className="absolute inset-x-0 bottom-0 bg-black/50 py-0.5">
+                    <span className="text-[9px] text-white font-medium leading-none block text-center">{s.label}</span>
+                  </div>
+                  {form.image === s.url && (
+                    <div className="absolute inset-0 bg-stone-900/20 flex items-center justify-center">
+                      <Check size={16} className="text-white drop-shadow" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+              <button
+                type="button"
+                disabled={imageLoading}
+                onClick={() => imageInputRef.current?.click()}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-stone-600 border border-stone-200 rounded-lg hover:bg-stone-100 transition-colors disabled:opacity-50 disabled:cursor-wait"
+              >
+                <Upload size={12} /> {imageLoading ? 'Processando…' : 'Subir imagem'}
+              </button>
+              <input
+                placeholder="Ou cole uma URL"
+                value={form.image.startsWith('data:') ? '' : form.image}
+                onChange={e => { setImageError(''); setForm(f => ({ ...f, image: e.target.value })) }}
+                className="flex-1 px-3 py-2 text-xs rounded-lg border border-stone-200 focus:outline-none focus:border-stone-400 min-w-0"
+              />
+            </div>
+            {imageError && <p className="text-[11px] text-red-400">{imageError}</p>}
+
+            {form.image && (
+              <div className="relative">
+                <img
+                  src={form.image}
+                  alt="preview"
+                  className="w-full h-20 object-cover rounded-lg border border-stone-100"
+                  onError={e => { e.target.style.display = 'none' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, image: '' }))}
+                  className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 hover:bg-black/70"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button variant="primary" size="sm" fullWidth onClick={saveGift}>
+              <Check size={14} /> Salvar
+            </Button>
+            <Button variant="ghost" size="sm" onClick={closeForm}>Cancelar</Button>
+          </div>
+        </div>
+      )}
+
+      {gifts.length === 0 && form === null && (
+        <p className="text-xs text-stone-400 text-center py-6">Nenhum presente ainda. Clique em "Adicionar".</p>
+      )}
+
+      {gifts.map(gift => (
+        <div key={gift.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 bg-stone-50">
+          {gift.image ? (
+            <img src={gift.image} alt={gift.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-stone-200 flex-shrink-0" />
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-stone-900 truncate">{gift.name}</p>
+            <p className="text-xs text-stone-400">R$ {Number(gift.price).toLocaleString('pt-BR')}{gift.store ? ` · ${gift.store}` : ''}</p>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              title="Editar"
+              onClick={() => openEdit(gift)}
+              className="p-1.5 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-colors"
+            >
+              <Pencil size={13} />
+            </button>
+            <button
+              title="Remover"
+              onClick={() => deleteGift(gift.id)}
+              className="p-1.5 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        </div>
+      ))}
+    </motion.div>
   )
 }

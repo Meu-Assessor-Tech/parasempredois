@@ -9,7 +9,15 @@ export function WeddingProvider({ children }) {
   const [wedding, setWedding] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
-      return saved ? { ...mockWedding, ...JSON.parse(saved) } : mockWedding
+      if (!saved) return mockWedding
+      const parsed = JSON.parse(saved)
+      // Prefer saved gifts array; fall back to mockWedding gifts if absent
+      return {
+        ...mockWedding,
+        ...parsed,
+        gifts:    parsed.gifts    ?? mockWedding.gifts,
+        sections: parsed.sections ?? mockWedding.sections,
+      }
     } catch {
       return mockWedding
     }

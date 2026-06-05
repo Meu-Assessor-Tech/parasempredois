@@ -1,17 +1,20 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, Check } from 'lucide-react'
+import { Check, Lock } from 'lucide-react'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import { mockTemplates } from '../../data/mockTemplates'
 import { useWedding } from '../../context/WeddingContext'
 
+const stagger = { visible: { transition: { staggerChildren: 0.08 } } }
+const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } } }
+
 export default function Templates() {
   const { wedding, updateWedding } = useWedding()
   const navigate = useNavigate()
-  const template = mockTemplates[0]
 
-  const handleConfirm = () => {
+  const handleSelect = (template) => {
+    if (template.comingSoon) return
     updateWedding({ template: template.id })
     navigate('/editor')
   }
@@ -23,106 +26,100 @@ export default function Templates() {
       </div>
 
       <main className="flex-1 overflow-auto">
-        <div className="max-w-3xl mx-auto px-4 sm:px-8 py-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-10"
-          >
-            <p className="text-[9px] uppercase tracking-[0.5em] text-sand-500 mb-3">Template</p>
-            <h1 className="font-serif text-4xl text-stone-900 mb-3">
-              {template.name}
-            </h1>
+        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-12">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
+            <p className="text-[9px] uppercase tracking-[0.5em] text-sand-500 mb-3">Templates</p>
+            <h1 className="font-serif text-4xl text-stone-900 mb-3">Escolha seu estilo</h1>
             <p className="text-stone-500 text-sm max-w-md leading-relaxed">
-              {template.description}
+              Selecione o template que melhor representa vocês. Todos usam as mesmas informações que você já preencheu.
             </p>
           </motion.div>
 
-          {/* Full preview card */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-2xl overflow-hidden border-2 border-stone-900 shadow-2xl mb-8"
+            initial="hidden"
+            animate="visible"
+            variants={stagger}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {/* Hero mockup */}
-            <div className="relative h-72 sm:h-96">
-              <img
-                src={template.preview}
-                alt={template.name}
-                className="w-full h-full object-cover"
-              />
-              <div
-                className="absolute inset-0"
-                style={{ background: 'linear-gradient(to bottom, rgba(10,8,6,0.45) 0%, rgba(10,8,6,0.2) 45%, rgba(10,8,6,0.6) 100%)' }}
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center px-8">
-                <p className="text-[9px] uppercase tracking-[0.5em] text-white/40 mb-6">Save the Date</p>
-                <p className="font-serif text-4xl sm:text-5xl text-white leading-none">Sofia</p>
-                <div className="flex items-center gap-4 my-3">
-                  <div className="w-10 h-px bg-white/20" />
-                  <span className="font-serif italic text-white/30 text-lg">&</span>
-                  <div className="w-10 h-px bg-white/20" />
-                </div>
-                <p className="font-serif text-4xl sm:text-5xl text-white leading-none">Lucas</p>
-                <p className="mt-6 text-[10px] uppercase tracking-[0.45em] text-white/35">20 de setembro de 2025</p>
-              </div>
-              <div className="absolute top-4 left-4">
-                <span className="bg-white/10 backdrop-blur-sm text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/20">
-                  {template.tag}
-                </span>
-              </div>
-              <div className="absolute top-4 right-4 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg">
-                <Check size={14} className="text-stone-900" />
-              </div>
-            </div>
+            {mockTemplates.map((template) => {
+              const isActive = wedding.template === template.id
+              return (
+                <motion.div key={template.id} variants={fadeUp}>
+                  <button
+                    onClick={() => handleSelect(template)}
+                    disabled={template.comingSoon}
+                    className={`w-full text-left rounded-2xl overflow-hidden border-2 transition-all duration-200 group ${
+                      isActive
+                        ? 'border-stone-900 shadow-lg'
+                        : template.comingSoon
+                        ? 'border-stone-100 opacity-60 cursor-not-allowed'
+                        : 'border-stone-100 hover:border-stone-300 hover:shadow-md'
+                    }`}
+                  >
+                    {/* Preview image */}
+                    <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">
+                      <img
+                        src={template.preview}
+                        alt={template.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
 
-            {/* Section mockup */}
-            <div className="bg-[#FAFAF8] px-8 py-8 border-t border-stone-100">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="flex-1 h-px bg-stone-200" />
-                <div className="w-1.5 h-1.5 rounded-full bg-sand-400" />
-                <div className="flex-1 h-px bg-stone-200" />
-              </div>
-              <div className="text-center mb-6">
-                <p className="text-[9px] uppercase tracking-[0.5em] text-sand-500 mb-2">Nossa história</p>
-                <p className="font-serif text-2xl text-stone-900">Como tudo começou</p>
-              </div>
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                {[
-                  'https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=300',
-                  'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=300',
-                  'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=300',
-                ].map((img, i) => (
-                  <div key={i} className="aspect-square rounded-xl overflow-hidden bg-stone-100">
-                    <img src={img} alt="" className="w-full h-full object-cover" />
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center justify-between text-xs text-stone-400">
-                <div className="flex gap-1.5">
-                  {template.colors.map((c, i) => (
-                    <div key={i} className="w-4 h-4 rounded-full border border-stone-200" style={{ backgroundColor: c }} />
-                  ))}
-                </div>
-                <span className="font-medium text-stone-500">Ivory Template</span>
-              </div>
-            </div>
-          </motion.div>
+                      {/* Tag */}
+                      <div className="absolute top-3 left-3">
+                        <span className={`text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full font-medium ${
+                          isActive ? 'bg-stone-900 text-white' : 'bg-white/90 text-stone-700'
+                        }`}>
+                          {template.tag}
+                        </span>
+                      </div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="flex justify-end"
-          >
-            <Button variant="primary" size="lg" onClick={handleConfirm}>
-              Usar este template
-              <ArrowRight size={16} />
-            </Button>
+                      {/* Active check */}
+                      {isActive && (
+                        <div className="absolute top-3 right-3 w-7 h-7 bg-stone-900 rounded-full flex items-center justify-center">
+                          <Check size={13} className="text-white" />
+                        </div>
+                      )}
+
+                      {/* Coming soon lock */}
+                      {template.comingSoon && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                          <div className="bg-white/90 rounded-full p-3">
+                            <Lock size={18} className="text-stone-500" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Name over image */}
+                      <div className="absolute bottom-3 left-4">
+                        <p className="font-serif text-xl text-white">{template.name}</p>
+                      </div>
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-4 bg-white">
+                      <p className="text-xs text-stone-500 leading-relaxed mb-3">{template.description}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-1.5">
+                          {template.colors.map((c, i) => (
+                            <div key={i} className="w-4 h-4 rounded-full border border-stone-200 flex-shrink-0" style={{ backgroundColor: c }} />
+                          ))}
+                        </div>
+                        {!template.comingSoon && (
+                          <span className="text-xs font-medium text-stone-500">
+                            {isActive ? 'Ativo' : 'Selecionar →'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                </motion.div>
+              )
+            })}
           </motion.div>
         </div>
       </main>
     </div>
   )
 }
+
