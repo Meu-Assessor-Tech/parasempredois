@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { WeddingProvider } from './context/WeddingContext'
+import ProtectedRoute from './components/auth/ProtectedRoute'
 import Landing from './pages/Landing'
 import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
@@ -15,9 +16,15 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/templates" element={<Templates />} />
-          <Route path="/editor" element={<Editor />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute><Dashboard /></ProtectedRoute>
+          } />
+          <Route path="/templates" element={
+            <ProtectedRoute><Templates /></ProtectedRoute>
+          } />
+          <Route path="/editor" element={
+            <ProtectedRoute><Editor /></ProtectedRoute>
+          } />
           <Route path="/site/:slug" element={<WeddingSite />} />
         </Routes>
       </WeddingProvider>
