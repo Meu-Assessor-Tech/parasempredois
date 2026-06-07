@@ -23,4 +23,4 @@ jobs:
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
-          projectId: parasempredois
+          projectId: parasempredois-10be9
