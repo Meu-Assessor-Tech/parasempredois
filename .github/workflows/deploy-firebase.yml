@@ -17,6 +17,12 @@ jobs:
           node-version: 22
 
       - run: npm ci
+
+      - name: Create .env
+        run: |
+          echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" >> .env
+          echo "VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}" >> .env
+
       - run: npm run build
 
       - uses: FirebaseExtended/action-hosting-deploy@v0
