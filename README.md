@@ -1,10 +1,10 @@
-# 💍 Nosso Dia — MVP Front-End
+# Para sempre dois - MVP Front-End
 
-Plataforma de criação de sites de casamento. MVP front-end com dados mockados.
+Plataforma gratuita e sem fins lucrativos para criação de sites de casamento. MVP front-end com dados mockados.
 
-## 🚀 Como rodar
+## Como rodar
 
-Abra um terminal (CMD, PowerShell ou Git Bash) na pasta do projeto e execute:
+Abra um terminal na pasta do projeto e execute:
 
 ```bash
 # 1. Instalar dependências
@@ -16,7 +16,7 @@ npm run dev
 
 Acesse: **http://localhost:5173**
 
-## 📄 Páginas
+## Páginas
 
 | Rota | Descrição |
 |------|-----------|
@@ -27,7 +27,7 @@ Acesse: **http://localhost:5173**
 | `/editor` | Editor do site |
 | `/site/ana-e-pedro` | Página pública do casamento |
 
-## 🛠 Stack
+## Stack
 
 - React 18 + Vite
 - Tailwind CSS
@@ -35,9 +35,9 @@ Acesse: **http://localhost:5173**
 - Lucide React
 - React Router DOM
 
-## 📁 Estrutura
+## Estrutura
 
-```
+```text
 src/
 ├── data/          # Dados mockados
 ├── context/       # AuthContext, WeddingContext

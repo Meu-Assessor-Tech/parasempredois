@@ -51,7 +51,6 @@ export default function Auth() {
     }
   }
 
-
   return (
     <div className="min-h-screen bg-sand-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -68,7 +67,7 @@ export default function Auth() {
         <div className="text-center mb-8">
           <a href="/" className="inline-flex items-center gap-2 mb-6">
             <Heart size={20} className="text-sand-600 fill-sand-600" />
-            <span className="font-serif text-xl text-stone-900">Nosso Dia</span>
+            <span className="font-serif text-xl text-stone-900">Para sempre dois</span>
           </a>
           <h1 className="font-serif text-3xl text-stone-900 mb-2">
             {mode === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta'}

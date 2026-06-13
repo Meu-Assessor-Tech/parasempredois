@@ -15,6 +15,16 @@ export default function Navbar({ transparent = false }) {
     navigate('/')
   }
 
+  const linkClass = transparent
+    ? 'text-sm text-white/85 hover:text-white transition-colors'
+    : 'text-sm text-stone-500 hover:text-stone-900 transition-colors'
+
+  const brandTextClass = transparent
+    ? 'font-serif text-lg font-medium text-white drop-shadow-sm'
+    : 'font-serif text-lg font-medium text-stone-900'
+
+  const mobileButtonClass = transparent ? 'md:hidden p-2 text-white' : 'md:hidden p-2 text-stone-900'
+
   return (
     <motion.nav
       initial={{ opacity: 0, y: -10 }}
@@ -26,13 +36,13 @@ export default function Navbar({ transparent = false }) {
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <Heart size={18} className="text-sand-600 fill-sand-600" />
-          <span className="font-serif text-lg font-medium text-stone-900">Nosso Dia</span>
+          <Heart size={18} className={transparent ? 'text-white fill-white drop-shadow-sm' : 'text-sand-600 fill-sand-600'} />
+          <span className={brandTextClass}>Para sempre dois</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-6">
-          <Link to="/templates" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">Templates</Link>
-          <Link to="/site/ana-e-pedro" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">Exemplo</Link>
+          <Link to="/templates" className={linkClass}>Templates</Link>
+          <Link to="/site/ana-e-pedro" className={linkClass}>Exemplo</Link>
           {user ? (
             <div className="flex items-center gap-3">
               <Link to="/dashboard">
@@ -43,7 +53,7 @@ export default function Navbar({ transparent = false }) {
           ) : (
             <div className="flex items-center gap-3">
               <Link to="/login">
-                <Button variant="ghost" size="sm">Entrar</Button>
+                <Button variant="ghost" size="sm" className={transparent ? '!text-white hover:!bg-white/10' : ''}>Entrar</Button>
               </Link>
               <Link to="/login">
                 <Button variant="primary" size="sm">Começar grátis</Button>
@@ -52,7 +62,7 @@ export default function Navbar({ transparent = false }) {
           )}
         </div>
 
-        <button className="md:hidden p-2" onClick={() => setMenuOpen(!menuOpen)}>
+        <button className={mobileButtonClass} onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu">
           {menuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>

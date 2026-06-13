@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, Star, Check, Heart, Sparkles, Globe } from 'lucide-react'
+import { ArrowRight, Star, Check, Heart, Sparkles, Globe, Gift, HandHeart } from 'lucide-react'
 import Navbar from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 import Button from '../../components/ui/Button'
 import { mockTemplates } from '../../data/mockTemplates'
 import { mockTestimonials } from '../../data/mockTestimonials'
+
+const PIX_KEY = 'adicione-sua-chave-pix'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -29,29 +31,43 @@ export default function Landing() {
         <div className="absolute inset-0">
           <img
             src="https://images.unsplash.com/photo-1519741497674-611481863552?w=1600&q=80"
-            alt="Wedding"
+            alt="Casal celebrando o casamento"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/60" />
         </div>
 
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pt-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white/90 text-xs mb-8">
+            <div className="inline-flex items-center gap-2 bg-white/12 backdrop-blur-md border border-white/25 rounded-full px-4 py-2 text-white text-xs mb-8 shadow-lg">
               <Sparkles size={12} />
-              <span>Crie o site do seu casamento em minutos</span>
+              <span>Para sempre dois é gratuito e sem fins lucrativos</span>
             </div>
             <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl text-white leading-tight mb-6">
               O site que seu <br />
               <em>amor merece</em>
             </h1>
-            <p className="text-white/80 text-lg sm:text-xl max-w-xl mx-auto leading-relaxed mb-10">
-              Templates elegantes, lista de presentes e RSVP integrados. Tudo que você precisa para compartilhar o dia mais especial da sua vida.
+            <p className="text-white/90 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed mb-8">
+              Crie um site de casamento bonito, simples e gratuito, com templates elegantes, lista de presentes e RSVP para compartilhar com seus convidados.
             </p>
+
+            <div className="mx-auto mb-10 max-w-2xl rounded-2xl border border-white/20 bg-white/12 px-5 py-4 text-left backdrop-blur-md shadow-xl sm:flex sm:items-start sm:gap-4">
+              <HandHeart size={22} className="mb-3 flex-shrink-0 text-white sm:mb-0" />
+              <div>
+                <p className="text-sm font-medium text-white">Uma colaboração opcional mantém o projeto vivo.</p>
+                <p className="mt-1 text-sm leading-relaxed text-white/80">
+                  O site não cobra para criar ou publicar. Se algum casal quiser apoiar o desenvolvimento, pode contribuir voluntariamente por Pix.
+                </p>
+                <p className="mt-3 text-xs text-white/70">
+                  Chave Pix: <span className="font-medium text-white">{PIX_KEY}</span>
+                </p>
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button
                 variant="primary"
@@ -112,24 +128,24 @@ export default function Landing() {
               {
                 step: '01',
                 title: 'Escolha um template',
-                desc: 'Selecione entre nossos templates elegantes criados por designers especializados em casamentos.',
-                icon: '✦',
+                desc: 'Selecione um visual elegante para combinar com o estilo do casal.',
+                icon: Sparkles,
               },
               {
                 step: '02',
                 title: 'Personalize com amor',
-                desc: 'Adicione fotos, textos, cores e todos os detalhes do seu grande dia com nosso editor intuitivo.',
-                icon: '◈',
+                desc: 'Adicione fotos, textos, cores e todos os detalhes do grande dia.',
+                icon: Heart,
               },
               {
                 step: '03',
                 title: 'Compartilhe com todos',
-                desc: 'Envie o link para seus convidados e deixe que eles confirmem presença e escolham presentes.',
-                icon: '❋',
+                desc: 'Envie o link para seus convidados confirmarem presença e verem os presentes.',
+                icon: Globe,
               },
             ].map((item) => (
               <motion.div key={item.step} variants={fadeUp} className="text-center p-8">
-                <div className="text-3xl mb-4 text-sand-600">{item.icon}</div>
+                <item.icon size={28} className="mb-4 inline-flex text-sand-600" />
                 <div className="text-xs font-mono text-stone-400 mb-3">{item.step}</div>
                 <h3 className="font-serif text-xl text-stone-900 mb-3">{item.title}</h3>
                 <p className="text-sm text-stone-500 leading-relaxed">{item.desc}</p>
@@ -156,7 +172,7 @@ export default function Landing() {
               Elegância para cada casal
             </motion.h2>
             <motion.p variants={fadeUp} className="text-stone-500 max-w-md mx-auto">
-              Templates criados com atenção aos detalhes, para que seu site reflita a personalidade de vocês.
+              Templates criados com atenção aos detalhes, para que o site reflita a personalidade de vocês.
             </motion.p>
           </motion.div>
 
@@ -214,7 +230,7 @@ export default function Landing() {
               Tudo que vocês precisam
             </motion.h2>
             <motion.p variants={fadeUp} className="text-stone-400 max-w-md mx-auto">
-              Uma plataforma completa para o dia mais importante da sua vida.
+              Uma plataforma completa para organizar e compartilhar as informações do casamento.
             </motion.p>
           </motion.div>
 
@@ -228,10 +244,10 @@ export default function Landing() {
             {[
               { icon: Globe, title: 'Site personalizado', desc: 'URL exclusiva com o nome de vocês.' },
               { icon: Heart, title: 'RSVP elegante', desc: 'Confirmação de presença para seus convidados.' },
-              { icon: Star, title: 'Lista de presentes', desc: 'Gerencie presentes com facilidade.' },
+              { icon: Gift, title: 'Lista de presentes', desc: 'Organize ideias de presentes com facilidade.' },
               { icon: Sparkles, title: 'Galeria de fotos', desc: 'Compartilhe momentos especiais.' },
-              { icon: Check, title: 'Countdown', desc: 'Contagem regressiva para o grande dia.' },
-              { icon: Globe, title: 'Mobile-first', desc: 'Perfeito em qualquer dispositivo.' },
+              { icon: Check, title: 'Contagem regressiva', desc: 'Acompanhe quanto falta para o grande dia.' },
+              { icon: HandHeart, title: 'Grátis por propósito', desc: 'Sem cobrança, planos pagos ou cartão de crédito.' },
             ].map((feature) => (
               <motion.div
                 key={feature.title}
@@ -313,7 +329,7 @@ export default function Landing() {
               Comece a criar <br />o site de vocês hoje
             </motion.h2>
             <motion.p variants={fadeUp} className="text-stone-500 mb-10 text-lg">
-              Gratuito para começar. Sem cartão de crédito.
+              Gratuito de verdade. Contribuições por Pix são opcionais e ajudam o projeto a continuar.
             </motion.p>
             <motion.div variants={fadeUp}>
               <Button variant="primary" size="xl" onClick={() => navigate('/templates')}>

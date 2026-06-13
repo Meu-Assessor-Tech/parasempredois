@@ -325,7 +325,7 @@ export default function IvoryTemplate({ wedding }) {
           </div>
           <p className="text-xs text-stone-300 font-light">
             Site criado com{' '}
-            <a href="/" className="text-stone-400 hover:text-sand-500 transition-colors duration-200">Nosso Dia</a>
+            <a href="/" className="text-stone-400 hover:text-sand-500 transition-colors duration-200">Para sempre dois</a>
           </p>
         </div>
       </footer>

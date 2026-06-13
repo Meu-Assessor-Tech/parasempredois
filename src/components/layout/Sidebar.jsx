@@ -1,8 +1,7 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Heart, LayoutDashboard, Image, Edit3, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { useNavigate } from 'react-router-dom'
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -21,7 +20,7 @@ export default function Sidebar() {
       <div className="px-6 mb-8">
         <Link to="/" className="flex items-center gap-2">
           <Heart size={16} className="text-sand-600 fill-sand-600" />
-          <span className="font-serif text-base font-medium text-stone-900">Nosso Dia</span>
+          <span className="font-serif text-base font-medium text-stone-900">Para sempre dois</span>
         </Link>
       </div>
 

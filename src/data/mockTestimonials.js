@@ -3,8 +3,8 @@ export const mockTestimonials = [
     id: '1',
     name: 'Carolina & Mateus',
     date: 'Março 2024',
-    text: 'O Nosso Dia tornou tudo tão simples e bonito. Nossos convidados amaram o site!',
-    image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=100',
+    text: 'O Para sempre dois tornou tudo tão simples e bonito. Nossos convidados amaram o site!',
+    image: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=100',
     stars: 5,
   },
   {
