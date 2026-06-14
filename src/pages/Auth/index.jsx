@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, ArrowRight, Eye, EyeOff } from 'lucide-react'
@@ -16,6 +16,9 @@ export default function Auth() {
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const { login, loginWithGoogle, register } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const requestedNextPath = searchParams.get('next') || '/dashboard'
+  const nextPath = requestedNextPath.startsWith('/') ? requestedNextPath : '/dashboard'
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
@@ -24,7 +27,7 @@ export default function Auth() {
     setError('')
     try {
       await loginWithGoogle(response.credential)
-      navigate('/dashboard')
+      navigate(nextPath)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao entrar com Google')
     } finally {
@@ -43,7 +46,7 @@ export default function Auth() {
       } else {
         await register(form.name, form.email, form.password)
       }
-      navigate('/dashboard')
+      navigate(nextPath)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao autenticar')
     } finally {

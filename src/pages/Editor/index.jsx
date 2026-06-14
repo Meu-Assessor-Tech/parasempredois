@@ -54,7 +54,7 @@ const COLORS = [
 const MAX_GALLERY_IMAGES = 6
 
 export default function Editor() {
-  const { wedding, updateWedding } = useWedding()
+  const { wedding, updateWedding, ensureWedding } = useWedding()
   const [previewMode, setPreviewMode] = useState('desktop')
   const [saved, setSaved] = useState(false)
   const [previewKey, setPreviewKey] = useState(0)
@@ -118,12 +118,20 @@ export default function Editor() {
     if (canUploadMedia(wedding.id)) {
       return uploadWeddingImage(wedding.id, file, kind)
     }
-    return processImageFile(file, kind)
-  }, [wedding.id])
+    return ensureWedding().then(currentWedding => {
+      if (canUploadMedia(currentWedding.id)) {
+        return uploadWeddingImage(currentWedding.id, file, kind)
+      }
+      return processImageFile(file, kind)
+    })
+  }, [wedding.id, ensureWedding])
 
   const handleSave = async () => {
     try {
-      await saveWeddingMedia(wedding)
+      const savedWedding = await saveWeddingMedia(wedding)
+      if (savedWedding?.id) {
+        updateWedding({ id: savedWedding.id })
+      }
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
@@ -737,6 +745,7 @@ const PHOTO_SUGGESTIONS = [
 ]
 
 function GiftsTab({ wedding, updateWedding }) {
+  const { ensureWedding } = useWedding()
   const gifts = wedding.gifts ?? []
   const [form, setForm] = useState(null)
   const [errors, setErrors] = useState({})
@@ -751,8 +760,13 @@ function GiftsTab({ wedding, updateWedding }) {
     if (canUploadMedia(wedding.id)) {
       return uploadWeddingImage(wedding.id, file, kind)
     }
-    return processImageFile(file, kind)
-  }, [wedding.id])
+    return ensureWedding().then(currentWedding => {
+      if (canUploadMedia(currentWedding.id)) {
+        return uploadWeddingImage(currentWedding.id, file, kind)
+      }
+      return processImageFile(file, kind)
+    })
+  }, [wedding.id, ensureWedding])
 
   const updatePixKey = (value) => {
     const safeValue = value.replace(/[\u0000-\u001F\u007F<>]/g, '').slice(0, 140)

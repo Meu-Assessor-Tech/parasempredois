@@ -27,16 +27,27 @@ export function getCurrentWedding() {
   return api('/weddings')
 }
 
+export function createWedding(wedding) {
+  return api('/weddings', {
+    method: 'POST',
+    body: JSON.stringify(payloadForWedding(wedding)),
+  })
+}
+
 export function saveWeddingMedia(wedding) {
-  if (!canSaveWedding(wedding?.id)) return Promise.resolve(null)
+  if (!canSaveWedding(wedding?.id)) return createWedding(wedding)
 
   return api(`/weddings/${wedding.id}`, {
     method: 'PUT',
-    body: JSON.stringify({
-      coverImage: storedMedia(wedding.coverImage),
-      galleryImages: storedMediaList(wedding.galleryImages),
-      giftPixQrCode: storedMedia(wedding.giftPixQrCode),
-      gifts: giftsForSave(wedding.gifts),
-    }),
+    body: JSON.stringify(payloadForWedding(wedding)),
   })
+}
+
+function payloadForWedding(wedding) {
+  return {
+    coverImage: storedMedia(wedding?.coverImage),
+    galleryImages: storedMediaList(wedding?.galleryImages),
+    giftPixQrCode: storedMedia(wedding?.giftPixQrCode),
+    gifts: giftsForSave(wedding?.gifts),
+  }
 }

@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Check, Lock } from 'lucide-react'
-import Sidebar from '../../components/layout/Sidebar'
+import Navbar from '../../components/layout/Navbar'
 import Button from '../../components/ui/Button'
 import { mockTemplates } from '../../data/mockTemplates'
+import { useAuth } from '../../context/AuthContext'
 import { useWedding } from '../../context/WeddingContext'
 
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } }
@@ -11,21 +12,20 @@ const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, tra
 
 export default function Templates() {
   const { wedding, updateWedding } = useWedding()
+  const { user } = useAuth()
   const navigate = useNavigate()
 
   const handleSelect = (template) => {
     if (template.comingSoon) return
     updateWedding({ template: template.id })
-    navigate('/editor')
+    navigate(user ? '/editor' : `/login?next=${encodeURIComponent('/editor')}`)
   }
 
   return (
-    <div className="flex min-h-screen bg-stone-50">
-      <div className="hidden md:flex">
-        <Sidebar />
-      </div>
+    <div className="min-h-screen bg-stone-50">
+      <Navbar />
 
-      <main className="flex-1 overflow-auto">
+      <main className="pt-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-8 py-12">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
             <p className="text-[9px] uppercase tracking-[0.5em] text-sand-500 mb-3">Templates</p>

@@ -19,9 +19,7 @@ export default function App() {
           <Route path="/dashboard" element={
             <ProtectedRoute><Dashboard /></ProtectedRoute>
           } />
-          <Route path="/templates" element={
-            <ProtectedRoute><Templates /></ProtectedRoute>
-          } />
+          <Route path="/templates" element={<Templates />} />
           <Route path="/editor" element={
             <ProtectedRoute><Editor /></ProtectedRoute>
           } />

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { getCurrentWedding } from '../api/weddings'
+import { canSaveWedding, createWedding, getCurrentWedding } from '../api/weddings'
 import { useAuth } from './AuthContext'
 import { mockWedding } from '../data/mockWedding'
 
@@ -36,6 +36,7 @@ export function WeddingProvider({ children }) {
 
     getCurrentWedding()
       .then(remoteWedding => {
+        if (!remoteWedding) return
         if (cancelled) return
         setWedding(prev => {
           const next = mergeRemoteWedding(prev, remoteWedding)
@@ -73,8 +74,27 @@ export function WeddingProvider({ children }) {
     setWedding(mockWedding)
   }
 
+  const ensureWedding = async () => {
+    if (canSaveWedding(wedding.id)) return wedding
+    if (!user) return wedding
+
+    const remoteWedding = await createWedding(wedding)
+    let nextWedding = null
+    setWedding(prev => {
+      const next = mergeRemoteWedding(prev, remoteWedding)
+      nextWedding = next
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      } catch {
+        // localStorage quota exceeded (e.g. large base64 images)
+      }
+      return next
+    })
+    return nextWedding ?? mergeRemoteWedding(wedding, remoteWedding)
+  }
+
   return (
-    <WeddingContext.Provider value={{ wedding, updateWedding, resetWedding }}>
+    <WeddingContext.Provider value={{ wedding, updateWedding, ensureWedding, resetWedding }}>
       {children}
     </WeddingContext.Provider>
   )
