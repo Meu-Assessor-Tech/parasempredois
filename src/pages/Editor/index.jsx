@@ -1,12 +1,13 @@
 import { useState, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode } from 'lucide-react'
+import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { useWedding } from '../../context/WeddingContext'
-import { templateConfigs } from '../../data/templateConfigs'
+import { mockTemplates } from '../../data/mockTemplates'
+import { mockWedding } from '../../data/mockWedding'
 
 const TABS = [
   { id: 'content', label: 'Conteúdo' },
@@ -46,6 +47,8 @@ const COLORS = [
   { label: 'Terracota',  value: '#C0714A' },
   { label: 'Caramelo',   value: '#C17F4A' },
 ]
+
+const MAX_GALLERY_IMAGES = 6
 
 function readFileAsDataURL(file) {
   return new Promise((resolve, reject) => {
@@ -119,12 +122,15 @@ async function processQrCodeImage(file) {
 }
 
 export default function Editor() {
-  const { wedding, updateWedding, resetWedding } = useWedding()
+  const { wedding, updateWedding } = useWedding()
   const [previewMode, setPreviewMode] = useState('desktop')
   const [saved, setSaved] = useState(false)
   const [previewKey, setPreviewKey] = useState(0)
+  const [draggedGalleryIndex, setDraggedGalleryIndex] = useState(null)
   const coverInputRef = useRef(null)
   const galleryInputRef = useRef(null)
+  const previewIframeRef = useRef(null)
+  const previewScrollRef = useRef({ top: 0, left: 0 })
   const debounceRef = useRef(null)
   const navigate = useNavigate()
   const location = useLocation()
@@ -139,17 +145,42 @@ export default function Editor() {
   }
 
   // Debounced preview reload — fires 800ms after last change
+  const capturePreviewScroll = useCallback(() => {
+    try {
+      const win = previewIframeRef.current?.contentWindow
+      if (!win) return
+      previewScrollRef.current = {
+        top: win.scrollY || win.document?.documentElement?.scrollTop || 0,
+        left: win.scrollX || win.document?.documentElement?.scrollLeft || 0,
+      }
+    } catch {
+      previewScrollRef.current = { top: 0, left: 0 }
+    }
+  }, [])
+
+  const restorePreviewScroll = useCallback(() => {
+    const { top, left } = previewScrollRef.current
+    window.setTimeout(() => {
+      try {
+        previewIframeRef.current?.contentWindow?.scrollTo(left, top)
+      } catch {
+        // Same-origin preview should be accessible; ignore browser restrictions.
+      }
+    }, 80)
+  }, [])
+
   const schedulePreviewReload = useCallback(() => {
     clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => setPreviewKey(k => k + 1), 800)
-  }, [])
+    debounceRef.current = setTimeout(() => {
+      capturePreviewScroll()
+      setPreviewKey(k => k + 1)
+    }, 800)
+  }, [capturePreviewScroll])
 
   const wrappedUpdate = useCallback((updates) => {
     updateWedding(updates)
     schedulePreviewReload()
   }, [updateWedding, schedulePreviewReload])
-
-  const cfg = templateConfigs[wedding.template] || templateConfigs.classic
 
   const handleSave = () => {
     setSaved(true)
@@ -167,14 +198,52 @@ export default function Editor() {
   const handleGalleryUpload = async (e) => {
     const files = Array.from(e.target.files)
     if (!files.length) return
-    const dataUrls = await Promise.all(files.map(readFileAsDataURL))
-    wrappedUpdate({ galleryImages: [...wedding.galleryImages, ...dataUrls] })
+    const currentImages = wedding.galleryImages ?? []
+    const remainingSlots = MAX_GALLERY_IMAGES - currentImages.length
+    if (remainingSlots <= 0) {
+      alert(`A galeria aceita até ${MAX_GALLERY_IMAGES} fotos para manter o layout bonito.`)
+      e.target.value = ''
+      return
+    }
+    const selectedFiles = files.slice(0, remainingSlots)
+    const dataUrls = await Promise.all(selectedFiles.map(readFileAsDataURL))
+    wrappedUpdate({ galleryImages: [...currentImages, ...dataUrls] })
+    if (files.length > remainingSlots) {
+      alert(`Foram adicionadas ${remainingSlots} foto(s). O limite da galeria é ${MAX_GALLERY_IMAGES}.`)
+    }
     e.target.value = ''
   }
 
   const removeGalleryImage = (index) => {
     wrappedUpdate({ galleryImages: wedding.galleryImages.filter((_, i) => i !== index) })
   }
+
+  const reorderGalleryImage = (fromIndex, toIndex) => {
+    if (fromIndex === null || fromIndex === toIndex) return
+    const nextImages = [...(wedding.galleryImages ?? [])]
+    const [movedImage] = nextImages.splice(fromIndex, 1)
+    nextImages.splice(toIndex, 0, movedImage)
+    wrappedUpdate({ galleryImages: nextImages })
+  }
+
+  const handleTemplateSelect = (template) => {
+    if (template.comingSoon || wedding.template === template.id) return
+    wrappedUpdate({ template: template.id, primaryColor: template.colors[1] })
+  }
+
+  const resetDesignData = () => {
+    if (!confirm('Resetar apenas template, cor de destaque, foto de capa e galeria?')) return
+    wrappedUpdate({
+      template: mockWedding.template,
+      primaryColor: mockWedding.primaryColor,
+      coverImage: mockWedding.coverImage,
+      galleryImages: mockWedding.galleryImages,
+    })
+  }
+
+  const activeTemplate = mockTemplates.find(template => template.id === wedding.template) ?? mockTemplates[0]
+  const defaultTemplateAccent = activeTemplate?.colors?.[1] ?? '#8B6F5E'
+  const usesTemplateAccent = wedding.primaryColor?.toLowerCase() === defaultTemplateAccent.toLowerCase()
 
   return (
     <div className="flex min-h-screen bg-stone-100">
@@ -228,8 +297,8 @@ export default function Editor() {
           </div>
         </div>
 
-        <div className="flex-1 flex overflow-hidden">
-          <div className="w-72 bg-white border-r border-stone-100 overflow-y-auto flex-shrink-0">
+        <div className="flex-1 min-h-0 flex overflow-hidden">
+          <div className="w-72 bg-white border-r border-stone-100 overflow-y-auto overscroll-contain flex-shrink-0 h-[calc(100vh-3.5rem)]">
             <div className="p-5">
               {activeTab === 'content' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
@@ -283,17 +352,59 @@ export default function Editor() {
               {activeTab === 'design' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                   <div>
-                    <h2 className="font-medium text-stone-900 text-sm mb-1">Template ativo</h2>
-                    <p className="text-xs text-stone-400 mb-3">{cfg.label}</p>
-                    <Button variant="outline" size="sm" fullWidth onClick={() => navigate('/templates')}>
-                      Trocar template
-                    </Button>
+                    <h2 className="font-medium text-stone-900 text-sm mb-1">Template</h2>
+                    <p className="text-xs text-stone-400 mb-3">Escolha um estilo visual. As fotos e textos continuam os mesmos.</p>
+                    <div className="space-y-2">
+                      {mockTemplates.map((template) => {
+                        const isActive = wedding.template === template.id
+                        const [baseColor, accentColor, darkColor] = template.colors
+                        return (
+                          <button
+                            key={template.id}
+                            type="button"
+                            disabled={template.comingSoon}
+                            onClick={() => handleTemplateSelect(template)}
+                            className={`w-full overflow-hidden rounded-xl border text-left transition-all ${
+                              isActive
+                                ? 'border-stone-900 bg-stone-50 shadow-sm'
+                                : 'border-stone-200 hover:border-stone-400 hover:bg-stone-50'
+                            } ${template.comingSoon ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            <div className="flex gap-3 p-3">
+                              <div className="w-16 h-16 rounded-lg border border-stone-200 bg-white overflow-hidden flex-shrink-0 p-2" aria-hidden>
+                                <div className="h-full rounded-md overflow-hidden" style={{ backgroundColor: baseColor }}>
+                                  <div className="h-4" style={{ backgroundColor: darkColor }} />
+                                  <div className="px-2 py-2 space-y-1.5">
+                                    <div className="h-1.5 w-8 rounded-full" style={{ backgroundColor: accentColor }} />
+                                    <div className="h-1 w-10 rounded-full bg-stone-300/60" />
+                                    <div className="h-1 w-6 rounded-full bg-stone-300/60" />
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="min-w-0 flex-1 py-0.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-sm font-medium text-stone-900 truncate">{template.name}</p>
+                                  {isActive && <Check size={14} className="text-stone-900 flex-shrink-0" />}
+                                </div>
+                                <p className="text-[11px] text-stone-500 leading-relaxed line-clamp-2 mt-1">{template.description}</p>
+                                <div className="flex items-center gap-1.5 mt-2">
+                                  {template.colors.map((color) => (
+                                    <span key={color} className="w-3 h-3 rounded-full border border-stone-200" style={{ backgroundColor: color }} />
+                                  ))}
+                                  <span className="text-[10px] text-stone-400 ml-1">base do template</span>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
 
                   <div>
                     <h2 className="font-medium text-stone-900 text-sm mb-1">Cor de destaque</h2>
                     <p className="text-[11px] text-stone-400 mb-3 leading-relaxed">
-                      Aparece nos botões de ação do site, incluindo Pix e confirmação de presença.
+                      Personaliza detalhes do template, como botões, ícones, labels e destaques.
                     </p>
                     <div className="grid grid-cols-6 gap-2 mb-3">
                       {COLORS.map(color => (
@@ -319,6 +430,14 @@ export default function Editor() {
                       />
                       <span className="text-[11px] font-mono text-stone-400">{wedding.primaryColor}</span>
                     </div>
+                    <button
+                      type="button"
+                      disabled={usesTemplateAccent}
+                      onClick={() => wrappedUpdate({ primaryColor: defaultTemplateAccent })}
+                      className="mt-3 w-full rounded-xl border border-stone-200 px-3 py-2 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      Restaurar cor padrão do {activeTemplate.name}
+                    </button>
                   </div>
 
                   <div>
@@ -339,17 +458,55 @@ export default function Editor() {
                   </div>
 
                   <div>
-                    <h2 className="font-medium text-stone-900 text-sm mb-3">Galeria de fotos</h2>
-                    <div className="grid grid-cols-3 gap-2 mb-3">
-                      {wedding.galleryImages.map((img, i) => (
-                        <div key={i} className="relative group aspect-square rounded-lg overflow-hidden bg-stone-100">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div>
+                        <h2 className="font-medium text-stone-900 text-sm">Galeria de fotos</h2>
+                        <p className="text-[11px] text-stone-400 mt-0.5">
+                          Até {MAX_GALLERY_IMAGES} fotos. Prefira verticais. Arraste para reorganizar.
+                        </p>
+                      </div>
+                      <span className="text-[11px] text-stone-400 flex-shrink-0">
+                        {(wedding.galleryImages ?? []).length}/{MAX_GALLERY_IMAGES}
+                      </span>
+                    </div>
+                    {(wedding.galleryImages ?? []).length > MAX_GALLERY_IMAGES && (
+                      <p className="mb-3 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
+                        O site exibe apenas as primeiras {MAX_GALLERY_IMAGES} fotos. Arraste as imagens para escolher quais aparecem.
+                      </p>
+                    )}
+                    <p className="mb-3 rounded-xl bg-stone-50 border border-stone-100 px-3 py-2 text-[11px] leading-relaxed text-stone-500">
+                      Dica: use uma foto horizontal para a capa e fotos verticais ou quadradas na galeria. A primeira foto pode aparecer em destaque nos templates.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2.5 mb-3">
+                      {(wedding.galleryImages ?? []).map((img, i) => (
+                        <div
+                          key={`${img}-${i}`}
+                          draggable
+                          onDragStart={() => setDraggedGalleryIndex(i)}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={() => {
+                            reorderGalleryImage(draggedGalleryIndex, i)
+                            setDraggedGalleryIndex(null)
+                          }}
+                          onDragEnd={() => setDraggedGalleryIndex(null)}
+                          className={`relative group aspect-[4/5] rounded-xl overflow-hidden bg-stone-100 border-2 transition-all ${
+                            draggedGalleryIndex === i ? 'border-stone-900 opacity-60 scale-95' : 'border-stone-100'
+                          }`}
+                        >
                           <img src={img} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                          <div className="absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/45 text-white opacity-0 transition-opacity group-hover:opacity-100 cursor-grab">
+                            <GripVertical size={13} />
+                          </div>
                           <button
                             onClick={() => removeGalleryImage(i)}
-                            className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label={`Remover foto ${i + 1}`}
                           >
                             <Trash2 size={14} className="text-white" />
                           </button>
+                          <span className="absolute bottom-1 left-1 rounded-full bg-black/45 px-1.5 py-0.5 text-[10px] text-white">
+                            {i + 1}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -361,7 +518,13 @@ export default function Editor() {
                       className="hidden"
                       onChange={handleGalleryUpload}
                     />
-                    <Button variant="outline" size="sm" fullWidth onClick={() => galleryInputRef.current?.click()}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      fullWidth
+                      disabled={(wedding.galleryImages ?? []).length >= MAX_GALLERY_IMAGES}
+                      onClick={() => galleryInputRef.current?.click()}
+                    >
                       <Plus size={14} /> Adicionar fotos à galeria
                     </Button>
                   </div>
@@ -371,10 +534,10 @@ export default function Editor() {
                       variant="ghost"
                       size="sm"
                       fullWidth
-                      onClick={() => { if (confirm('Resetar todos os dados para o exemplo padrão?')) { resetWedding(); schedulePreviewReload() } }}
+                      onClick={resetDesignData}
                       className="!text-red-400 hover:!text-red-600 hover:!bg-red-50"
                     >
-                      Resetar dados
+                      Resetar dados de design
                     </Button>
                   </div>
                 </motion.div>
@@ -415,15 +578,17 @@ export default function Editor() {
           </div>
 
           {/* Preview — iframe rendering the real site */}
-          <div className="flex-1 bg-stone-100 overflow-auto flex items-start justify-center p-6">
+          <div className="flex-1 bg-stone-100 overflow-hidden flex items-start justify-center p-6 h-[calc(100vh-3.5rem)]">
             <div className={`bg-white shadow-xl rounded-xl overflow-hidden transition-all duration-300 ${
               previewMode === 'mobile' ? 'w-[390px]' : 'w-full max-w-4xl'
             }`} style={{ height: previewMode === 'mobile' ? '780px' : '700px' }}>
               <iframe
+                ref={previewIframeRef}
                 key={previewKey}
                 src={`/site/${wedding.slug}`}
                 title="Preview do site"
                 className="w-full h-full border-0"
+                onLoad={restorePreviewScroll}
                 style={previewMode === 'mobile' ? { transform: 'scale(1)', transformOrigin: 'top left' } : {}}
               />
             </div>

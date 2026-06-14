@@ -13,8 +13,7 @@ export const mockTemplates = [
     description: 'Boho moderno e caloroso. Tipografia serifada itálica, tons terracota e creme, estilo orgânico.',
     preview: 'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=800',
     colors: ['#FBF6EF', '#B46432', '#F2E8DC'],
-    tag: 'Em breve',
-    comingSoon: true,
+    tag: 'Disponível',
   },
   {
     id: 'floral',
@@ -22,8 +21,6 @@ export const mockTemplates = [
     description: 'Luxo dramático e sofisticado. Fundo escuro, detalhes dourados e tipografia serifada imponente.',
     preview: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800',
     colors: ['#0D0B1A', '#C8A020', '#13101F'],
-    tag: 'Em breve',
-    comingSoon: true,
+    tag: 'Disponível',
   },
 ]
-

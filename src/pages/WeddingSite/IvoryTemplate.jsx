@@ -35,7 +35,7 @@ function Ornament({ className = '' }) {
       <div className="flex-1 h-px bg-stone-100" />
       <div className="flex items-center gap-1.5">
         <div className="w-1 h-1 rounded-full bg-stone-200" />
-        <div className="w-[5px] h-[5px] rounded-full bg-sand-300" />
+        <div className="w-[5px] h-[5px] rounded-full bg-[var(--accent)]" />
         <div className="w-1 h-1 rounded-full bg-stone-200" />
       </div>
       <div className="flex-1 h-px bg-stone-100" />
@@ -45,10 +45,26 @@ function Ornament({ className = '' }) {
 
 function SectionLabel({ children }) {
   return (
-    <p className="text-[11px] sm:text-xs uppercase tracking-[0.3em] text-sand-500 mb-5 font-sans font-medium">
+    <p className="text-[11px] sm:text-xs uppercase tracking-[0.3em] text-[var(--accent)] mb-5 font-sans font-medium">
       {children}
     </p>
   )
+}
+
+function galleryGridClass(count) {
+  if (count === 1) return 'grid grid-cols-1 gap-3'
+  if (count === 2) return 'grid grid-cols-2 gap-3'
+  if (count === 3) return 'grid grid-cols-2 gap-3'
+  if (count === 4) return 'grid grid-cols-2 gap-3'
+  if (count === 5) return 'grid grid-cols-6 gap-3'
+  return 'grid grid-cols-2 sm:grid-cols-3 gap-3'
+}
+
+function galleryItemClass(count, index) {
+  if (count === 1) return 'aspect-[16/10]'
+  if (count === 3 && index === 0) return 'col-span-2 aspect-[16/10]'
+  if (count === 5) return index < 2 ? 'col-span-3 aspect-[4/5]' : 'col-span-2 aspect-[4/5]'
+  return 'aspect-[4/5]'
 }
 
 export default function IvoryTemplate({ wedding }) {
@@ -78,7 +94,7 @@ export default function IvoryTemplate({ wedding }) {
   const handleRsvp = (e) => { e.preventDefault(); setRsvpSent(true) }
   const giftPixKey = (wedding.giftPixKey ?? '').trim()
   const giftPixQrCode = wedding.giftPixQrCode ?? ''
-  const galleryImages = wedding.galleryImages ?? []
+  const galleryImages = (wedding.galleryImages ?? []).slice(0, 6)
   const canGiftWithPix = Boolean(giftPixKey)
 
   const copyGiftPixKey = async () => {
@@ -120,7 +136,7 @@ export default function IvoryTemplate({ wedding }) {
   const dateLong  = weddingDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] text-stone-900">
+    <div className="min-h-screen bg-[#FAFAF8] text-stone-900" style={{ '--accent': wedding.primaryColor || '#8B6F5E' }}>
 
       {/* HERO */}
       <section className="relative h-screen min-h-[640px] flex flex-col items-center justify-center overflow-hidden">
@@ -157,7 +173,7 @@ export default function IvoryTemplate({ wedding }) {
             { icon: Heart,    label: 'Recado', value: wedding.message.length > 58 ? wedding.message.slice(0, 58) + '…' : wedding.message },
           ].map(({ icon: Icon, label, value }, i) => (
             <div key={i} className={`flex flex-col items-center text-center gap-3.5 px-6 ${i < 2 ? 'sm:border-r border-stone-100' : ''}`}>
-              <Icon size={15} strokeWidth={1.7} className="text-sand-400" />
+              <Icon size={15} strokeWidth={1.7} className="text-[var(--accent)]" />
               <p className="text-[11px] sm:text-xs uppercase tracking-[0.24em] text-stone-500">{label}</p>
               <p className="text-[15px] sm:text-base text-stone-700 font-light leading-relaxed capitalize max-w-[220px]">{value}</p>
             </div>
@@ -239,8 +255,8 @@ export default function IvoryTemplate({ wedding }) {
               <SectionLabel>Galeria</SectionLabel>
               <h2 className="font-serif text-[2.2rem] sm:text-[2.6rem] font-normal text-stone-900 leading-tight">Nossos momentos</h2>
             </motion.div>
-            <motion.div variants={fadeUp} className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 sm:auto-rows-[210px]">
-              {galleryImages.slice(0, 7).map((img, i) => (
+            <motion.div variants={fadeUp} className={galleryGridClass(galleryImages.length)}>
+              {galleryImages.map((img, i) => (
                 <motion.button
                   key={i}
                   type="button"
@@ -248,17 +264,12 @@ export default function IvoryTemplate({ wedding }) {
                   whileHover={{ scale: 1.018 }}
                   transition={{ duration: 0.4, ease }}
                   aria-label={`Ampliar foto ${i + 1}`}
-                  className={`group overflow-hidden rounded-2xl bg-stone-100 cursor-zoom-in focus:outline-none focus:ring-4 focus:ring-sand-100 ${i === 0 && galleryImages.length > 2 ? 'sm:col-span-2 sm:row-span-2 aspect-square sm:aspect-auto' : 'aspect-square'}`}
+                  className={`group overflow-hidden rounded-2xl bg-stone-100 cursor-zoom-in focus:outline-none focus:ring-4 focus:ring-sand-100 ${galleryItemClass(galleryImages.length, i)}`}
                 >
                   <img src={img} alt={`Momento ${i + 1}`} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
                 </motion.button>
               ))}
             </motion.div>
-            {galleryImages.length > 7 && (
-              <motion.p variants={fadeUp} className="mt-6 text-center text-xs uppercase tracking-[0.2em] text-stone-400 font-light">
-                + {galleryImages.length - 7} fotos
-              </motion.p>
-            )}
           </motion.div>
         </section>
       )}
@@ -340,7 +351,7 @@ export default function IvoryTemplate({ wedding }) {
                       <img src={giftPixQrCode} alt="QR Code Pix dos noivos" className="w-full h-full object-cover" />
                     ) : (
                       <div className="text-center px-4">
-                        <QrCode size={34} className="mx-auto text-stone-300 mb-2" />
+                        <QrCode size={34} className="mx-auto text-[var(--accent)] opacity-35 mb-2" />
                         <p className="text-[10px] uppercase tracking-[0.18em] text-stone-300">QR Code</p>
                       </div>
                     )}
@@ -469,7 +480,7 @@ export default function IvoryTemplate({ wedding }) {
             <div className="flex-1 h-px bg-stone-100" />
             <div className="flex items-center gap-1.5">
               <div className="w-1 h-1 rounded-full bg-stone-200" />
-              <div className="w-[5px] h-[5px] rounded-full bg-sand-300" />
+              <div className="w-[5px] h-[5px] rounded-full bg-[var(--accent)]" />
               <div className="w-1 h-1 rounded-full bg-stone-200" />
             </div>
             <div className="flex-1 h-px bg-stone-100" />

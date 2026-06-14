@@ -1,12 +1,11 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, LayoutDashboard, Image, Edit3, HandHeart, LogOut } from 'lucide-react'
+import { Heart, LayoutDashboard, Edit3, HandHeart, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 const navItems = [
+  { icon: Edit3, label: 'Editar', path: '/editor' },
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: Image, label: 'Templates', path: '/templates' },
-  { icon: Edit3, label: 'Editor', path: '/editor' },
   { icon: HandHeart, label: 'Colaborar', path: '/dashboard?tab=colaborar' },
 ]
 
