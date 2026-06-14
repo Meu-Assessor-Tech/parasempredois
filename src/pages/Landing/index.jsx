@@ -1,13 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, Star, Check, Heart, Sparkles, Globe, Gift, HandHeart } from 'lucide-react'
+import { ArrowRight, Star, Check, Heart, Sparkles, Globe, Gift } from 'lucide-react'
 import Navbar from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 import Button from '../../components/ui/Button'
 import { mockTemplates } from '../../data/mockTemplates'
 import { mockTestimonials } from '../../data/mockTestimonials'
-
-const PIX_KEY = 'adicione-sua-chave-pix'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -45,28 +43,15 @@ export default function Landing() {
           >
             <div className="inline-flex items-center gap-2 bg-white/12 backdrop-blur-md border border-white/25 rounded-full px-4 py-2 text-white text-xs mb-8 shadow-lg">
               <Sparkles size={12} />
-              <span>Para sempre dois é gratuito e sem fins lucrativos</span>
+              <span>Crie o site do seu casamento em minutos</span>
             </div>
             <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl text-white leading-tight mb-6">
               O site que seu <br />
               <em>amor merece</em>
             </h1>
-            <p className="text-white/90 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed mb-8">
-              Crie um site de casamento bonito, simples e gratuito, com templates elegantes, lista de presentes e RSVP para compartilhar com seus convidados.
+            <p className="text-white/90 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed mb-10">
+              Crie um site de casamento bonito e simples, com templates elegantes, lista de presentes e RSVP para compartilhar com seus convidados.
             </p>
-
-            <div className="mx-auto mb-10 max-w-2xl rounded-2xl border border-white/20 bg-white/12 px-5 py-4 text-left backdrop-blur-md shadow-xl sm:flex sm:items-start sm:gap-4">
-              <HandHeart size={22} className="mb-3 flex-shrink-0 text-white sm:mb-0" />
-              <div>
-                <p className="text-sm font-medium text-white">Uma colaboração opcional mantém o projeto vivo.</p>
-                <p className="mt-1 text-sm leading-relaxed text-white/80">
-                  O site não cobra para criar ou publicar. Se algum casal quiser apoiar o desenvolvimento, pode contribuir voluntariamente por Pix.
-                </p>
-                <p className="mt-3 text-xs text-white/70">
-                  Chave Pix: <span className="font-medium text-white">{PIX_KEY}</span>
-                </p>
-              </div>
-            </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button
@@ -75,7 +60,7 @@ export default function Landing() {
                 onClick={() => navigate('/templates')}
                 className="!bg-white !text-stone-900 hover:!bg-stone-100 shadow-xl"
               >
-                Criar meu site grátis
+                Comece grátis
                 <ArrowRight size={16} />
               </Button>
               <Button
@@ -247,7 +232,7 @@ export default function Landing() {
               { icon: Gift, title: 'Lista de presentes', desc: 'Organize ideias de presentes com facilidade.' },
               { icon: Sparkles, title: 'Galeria de fotos', desc: 'Compartilhe momentos especiais.' },
               { icon: Check, title: 'Contagem regressiva', desc: 'Acompanhe quanto falta para o grande dia.' },
-              { icon: HandHeart, title: 'Grátis por propósito', desc: 'Sem cobrança, planos pagos ou cartão de crédito.' },
+              { icon: Globe, title: 'Mobile-first', desc: 'Perfeito em qualquer dispositivo.' },
             ].map((feature) => (
               <motion.div
                 key={feature.title}
@@ -329,11 +314,11 @@ export default function Landing() {
               Comece a criar <br />o site de vocês hoje
             </motion.h2>
             <motion.p variants={fadeUp} className="text-stone-500 mb-10 text-lg">
-              Gratuito de verdade. Contribuições por Pix são opcionais e ajudam o projeto a continuar.
+              Escolha um template, personalize os detalhes e compartilhe com seus convidados.
             </motion.p>
             <motion.div variants={fadeUp}>
               <Button variant="primary" size="xl" onClick={() => navigate('/templates')}>
-                Criar meu site agora
+                Comece grátis
                 <ArrowRight size={18} />
               </Button>
             </motion.div>

@@ -1,19 +1,21 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, LayoutDashboard, Image, Edit3, Settings, LogOut } from 'lucide-react'
+import { Heart, LayoutDashboard, Image, Edit3, HandHeart, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Image, label: 'Templates', path: '/templates' },
   { icon: Edit3, label: 'Editor', path: '/editor' },
-  { icon: Settings, label: 'Configurações', path: '/dashboard?tab=settings' },
+  { icon: HandHeart, label: 'Colaborar', path: '/dashboard?tab=colaborar' },
 ]
 
 export default function Sidebar() {
   const location = useLocation()
   const { logout } = useAuth()
   const navigate = useNavigate()
+
+  const currentPath = `${location.pathname}${location.search}`
 
   return (
     <div className="w-60 min-h-screen bg-white border-r border-stone-100 flex flex-col py-6">
@@ -26,7 +28,10 @@ export default function Sidebar() {
 
       <nav className="flex-1 px-3">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path.split('?')[0]
+          const isActive = item.path.includes('?')
+            ? currentPath === item.path
+            : location.pathname === item.path && !location.search
+
           return (
             <Link key={item.path} to={item.path}>
               <motion.div

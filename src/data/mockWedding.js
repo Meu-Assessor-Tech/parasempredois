@@ -21,6 +21,8 @@ export const mockWedding = {
   guestCount: 47,
   rsvpEnabled: true,
   sections: [],
+  giftPixKey: 'X',
+  giftPixQrCode: '',
   gifts: [
     { id: '1', name: 'Jogo de Panelas', store: 'Le Creuset', price: 890, category: 'Cozinha', image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400' },
     { id: '2', name: 'Kit de Vinhos', store: 'Wine.com', price: 350, category: 'Adega', image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400' },

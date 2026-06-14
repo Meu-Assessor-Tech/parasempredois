@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X } from 'lucide-react'
+import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
@@ -58,6 +58,7 @@ function readFileAsDataURL(file) {
 
 // ── Secure gift image processing ──────────────────────────────────────────────
 const GIFT_MAX_RAW_MB  = 10            // reject before even reading
+const QR_MAX_RAW_MB    = 3
 const GIFT_MAX_DIM     = 800           // max width or height after resize
 const GIFT_JPEG_Q      = 0.82          // compression quality
 const ALLOWED_MIME     = ['image/jpeg', 'image/png', 'image/webp']
@@ -104,6 +105,17 @@ async function processGiftImage(file) {
   if (!valid)
     throw new Error('O arquivo não é uma imagem válida.')
   return resizeAndCompress(file)
+}
+
+async function processQrCodeImage(file) {
+  if (!ALLOWED_MIME.includes(file.type))
+    throw new Error('Formato não suportado. Use JPEG, PNG ou WebP.')
+  if (file.size > QR_MAX_RAW_MB * 1024 * 1024)
+    throw new Error(`O QR Code deve ter no máximo ${QR_MAX_RAW_MB} MB.`)
+  const valid = await checkMagicBytes(file)
+  if (!valid)
+    throw new Error('O arquivo não é uma imagem válida.')
+  return readFileAsDataURL(file)
 }
 
 export default function Editor() {
@@ -281,7 +293,7 @@ export default function Editor() {
                   <div>
                     <h2 className="font-medium text-stone-900 text-sm mb-1">Cor de destaque</h2>
                     <p className="text-[11px] text-stone-400 mb-3 leading-relaxed">
-                      Aparece nos botões de ação do site — "Presentear" e "Confirmar presença".
+                      Aparece nos botões de ação do site, incluindo Pix e confirmação de presença.
                     </p>
                     <div className="grid grid-cols-6 gap-2 mb-3">
                       {COLORS.map(color => (
@@ -609,7 +621,31 @@ function GiftsTab({ wedding, updateWedding }) {
   const [errors, setErrors] = useState({})
   const [imageLoading, setImageLoading] = useState(false)
   const [imageError, setImageError] = useState('')
+  const [qrLoading, setQrLoading] = useState(false)
+  const [qrError, setQrError] = useState('')
   const imageInputRef = useRef(null)
+  const qrInputRef = useRef(null)
+
+  const updatePixKey = (value) => {
+    const safeValue = value.replace(/[\u0000-\u001F\u007F<>]/g, '').slice(0, 140)
+    updateWedding({ giftPixKey: safeValue })
+  }
+
+  const handleQrUpload = async (e) => {
+    const file = e.target.files[0]
+    e.target.value = ''
+    if (!file) return
+    setQrLoading(true)
+    setQrError('')
+    try {
+      const dataUrl = await processQrCodeImage(file)
+      updateWedding({ giftPixQrCode: dataUrl })
+    } catch (err) {
+      setQrError(err.message)
+    } finally {
+      setQrLoading(false)
+    }
+  }
 
   const openNew = () => { setForm({ ...EMPTY_GIFT }); setErrors({}); setImageError('') }
   const openEdit = (gift) => { setForm({ ...gift }); setErrors({}); setImageError('') }
@@ -657,8 +693,75 @@ function GiftsTab({ wedding, updateWedding }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-4">
+        <div>
+          <h2 className="font-medium text-stone-900 text-sm">Pix dos presentes</h2>
+          <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
+            A chave fica pública no site dos noivos. O pagamento acontece fora da plataforma, no app do banco do convidado.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-stone-600 mb-1.5">Chave Pix</label>
+          <input
+            placeholder="CPF, e-mail, telefone ou chave aleatória"
+            value={wedding.giftPixKey ?? ''}
+            onChange={e => updatePixKey(e.target.value)}
+            maxLength={140}
+            autoComplete="off"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-stone-200 focus:outline-none focus:border-stone-400"
+          />
+        </div>
+
+        <div>
+          <input
+            ref={qrInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleQrUpload}
+          />
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 rounded-xl border border-dashed border-stone-300 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
+              {wedding.giftPixQrCode ? (
+                <img src={wedding.giftPixQrCode} alt="QR Code Pix" className="w-full h-full object-cover" />
+              ) : (
+                <QrCode size={24} className="text-stone-300" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-stone-700">QR Code opcional</p>
+              <p className="text-[11px] text-stone-400 mb-2">Use apenas uma imagem confiável do QR Code Pix do casal.</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={qrLoading}
+                  onClick={() => qrInputRef.current?.click()}
+                  className="px-3 py-1.5 text-xs text-stone-600 border border-stone-200 rounded-lg hover:bg-white transition-colors disabled:opacity-50"
+                >
+                  {qrLoading ? 'Processando...' : 'Enviar QR Code'}
+                </button>
+                {wedding.giftPixQrCode && (
+                  <button
+                    type="button"
+                    onClick={() => updateWedding({ giftPixQrCode: '' })}
+                    className="px-3 py-1.5 text-xs text-red-500 border border-red-100 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          {qrError && <p className="text-[11px] text-red-400 mt-2">{qrError}</p>}
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
-        <h2 className="font-medium text-stone-900 text-sm">Lista de presentes</h2>
+        <div>
+          <h2 className="font-medium text-stone-900 text-sm">Presentes simbólicos</h2>
+          <p className="text-[11px] text-stone-400 mt-0.5">Os botões do site copiam a chave Pix configurada acima.</p>
+        </div>
         <Button variant="outline" size="sm" onClick={openNew}>
           <Plus size={14} /> Adicionar
         </Button>

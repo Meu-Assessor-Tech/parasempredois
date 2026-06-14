@@ -51,14 +51,9 @@ export default function Navbar({ transparent = false }) {
               <Button variant="ghost" size="sm" onClick={handleLogout}>Sair</Button>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
-              <Link to="/login">
-                <Button variant="ghost" size="sm" className={transparent ? '!text-white hover:!bg-white/10' : ''}>Entrar</Button>
-              </Link>
-              <Link to="/login">
-                <Button variant="primary" size="sm">Começar grátis</Button>
-              </Link>
-            </div>
+            <Link to="/login">
+              <Button variant="primary" size="sm">Comece grátis</Button>
+            </Link>
           )}
         </div>
 
@@ -81,10 +76,7 @@ export default function Navbar({ transparent = false }) {
               <Button variant="ghost" size="sm" fullWidth onClick={handleLogout}>Sair</Button>
             </>
           ) : (
-            <>
-              <Link to="/login" className="block"><Button variant="outline" size="sm" fullWidth>Entrar</Button></Link>
-              <Link to="/login" className="block"><Button variant="primary" size="sm" fullWidth>Começar grátis</Button></Link>
-            </>
+            <Link to="/login" className="block"><Button variant="primary" size="sm" fullWidth>Comece grátis</Button></Link>
           )}
         </motion.div>
       )}

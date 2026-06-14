@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, MapPin, Calendar, ChevronDown, ShoppingBag } from 'lucide-react'
+import { Heart, MapPin, Calendar, ChevronDown, Copy, Check, X, ChevronLeft, ChevronRight, QrCode } from 'lucide-react'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.9, ease } } }
@@ -55,6 +55,8 @@ export default function IvoryTemplate({ wedding }) {
   const [rsvpName, setRsvpName] = useState('')
   const [rsvpGuests, setRsvpGuests] = useState('0')
   const [rsvpSent, setRsvpSent] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(null)
+  const [pixCopied, setPixCopied] = useState(false)
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
 
   useEffect(() => {
@@ -74,6 +76,44 @@ export default function IvoryTemplate({ wedding }) {
   }, [wedding.date])
 
   const handleRsvp = (e) => { e.preventDefault(); setRsvpSent(true) }
+  const giftPixKey = (wedding.giftPixKey ?? '').trim()
+  const giftPixQrCode = wedding.giftPixQrCode ?? ''
+  const galleryImages = wedding.galleryImages ?? []
+  const canGiftWithPix = Boolean(giftPixKey)
+
+  const copyGiftPixKey = async () => {
+    if (!giftPixKey) return
+    try {
+      await navigator.clipboard.writeText(giftPixKey)
+      setPixCopied(true)
+      window.setTimeout(() => setPixCopied(false), 1800)
+    } catch {
+      setPixCopied(false)
+    }
+  }
+
+  const closeLightbox = () => setLightboxIndex(null)
+  const showPreviousImage = () => {
+    setLightboxIndex(index => (index === null ? index : (index - 1 + galleryImages.length) % galleryImages.length))
+  }
+  const showNextImage = () => {
+    setLightboxIndex(index => (index === null ? index : (index + 1) % galleryImages.length))
+  }
+
+  useEffect(() => {
+    if (lightboxIndex === null) return
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') closeLightbox()
+      if (event.key === 'ArrowLeft') showPreviousImage()
+      if (event.key === 'ArrowRight') showNextImage()
+    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [lightboxIndex, galleryImages.length])
 
   const weddingDate = new Date(wedding.date)
   const dateShort = weddingDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
@@ -192,7 +232,7 @@ export default function IvoryTemplate({ wedding }) {
       ))}
 
       {/* GALERIA */}
-      {wedding.galleryImages.length > 0 && (
+      {galleryImages.length > 0 && (
         <section className="py-24 px-4 sm:px-6 bg-white">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger} className="max-w-5xl mx-auto">
             <motion.div variants={fadeUp} className="text-center mb-14">
@@ -200,33 +240,140 @@ export default function IvoryTemplate({ wedding }) {
               <h2 className="font-serif text-[2.2rem] sm:text-[2.6rem] font-normal text-stone-900 leading-tight">Nossos momentos</h2>
             </motion.div>
             <motion.div variants={fadeUp} className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 sm:auto-rows-[210px]">
-              {wedding.galleryImages.slice(0, 7).map((img, i) => (
-                <motion.div key={i} whileHover={{ scale: 1.018 }} transition={{ duration: 0.4, ease }}
-                  className={`group overflow-hidden rounded-2xl bg-stone-100 cursor-pointer ${i === 0 && wedding.galleryImages.length > 2 ? 'sm:col-span-2 sm:row-span-2 aspect-square sm:aspect-auto' : 'aspect-square'}`}>
+              {galleryImages.slice(0, 7).map((img, i) => (
+                <motion.button
+                  key={i}
+                  type="button"
+                  onClick={() => setLightboxIndex(i)}
+                  whileHover={{ scale: 1.018 }}
+                  transition={{ duration: 0.4, ease }}
+                  aria-label={`Ampliar foto ${i + 1}`}
+                  className={`group overflow-hidden rounded-2xl bg-stone-100 cursor-zoom-in focus:outline-none focus:ring-4 focus:ring-sand-100 ${i === 0 && galleryImages.length > 2 ? 'sm:col-span-2 sm:row-span-2 aspect-square sm:aspect-auto' : 'aspect-square'}`}
+                >
                   <img src={img} alt={`Momento ${i + 1}`} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
-                </motion.div>
+                </motion.button>
               ))}
             </motion.div>
-            {wedding.galleryImages.length > 7 && (
+            {galleryImages.length > 7 && (
               <motion.p variants={fadeUp} className="mt-6 text-center text-xs uppercase tracking-[0.2em] text-stone-400 font-light">
-                + {wedding.galleryImages.length - 7} fotos
+                + {galleryImages.length - 7} fotos
               </motion.p>
             )}
           </motion.div>
         </section>
       )}
 
+      <AnimatePresence>
+        {lightboxIndex !== null && galleryImages[lightboxIndex] && (
+          <motion.div
+            className="fixed inset-0 z-50 bg-stone-950/92 backdrop-blur-sm flex items-center justify-center px-4 py-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeLightbox}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Foto ampliada"
+          >
+            <button
+              type="button"
+              onClick={closeLightbox}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors"
+              aria-label="Fechar foto ampliada"
+            >
+              <X size={20} />
+            </button>
+
+            {galleryImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={(event) => { event.stopPropagation(); showPreviousImage() }}
+                  className="absolute left-4 sm:left-8 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors"
+                  aria-label="Foto anterior"
+                >
+                  <ChevronLeft size={22} />
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => { event.stopPropagation(); showNextImage() }}
+                  className="absolute right-4 sm:right-8 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors"
+                  aria-label="Próxima foto"
+                >
+                  <ChevronRight size={22} />
+                </button>
+              </>
+            )}
+
+            <motion.img
+              src={galleryImages[lightboxIndex]}
+              alt={`Momento ${lightboxIndex + 1} ampliado`}
+              className="max-h-[86vh] max-w-[92vw] rounded-2xl object-contain shadow-2xl"
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              onClick={(event) => event.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Ornament className="max-w-64 mx-auto" />
 
       {/* LISTA DE PRESENTES */}
-      {(wedding.gifts ?? []).length > 0 && (
+      {((wedding.gifts ?? []).length > 0 || canGiftWithPix || giftPixQrCode) && (
         <section className="py-28 px-4 sm:px-6 bg-[#FAFAF8]">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger} className="max-w-5xl mx-auto">
             <motion.div variants={fadeUp} className="text-center mb-14">
               <SectionLabel>Lista de presentes</SectionLabel>
               <h2 className="font-serif text-[2.2rem] sm:text-[2.6rem] font-normal text-stone-900 mb-4 leading-tight">Presenteie com amor</h2>
-              <p className="text-stone-400 text-sm font-light max-w-[280px] mx-auto leading-relaxed">Cada gesto carinhoso torna este dia ainda mais especial.</p>
+              <p className="text-stone-400 text-sm font-light max-w-md mx-auto leading-relaxed">
+                Os presentes abaixo são sugestões simbólicas. Para contribuir, copie a chave Pix e conclua no app do seu banco.
+              </p>
             </motion.div>
+
+            {(canGiftWithPix || giftPixQrCode) && (
+              <motion.div variants={fadeUp} className="max-w-2xl mx-auto mb-12 bg-white rounded-3xl border border-stone-100 p-5 sm:p-6 shadow-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-5 items-center">
+                  <div className="aspect-square rounded-2xl border border-dashed border-stone-200 bg-stone-50 flex items-center justify-center overflow-hidden">
+                    {giftPixQrCode ? (
+                      <img src={giftPixQrCode} alt="QR Code Pix dos noivos" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center px-4">
+                        <QrCode size={34} className="mx-auto text-stone-300 mb-2" />
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-stone-300">QR Code</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-sand-500 mb-3">Pix dos noivos</p>
+                    <p className="text-sm text-stone-500 leading-relaxed mb-4">
+                      A plataforma não processa pagamentos. Use a chave abaixo apenas no app do seu banco.
+                    </p>
+                    {canGiftWithPix ? (
+                      <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                        <code className="flex-1 rounded-xl bg-stone-50 border border-stone-100 px-4 py-3 text-sm text-stone-700 break-all">
+                          {giftPixKey}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={copyGiftPixKey}
+                          className="flex items-center justify-center gap-2 text-xs font-medium text-white px-4 py-3 rounded-xl active:scale-[0.98] transition-all duration-150"
+                          style={{ backgroundColor: wedding.primaryColor }}
+                        >
+                          {pixCopied ? <Check size={14} /> : <Copy size={14} />}
+                          {pixCopied ? 'Copiado' : 'Copiar chave'}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-stone-400">Os noivos ainda não informaram uma chave Pix.</p>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
               {(wedding.gifts ?? []).map((gift, i) => (
                 <motion.div key={gift.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
@@ -242,10 +389,14 @@ export default function IvoryTemplate({ wedding }) {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-stone-800">R$ {gift.price.toLocaleString('pt-BR')}</span>
                       <button
+                        type="button"
+                        onClick={copyGiftPixKey}
+                        disabled={!canGiftWithPix}
                         className="flex items-center gap-1 text-[11px] font-medium text-white px-3 py-1.5 rounded-full active:scale-95 transition-all duration-150"
-                        style={{ backgroundColor: wedding.primaryColor }}
+                        style={{ backgroundColor: canGiftWithPix ? wedding.primaryColor : '#D4D4D4' }}
                       >
-                        <ShoppingBag size={9} /> Presentear
+                        {pixCopied ? <Check size={9} /> : <Copy size={9} />}
+                        {pixCopied ? 'Copiado' : 'Pix'}
                       </button>
                     </div>
                   </div>
