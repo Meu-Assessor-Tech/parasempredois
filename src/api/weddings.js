@@ -23,6 +23,10 @@ export function canSaveWedding(weddingId) {
   return UUID_RE.test(String(weddingId || ''))
 }
 
+export function getCurrentWedding() {
+  return api('/weddings')
+}
+
 export function saveWeddingMedia(wedding) {
   if (!canSaveWedding(wedding?.id)) return Promise.resolve(null)
 
