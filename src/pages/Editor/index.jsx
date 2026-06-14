@@ -5,9 +5,12 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import { canUploadMedia, uploadWeddingImage } from '../../api/media'
+import { saveWeddingMedia } from '../../api/weddings'
 import { useWedding } from '../../context/WeddingContext'
 import { mockTemplates } from '../../data/mockTemplates'
 import { mockWedding } from '../../data/mockWedding'
+import { IMAGE_MIME_TYPES, mediaKey, mediaUrl, processImageFile } from '../../utils/media'
 
 const TABS = [
   { id: 'content', label: 'Conteúdo' },
@@ -49,77 +52,6 @@ const COLORS = [
 ]
 
 const MAX_GALLERY_IMAGES = 6
-
-function readFileAsDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = e => resolve(e.target.result)
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
-
-// ── Secure gift image processing ──────────────────────────────────────────────
-const GIFT_MAX_RAW_MB  = 10            // reject before even reading
-const QR_MAX_RAW_MB    = 3
-const GIFT_MAX_DIM     = 800           // max width or height after resize
-const GIFT_JPEG_Q      = 0.82          // compression quality
-const ALLOWED_MIME     = ['image/jpeg', 'image/png', 'image/webp']
-
-// Real-type check via magic bytes (prevents renamed files from sneaking through)
-async function checkMagicBytes(file) {
-  const buf  = await file.slice(0, 12).arrayBuffer()
-  const b    = new Uint8Array(buf)
-  const jpeg = b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF
-  const png  = b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47
-  const webp = b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46
-            && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50
-  return jpeg || png || webp
-}
-
-function resizeAndCompress(file) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file)
-    const img = new Image()
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      let { naturalWidth: w, naturalHeight: h } = img
-      if (w > GIFT_MAX_DIM || h > GIFT_MAX_DIM) {
-        if (w >= h) { h = Math.round(h * GIFT_MAX_DIM / w); w = GIFT_MAX_DIM }
-        else        { w = Math.round(w * GIFT_MAX_DIM / h); h = GIFT_MAX_DIM }
-      }
-      const canvas = document.createElement('canvas')
-      canvas.width  = w
-      canvas.height = h
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-      resolve(canvas.toDataURL('image/jpeg', GIFT_JPEG_Q))
-    }
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Não foi possível carregar a imagem.')) }
-    img.src = url
-  })
-}
-
-async function processGiftImage(file) {
-  if (!ALLOWED_MIME.includes(file.type))
-    throw new Error('Formato não suportado. Use JPEG, PNG ou WebP.')
-  if (file.size > GIFT_MAX_RAW_MB * 1024 * 1024)
-    throw new Error(`A imagem deve ter no máximo ${GIFT_MAX_RAW_MB} MB.`)
-  const valid = await checkMagicBytes(file)
-  if (!valid)
-    throw new Error('O arquivo não é uma imagem válida.')
-  return resizeAndCompress(file)
-}
-
-async function processQrCodeImage(file) {
-  if (!ALLOWED_MIME.includes(file.type))
-    throw new Error('Formato não suportado. Use JPEG, PNG ou WebP.')
-  if (file.size > QR_MAX_RAW_MB * 1024 * 1024)
-    throw new Error(`O QR Code deve ter no máximo ${QR_MAX_RAW_MB} MB.`)
-  const valid = await checkMagicBytes(file)
-  if (!valid)
-    throw new Error('O arquivo não é uma imagem válida.')
-  return readFileAsDataURL(file)
-}
 
 export default function Editor() {
   const { wedding, updateWedding } = useWedding()
@@ -182,17 +114,34 @@ export default function Editor() {
     schedulePreviewReload()
   }, [updateWedding, schedulePreviewReload])
 
-  const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  const uploadOrPreview = useCallback((file, kind) => {
+    if (canUploadMedia(wedding.id)) {
+      return uploadWeddingImage(wedding.id, file, kind)
+    }
+    return processImageFile(file, kind)
+  }, [wedding.id])
+
+  const handleSave = async () => {
+    try {
+      await saveWeddingMedia(wedding)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      alert(err.message)
+    }
   }
 
   const handleCoverUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    const dataUrl = await readFileAsDataURL(file)
-    wrappedUpdate({ coverImage: dataUrl })
-    e.target.value = ''
+    try {
+      const image = await uploadOrPreview(file, 'cover')
+      wrappedUpdate({ coverImage: image })
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      e.target.value = ''
+    }
   }
 
   const handleGalleryUpload = async (e) => {
@@ -206,8 +155,15 @@ export default function Editor() {
       return
     }
     const selectedFiles = files.slice(0, remainingSlots)
-    const dataUrls = await Promise.all(selectedFiles.map(readFileAsDataURL))
-    wrappedUpdate({ galleryImages: [...currentImages, ...dataUrls] })
+    const images = await Promise.all(selectedFiles.map(file => uploadOrPreview(file, 'gallery'))).catch(err => {
+      alert(err.message)
+      return null
+    })
+    if (!images) {
+      e.target.value = ''
+      return
+    }
+    wrappedUpdate({ galleryImages: [...currentImages, ...images] })
     if (files.length > remainingSlots) {
       alert(`Foram adicionadas ${remainingSlots} foto(s). O limite da galeria é ${MAX_GALLERY_IMAGES}.`)
     }
@@ -443,12 +399,12 @@ export default function Editor() {
                   <div>
                     <h2 className="font-medium text-stone-900 text-sm mb-3">Foto de capa</h2>
                     <div className="aspect-video rounded-xl overflow-hidden mb-3 bg-stone-100">
-                      <img src={wedding.coverImage} alt="Cover" className="w-full h-full object-cover" />
+                      <img src={mediaUrl(wedding.coverImage)} alt="Cover" className="w-full h-full object-cover" />
                     </div>
                     <input
                       ref={coverInputRef}
                       type="file"
-                      accept="image/*"
+                      accept={IMAGE_MIME_TYPES.join(',')}
                       className="hidden"
                       onChange={handleCoverUpload}
                     />
@@ -480,7 +436,7 @@ export default function Editor() {
                     <div className="grid grid-cols-2 gap-2.5 mb-3">
                       {(wedding.galleryImages ?? []).map((img, i) => (
                         <div
-                          key={`${img}-${i}`}
+                          key={`${mediaKey(img, i)}-${i}`}
                           draggable
                           onDragStart={() => setDraggedGalleryIndex(i)}
                           onDragOver={(e) => e.preventDefault()}
@@ -493,7 +449,7 @@ export default function Editor() {
                             draggedGalleryIndex === i ? 'border-stone-900 opacity-60 scale-95' : 'border-stone-100'
                           }`}
                         >
-                          <img src={img} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                          <img src={mediaUrl(img)} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
                           <div className="absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/45 text-white opacity-0 transition-opacity group-hover:opacity-100 cursor-grab">
                             <GripVertical size={13} />
                           </div>
@@ -513,7 +469,7 @@ export default function Editor() {
                     <input
                       ref={galleryInputRef}
                       type="file"
-                      accept="image/*"
+                      accept={IMAGE_MIME_TYPES.join(',')}
                       multiple
                       className="hidden"
                       onChange={handleGalleryUpload}
@@ -791,6 +747,13 @@ function GiftsTab({ wedding, updateWedding }) {
   const imageInputRef = useRef(null)
   const qrInputRef = useRef(null)
 
+  const uploadOrPreview = useCallback((file, kind) => {
+    if (canUploadMedia(wedding.id)) {
+      return uploadWeddingImage(wedding.id, file, kind)
+    }
+    return processImageFile(file, kind)
+  }, [wedding.id])
+
   const updatePixKey = (value) => {
     const safeValue = value.replace(/[\u0000-\u001F\u007F<>]/g, '').slice(0, 140)
     updateWedding({ giftPixKey: safeValue })
@@ -803,8 +766,8 @@ function GiftsTab({ wedding, updateWedding }) {
     setQrLoading(true)
     setQrError('')
     try {
-      const dataUrl = await processQrCodeImage(file)
-      updateWedding({ giftPixQrCode: dataUrl })
+      const image = await uploadOrPreview(file, 'qrCode')
+      updateWedding({ giftPixQrCode: image })
     } catch (err) {
       setQrError(err.message)
     } finally {
@@ -823,8 +786,8 @@ function GiftsTab({ wedding, updateWedding }) {
     setImageLoading(true)
     setImageError('')
     try {
-      const dataUrl = await processGiftImage(file)
-      setForm(f => ({ ...f, image: dataUrl }))
+      const image = await uploadOrPreview(file, 'gift')
+      setForm(f => ({ ...f, image }))
     } catch (err) {
       setImageError(err.message)
     } finally {
@@ -882,14 +845,14 @@ function GiftsTab({ wedding, updateWedding }) {
           <input
             ref={qrInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept={IMAGE_MIME_TYPES.join(',')}
             className="hidden"
             onChange={handleQrUpload}
           />
           <div className="flex items-center gap-3">
             <div className="w-16 h-16 rounded-xl border border-dashed border-stone-300 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
               {wedding.giftPixQrCode ? (
-                <img src={wedding.giftPixQrCode} alt="QR Code Pix" className="w-full h-full object-cover" />
+                <img src={mediaUrl(wedding.giftPixQrCode)} alt="QR Code Pix" className="w-full h-full object-cover" />
               ) : (
                 <QrCode size={24} className="text-stone-300" />
               )}
@@ -999,7 +962,7 @@ function GiftsTab({ wedding, updateWedding }) {
               <input
                 ref={imageInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept={IMAGE_MIME_TYPES.join(',')}
                 className="hidden"
                 onChange={handleImageUpload}
               />
@@ -1013,7 +976,7 @@ function GiftsTab({ wedding, updateWedding }) {
               </button>
               <input
                 placeholder="Ou cole uma URL"
-                value={form.image.startsWith('data:') ? '' : form.image}
+                value={mediaUrl(form.image).startsWith('data:') ? '' : mediaUrl(form.image)}
                 onChange={e => { setImageError(''); setForm(f => ({ ...f, image: e.target.value })) }}
                 className="flex-1 px-3 py-2 text-xs rounded-lg border border-stone-200 focus:outline-none focus:border-stone-400 min-w-0"
               />
@@ -1023,7 +986,7 @@ function GiftsTab({ wedding, updateWedding }) {
             {form.image && (
               <div className="relative">
                 <img
-                  src={form.image}
+                  src={mediaUrl(form.image)}
                   alt="preview"
                   className="w-full h-20 object-cover rounded-lg border border-stone-100"
                   onError={e => { e.target.style.display = 'none' }}
@@ -1054,7 +1017,7 @@ function GiftsTab({ wedding, updateWedding }) {
       {gifts.map(gift => (
         <div key={gift.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 bg-stone-50">
           {gift.image ? (
-            <img src={gift.image} alt={gift.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+            <img src={mediaUrl(gift.image)} alt={gift.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
           ) : (
             <div className="w-10 h-10 rounded-lg bg-stone-200 flex-shrink-0" />
           )}

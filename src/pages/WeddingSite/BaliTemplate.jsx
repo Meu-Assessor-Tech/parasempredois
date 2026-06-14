@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, MapPin, QrCode, X } from 'lucide-react'
+import { mediaKey, mediaUrl } from '../../utils/media'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 26 }, visible: { opacity: 1, y: 0, transition: { duration: 0.75, ease } } }
@@ -97,7 +98,7 @@ export default function BaliTemplate({ wedding }) {
   return (
     <div className="min-h-screen bg-[#FBF6EF] text-[#4B3328]" style={{ '--accent': accent }}>
       <section className="relative min-h-screen overflow-hidden flex items-center">
-        <img src={wedding.coverImage} alt={`${wedding.brideName} & ${wedding.groomName}`} className="absolute inset-0 w-full h-full object-cover" />
+        <img src={mediaUrl(wedding.coverImage)} alt={`${wedding.brideName} & ${wedding.groomName}`} className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#5E2F1E]/80 via-[#8F4E2B]/35 to-transparent" />
         <div className="relative z-10 w-full max-w-6xl mx-auto px-6 py-24">
           <motion.div initial="hidden" animate="visible" variants={stagger} className="max-w-xl text-white">
@@ -163,8 +164,8 @@ export default function BaliTemplate({ wedding }) {
             </div>
             <div className={galleryGridClass(galleryImages.length)}>
               {galleryImages.map((img, i) => (
-                <button key={img} type="button" onClick={() => setLightboxIndex(i)} className={`block w-full overflow-hidden rounded-[2rem] bg-[#E8D8C8] cursor-zoom-in focus:outline-none focus:ring-4 focus:ring-[#E8D8C8] ${galleryItemClass(galleryImages.length, i)}`}>
-                  <img src={img} alt={`Momento ${i + 1}`} className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
+                <button key={mediaKey(img, i)} type="button" onClick={() => setLightboxIndex(i)} className={`block w-full overflow-hidden rounded-[2rem] bg-[#E8D8C8] cursor-zoom-in focus:outline-none focus:ring-4 focus:ring-[#E8D8C8] ${galleryItemClass(galleryImages.length, i)}`}>
+                  <img src={mediaUrl(img)} alt={`Momento ${i + 1}`} className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
                 </button>
               ))}
             </div>
@@ -183,7 +184,7 @@ export default function BaliTemplate({ wedding }) {
             {(canGiftWithPix || giftPixQrCode) && (
               <div className="max-w-2xl mx-auto mb-10 rounded-[2rem] bg-[#FBF6EF] border border-[#E8D8C8] p-5 grid grid-cols-1 sm:grid-cols-[130px_1fr] gap-5">
                 <div className="aspect-square rounded-3xl bg-white border border-[#E8D8C8] flex items-center justify-center overflow-hidden">
-                  {giftPixQrCode ? <img src={giftPixQrCode} alt="QR Code Pix" className="w-full h-full object-cover" /> : <QrCode size={34} className="text-[#D9BCA5]" />}
+                  {giftPixQrCode ? <img src={mediaUrl(giftPixQrCode)} alt="QR Code Pix" className="w-full h-full object-cover" /> : <QrCode size={34} className="text-[#D9BCA5]" />}
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs uppercase tracking-[0.24em] text-[var(--accent)] mb-3">Pix dos noivos</p>
@@ -203,7 +204,7 @@ export default function BaliTemplate({ wedding }) {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(wedding.gifts ?? []).map(gift => (
                 <div key={gift.id} className="rounded-[1.5rem] overflow-hidden bg-[#FBF6EF] border border-[#E8D8C8]">
-                  <img src={gift.image} alt={gift.name} className="aspect-square w-full object-cover" />
+                  <img src={mediaUrl(gift.image)} alt={gift.name} className="aspect-square w-full object-cover" />
                   <div className="p-4">
                     <p className="text-[10px] uppercase tracking-[0.18em] text-[#A6785B] mb-1">{gift.category}</p>
                     <h3 className="text-sm font-medium text-[#4B3328]">{gift.name}</h3>
@@ -263,7 +264,7 @@ export default function BaliTemplate({ wedding }) {
                 <button type="button" onClick={(e) => { e.stopPropagation(); setLightboxIndex(i => (i + 1) % galleryImages.length) }} className="absolute right-4 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center"><ChevronRight size={22} /></button>
               </>
             )}
-            <img src={galleryImages[lightboxIndex]} alt={`Momento ${lightboxIndex + 1} ampliado`} onClick={e => e.stopPropagation()} className="max-w-[92vw] max-h-[86vh] object-contain rounded-[2rem] shadow-2xl" />
+            <img src={mediaUrl(galleryImages[lightboxIndex])} alt={`Momento ${lightboxIndex + 1} ampliado`} onClick={e => e.stopPropagation()} className="max-w-[92vw] max-h-[86vh] object-contain rounded-[2rem] shadow-2xl" />
           </motion.div>
         )}
       </AnimatePresence>

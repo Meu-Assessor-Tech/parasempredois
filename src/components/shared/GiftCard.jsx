@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { ShoppingBag, Check } from 'lucide-react'
 import Button from '../ui/Button'
+import { mediaUrl } from '../../utils/media'
 
 export default function GiftCard({ gift }) {
   return (
@@ -12,7 +13,7 @@ export default function GiftCard({ gift }) {
       }`}
     >
       <div className="aspect-square overflow-hidden">
-        <img src={gift.image} alt={gift.name} className="w-full h-full object-cover" />
+        <img src={mediaUrl(gift.image)} alt={gift.name} className="w-full h-full object-cover" />
       </div>
       <div className="p-4">
         <span className="text-xs text-stone-400 uppercase tracking-wide">{gift.category}</span>

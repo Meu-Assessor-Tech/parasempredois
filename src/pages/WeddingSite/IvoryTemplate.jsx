@@ -11,6 +11,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, MapPin, Calendar, ChevronDown, Copy, Check, X, ChevronLeft, ChevronRight, QrCode } from 'lucide-react'
+import { mediaKey, mediaUrl } from '../../utils/media'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.9, ease } } }
@@ -141,7 +142,7 @@ export default function IvoryTemplate({ wedding }) {
       {/* HERO */}
       <section className="relative h-screen min-h-[640px] flex flex-col items-center justify-center overflow-hidden">
         <motion.div initial={{ scale: 1.07 }} animate={{ scale: 1 }} transition={{ duration: 4, ease: [0.25, 0.46, 0.45, 0.94] }} className="absolute inset-0">
-          <img src={wedding.coverImage} alt={`${wedding.brideName} & ${wedding.groomName}`} className="w-full h-full object-cover" />
+          <img src={mediaUrl(wedding.coverImage)} alt={`${wedding.brideName} & ${wedding.groomName}`} className="w-full h-full object-cover" />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(14,11,8,0.46) 0%, rgba(14,11,8,0.06) 38%, rgba(14,11,8,0.52) 100%)' }} />
           <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 50%, transparent 50%, rgba(14,11,8,0.18) 100%)' }} />
         </motion.div>
@@ -258,7 +259,7 @@ export default function IvoryTemplate({ wedding }) {
             <motion.div variants={fadeUp} className={galleryGridClass(galleryImages.length)}>
               {galleryImages.map((img, i) => (
                 <motion.button
-                  key={i}
+                  key={mediaKey(img, i)}
                   type="button"
                   onClick={() => setLightboxIndex(i)}
                   whileHover={{ scale: 1.018 }}
@@ -266,7 +267,7 @@ export default function IvoryTemplate({ wedding }) {
                   aria-label={`Ampliar foto ${i + 1}`}
                   className={`group overflow-hidden rounded-2xl bg-stone-100 cursor-zoom-in focus:outline-none focus:ring-4 focus:ring-sand-100 ${galleryItemClass(galleryImages.length, i)}`}
                 >
-                  <img src={img} alt={`Momento ${i + 1}`} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
+                  <img src={mediaUrl(img)} alt={`Momento ${i + 1}`} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
                 </motion.button>
               ))}
             </motion.div>
@@ -317,7 +318,7 @@ export default function IvoryTemplate({ wedding }) {
             )}
 
             <motion.img
-              src={galleryImages[lightboxIndex]}
+              src={mediaUrl(galleryImages[lightboxIndex])}
               alt={`Momento ${lightboxIndex + 1} ampliado`}
               className="max-h-[86vh] max-w-[92vw] rounded-2xl object-contain shadow-2xl"
               initial={{ opacity: 0, scale: 0.96 }}
@@ -348,7 +349,7 @@ export default function IvoryTemplate({ wedding }) {
                 <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-5 items-center">
                   <div className="aspect-square rounded-2xl border border-dashed border-stone-200 bg-stone-50 flex items-center justify-center overflow-hidden">
                     {giftPixQrCode ? (
-                      <img src={giftPixQrCode} alt="QR Code Pix dos noivos" className="w-full h-full object-cover" />
+                      <img src={mediaUrl(giftPixQrCode)} alt="QR Code Pix dos noivos" className="w-full h-full object-cover" />
                     ) : (
                       <div className="text-center px-4">
                         <QrCode size={34} className="mx-auto text-[var(--accent)] opacity-35 mb-2" />
@@ -391,7 +392,7 @@ export default function IvoryTemplate({ wedding }) {
                   transition={{ delay: i * 0.06, duration: 0.7, ease }} whileHover={{ y: -5 }}
                   className="group bg-white rounded-2xl overflow-hidden border border-stone-100 hover:border-stone-200 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300">
                   <div className="aspect-square overflow-hidden bg-stone-50">
-                    <img src={gift.image} alt={gift.name} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]" />
+                    <img src={mediaUrl(gift.image)} alt={gift.name} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]" />
                   </div>
                   <div className="p-4">
                     <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-stone-400 mb-1.5">{gift.category}</p>

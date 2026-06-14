@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import { useAuth } from '../../context/AuthContext'
 import { useWedding } from '../../context/WeddingContext'
+import { mediaUrl } from '../../utils/media'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -180,7 +181,7 @@ export default function Dashboard() {
               <Card className="overflow-hidden">
                 <div className="relative aspect-video">
                   <img
-                    src={wedding.coverImage}
+                    src={mediaUrl(wedding.coverImage)}
                     alt="Preview"
                     className="w-full h-full object-cover"
                   />

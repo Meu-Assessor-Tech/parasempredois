@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, MapPin, QrCode, X } from 'lucide-react'
+import { mediaKey, mediaUrl } from '../../utils/media'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 28 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease } } }
@@ -97,7 +98,7 @@ export default function CelestialTemplate({ wedding }) {
   return (
     <div className="min-h-screen bg-[#080713] text-white" style={{ '--accent': accent }}>
       <section className="relative min-h-screen overflow-hidden flex items-center justify-center text-center px-6">
-        <img src={wedding.coverImage} alt={`${wedding.brideName} & ${wedding.groomName}`} className="absolute inset-0 w-full h-full object-cover opacity-42" />
+        <img src={mediaUrl(wedding.coverImage)} alt={`${wedding.brideName} & ${wedding.groomName}`} className="absolute inset-0 w-full h-full object-cover opacity-42" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,7,19,0.45),rgba(8,7,19,0.88)_70%,#080713)]" />
         <motion.div initial="hidden" animate="visible" variants={stagger} className="relative z-10 max-w-5xl mx-auto">
           <motion.p variants={fadeUp} className="text-[10px] uppercase tracking-[0.55em] text-[var(--accent)] mb-8">Save the date</motion.p>
@@ -169,8 +170,8 @@ export default function CelestialTemplate({ wedding }) {
             </div>
             <div className={galleryGridClass(galleryImages.length)}>
               {galleryImages.map((img, i) => (
-                <button key={img} type="button" onClick={() => setLightboxIndex(i)} className={`overflow-hidden bg-white/5 cursor-zoom-in border border-white/10 ${galleryItemClass(galleryImages.length, i)}`}>
-                  <img src={img} alt={`Momento ${i + 1}`} className="w-full h-full object-cover opacity-90 transition duration-700 hover:scale-105 hover:opacity-100" />
+                <button key={mediaKey(img, i)} type="button" onClick={() => setLightboxIndex(i)} className={`overflow-hidden bg-white/5 cursor-zoom-in border border-white/10 ${galleryItemClass(galleryImages.length, i)}`}>
+                  <img src={mediaUrl(img)} alt={`Momento ${i + 1}`} className="w-full h-full object-cover opacity-90 transition duration-700 hover:scale-105 hover:opacity-100" />
                 </button>
               ))}
             </div>
@@ -189,7 +190,7 @@ export default function CelestialTemplate({ wedding }) {
             {(canGiftWithPix || giftPixQrCode) && (
               <div className="max-w-3xl mx-auto mb-12 border border-white/10 bg-white/[0.035] p-5 grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-5">
                 <div className="aspect-square border border-white/10 bg-[#080713] flex items-center justify-center overflow-hidden">
-                  {giftPixQrCode ? <img src={giftPixQrCode} alt="QR Code Pix" className="w-full h-full object-cover" /> : <QrCode size={40} className="text-white/20" />}
+                  {giftPixQrCode ? <img src={mediaUrl(giftPixQrCode)} alt="QR Code Pix" className="w-full h-full object-cover" /> : <QrCode size={40} className="text-white/20" />}
                 </div>
                 <div className="min-w-0 self-center">
                   <p className="text-xs uppercase tracking-[0.35em] text-[var(--accent)] mb-3">Pix dos noivos</p>
@@ -208,7 +209,7 @@ export default function CelestialTemplate({ wedding }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10">
               {(wedding.gifts ?? []).map(gift => (
                 <div key={gift.id} className="bg-[#0D0B1A] p-4 grid grid-cols-[96px_1fr] gap-4">
-                  <img src={gift.image} alt={gift.name} className="w-24 h-24 object-cover" />
+                  <img src={mediaUrl(gift.image)} alt={gift.name} className="w-24 h-24 object-cover" />
                   <div className="min-w-0">
                     <p className="text-[10px] uppercase tracking-[0.26em] text-white/35 mb-1">{gift.category}</p>
                     <h3 className="font-medium text-white truncate">{gift.name}</h3>
@@ -266,7 +267,7 @@ export default function CelestialTemplate({ wedding }) {
                 <button type="button" onClick={(e) => { e.stopPropagation(); setLightboxIndex(i => (i + 1) % galleryImages.length) }} className="absolute right-4 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center"><ChevronRight size={22} /></button>
               </>
             )}
-            <img src={galleryImages[lightboxIndex]} alt={`Momento ${lightboxIndex + 1} ampliado`} onClick={e => e.stopPropagation()} className="max-w-[92vw] max-h-[86vh] object-contain shadow-2xl" />
+            <img src={mediaUrl(galleryImages[lightboxIndex])} alt={`Momento ${lightboxIndex + 1} ampliado`} onClick={e => e.stopPropagation()} className="max-w-[92vw] max-h-[86vh] object-contain shadow-2xl" />
           </motion.div>
         )}
       </AnimatePresence>
