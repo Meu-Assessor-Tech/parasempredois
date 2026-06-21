@@ -8,6 +8,7 @@ import Card from '../../components/ui/Card'
 import { useAuth } from '../../context/AuthContext'
 import { useWedding } from '../../context/WeddingContext'
 import { mediaUrl } from '../../utils/media'
+import { formatWeddingDate, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -117,8 +118,9 @@ export default function Dashboard() {
     { label: 'Dias restantes', value: '128', icon: TrendingUp, trend: 'para o grande dia' },
   ]
 
-  const weddingDate = new Date(wedding.date)
-  const formattedDate = weddingDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+  const formattedDate = formatWeddingDate(wedding.date, { day: '2-digit', month: 'long', year: 'numeric' })
+  const weddingTitle = weddingDisplayTitle(wedding)
+  const weddingVenue = weddingDisplayVenue(wedding)
 
   if (currentTab === 'colaborar') {
     return <CollaborationTab />
@@ -142,12 +144,12 @@ export default function Dashboard() {
               Bem-vindo de volta
             </motion.p>
             <motion.h1 variants={fadeUp} className="font-serif text-3xl sm:text-4xl text-stone-900 mb-2">
-              {wedding.brideName} & {wedding.groomName}
+              {weddingTitle}
             </motion.h1>
             <motion.p variants={fadeUp} className="text-stone-500 text-sm flex items-center gap-2">
               <span>{formattedDate}</span>
               <span className="w-1 h-1 bg-stone-300 rounded-full" />
-              <span>{wedding.venue}</span>
+              <span>{weddingVenue}</span>
             </motion.p>
           </motion.div>
 
@@ -188,7 +190,7 @@ export default function Dashboard() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4">
                     <p className="font-serif text-xl text-white mb-1">
-                      {wedding.brideName} & {wedding.groomName}
+                      {weddingTitle}
                     </p>
                     <p className="text-white/70 text-sm">{formattedDate}</p>
                   </div>

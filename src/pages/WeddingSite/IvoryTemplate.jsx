@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, MapPin, Calendar, ChevronDown, Copy, Check, X, ChevronLeft, ChevronRight, QrCode } from 'lucide-react'
 import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
+import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.9, ease } } }
@@ -78,6 +79,10 @@ export default function IvoryTemplate({ wedding }) {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
 
   useEffect(() => {
+    if (!wedding.date) {
+      setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+      return
+    }
     const tick = () => {
       const diff = new Date(wedding.date) - new Date()
       if (diff <= 0) return setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
@@ -98,6 +103,11 @@ export default function IvoryTemplate({ wedding }) {
   const giftPixQrCode = wedding.giftPixQrCode ?? ''
   const galleryImages = (wedding.galleryImages ?? []).slice(0, 6)
   const canGiftWithPix = Boolean(giftPixKey)
+  const { brideName, groomName } = weddingDisplayNames(wedding)
+  const displayTitle = weddingDisplayTitle(wedding)
+  const displayVenue = weddingDisplayVenue(wedding)
+  const displayMessage = weddingDisplayMessage(wedding)
+  const displayStory = weddingDisplayStory(wedding)
 
   const copyGiftPixKey = async () => {
     if (!giftPixKey) return
@@ -133,9 +143,8 @@ export default function IvoryTemplate({ wedding }) {
     }
   }, [lightboxIndex, galleryImages.length])
 
-  const weddingDate = new Date(wedding.date)
-  const dateShort = weddingDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
-  const dateLong  = weddingDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+  const dateShort = formatWeddingDate(wedding.date, { day: '2-digit', month: 'long', year: 'numeric' })
+  const dateLong  = formatWeddingDate(wedding.date, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-stone-900" style={{ '--accent': wedding.primaryColor || '#8B6F5E' }}>
@@ -143,22 +152,22 @@ export default function IvoryTemplate({ wedding }) {
       {/* HERO */}
       <section id="preview-cover" className="relative h-screen min-h-[640px] flex flex-col items-center justify-center overflow-hidden">
         <motion.div initial={{ scale: 1.07 }} animate={{ scale: 1 }} transition={{ duration: 4, ease: [0.25, 0.46, 0.45, 0.94] }} className="absolute inset-0">
-          <img src={mediaUrl(wedding.coverImage)} alt={`${wedding.brideName} & ${wedding.groomName}`} className="w-full h-full object-cover" />
+          <img src={mediaUrl(wedding.coverImage)} alt={displayTitle} className="w-full h-full object-cover" />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(14,11,8,0.46) 0%, rgba(14,11,8,0.06) 38%, rgba(14,11,8,0.52) 100%)' }} />
           <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 50%, transparent 50%, rgba(14,11,8,0.18) 100%)' }} />
         </motion.div>
 
         <motion.div initial="hidden" animate="visible" variants={stagger} className="relative z-10 flex flex-col items-center text-center px-8 select-none">
           <motion.p variants={fadeUp} className="text-xs sm:text-sm uppercase tracking-[0.28em] text-white/70 mb-10 sm:mb-12 font-sans font-light">Save the Date</motion.p>
-          <motion.h1 variants={fadeUp} className="font-serif font-normal leading-[0.95] text-white" style={{ fontSize: 'clamp(3.75rem, 9.5vw, 8rem)' }}>{wedding.brideName}</motion.h1>
+          <motion.h1 variants={fadeUp} className="font-serif font-normal leading-[0.95] text-white" style={{ fontSize: 'clamp(3.75rem, 9.5vw, 8rem)' }}>{brideName}</motion.h1>
           <motion.div variants={fadeUp} className="flex items-center gap-5 my-6">
             <div className="w-14 h-px bg-white/15" />
             <Heart size={9} className="fill-white/20 text-white/20" strokeWidth={0} />
             <div className="w-14 h-px bg-white/15" />
           </motion.div>
-          <motion.h1 variants={fadeUp} className="font-serif font-normal leading-[0.95] text-white" style={{ fontSize: 'clamp(3.75rem, 9.5vw, 8rem)' }}>{wedding.groomName}</motion.h1>
+          <motion.h1 variants={fadeUp} className="font-serif font-normal leading-[0.95] text-white" style={{ fontSize: 'clamp(3.75rem, 9.5vw, 8rem)' }}>{groomName}</motion.h1>
           <motion.p variants={fadeUp} className="mt-10 sm:mt-12 text-sm sm:text-base uppercase tracking-[0.2em] text-white/80 capitalize">{dateShort}</motion.p>
-          <motion.p variants={fadeUp} className="mt-2.5 text-xs sm:text-sm uppercase tracking-[0.14em] text-white/75">{wedding.venue}</motion.p>
+          <motion.p variants={fadeUp} className="mt-2.5 text-xs sm:text-sm uppercase tracking-[0.14em] text-white/75">{displayVenue}</motion.p>
         </motion.div>
 
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 pointer-events-none">
@@ -171,8 +180,8 @@ export default function IvoryTemplate({ wedding }) {
         <div className="max-w-3xl mx-auto px-6 py-12 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-0">
           {[
             { icon: Calendar, label: 'Data',   value: dateLong },
-            { icon: MapPin,   label: 'Local',  value: wedding.venue },
-            { icon: Heart,    label: 'Recado', value: wedding.message.length > 58 ? wedding.message.slice(0, 58) + '…' : wedding.message },
+            { icon: MapPin,   label: 'Local',  value: displayVenue },
+            { icon: Heart,    label: 'Recado', value: displayMessage.length > 58 ? `${displayMessage.slice(0, 58)}...` : displayMessage },
           ].map(({ icon: Icon, label, value }, i) => (
             <div key={i} className={`flex flex-col items-center text-center gap-3.5 px-6 ${i < 2 ? 'sm:border-r border-stone-100' : ''}`}>
               <Icon size={15} strokeWidth={1.7} className="text-[var(--accent)]" />
@@ -199,7 +208,7 @@ export default function IvoryTemplate({ wedding }) {
           </motion.div>
           <motion.div variants={fadeUp} className="mt-12 flex items-center justify-center gap-2 text-stone-400">
             <MapPin size={11} strokeWidth={1.5} />
-            <span className="text-xs font-light capitalize">{wedding.venue}</span>
+            <span className="text-xs font-light capitalize">{displayVenue}</span>
           </motion.div>
         </motion.div>
       </section>
@@ -215,12 +224,12 @@ export default function IvoryTemplate({ wedding }) {
           </motion.div>
           <motion.div variants={fadeUp} className="relative px-4 sm:px-10">
             <span className="absolute -top-4 left-0 sm:left-4 font-serif text-[5.5rem] leading-none text-sand-100 select-none pointer-events-none" aria-hidden>"</span>
-            <p className="relative font-serif italic text-[1.2rem] sm:text-[1.35rem] text-stone-500 leading-[1.8] text-center pt-10 pb-4">{wedding.story}</p>
+            <p className="relative font-serif italic text-[1.2rem] sm:text-[1.35rem] text-stone-500 leading-[1.8] text-center pt-10 pb-4">{displayStory}</p>
             <span className="absolute -bottom-8 right-0 sm:right-4 font-serif text-[5.5rem] leading-none text-sand-100 select-none pointer-events-none" aria-hidden>"</span>
           </motion.div>
           <motion.div variants={fadeUp} className="mt-20 flex items-center justify-center gap-3">
             <div className="w-8 h-px bg-stone-200" />
-            <p className="font-serif italic text-sm text-stone-400">{wedding.brideName} & {wedding.groomName}</p>
+            <p className="font-serif italic text-sm text-stone-400">{displayTitle}</p>
             <div className="w-8 h-px bg-stone-200" />
           </motion.div>
         </motion.div>
@@ -475,11 +484,11 @@ export default function IvoryTemplate({ wedding }) {
         <div className="relative">
           <Heart size={13} className="mx-auto mb-8" style={{ fill: wedding.primaryColor, color: wedding.primaryColor }} strokeWidth={0} />
           <p className="font-serif text-[1.85rem] sm:text-[2.2rem] font-normal text-stone-900 leading-snug mb-3">
-            {wedding.brideName}{' '}
+            {brideName}{' '}
             <span className="font-serif italic text-stone-400 text-[1.4rem] sm:text-[1.6rem]">&</span>{' '}
-            {wedding.groomName}
+            {groomName}
           </p>
-          <p className="text-[10px] uppercase tracking-[0.5em] text-stone-400 mb-10 capitalize">{dateShort} · {wedding.venue}</p>
+          <p className="text-[10px] uppercase tracking-[0.5em] text-stone-400 mb-10 capitalize">{dateShort} · {displayVenue}</p>
           <div className="flex items-center gap-3 max-w-[120px] mx-auto mb-10">
             <div className="flex-1 h-px bg-stone-100" />
             <div className="flex items-center gap-1.5">

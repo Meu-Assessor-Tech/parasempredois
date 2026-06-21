@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, MapPin, QrCode, X } from 'lucide-react'
 import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
+import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 26 }, visible: { opacity: 1, y: 0, transition: { duration: 0.75, ease } } }
@@ -50,8 +51,17 @@ export default function BaliTemplate({ wedding }) {
   const giftPixKey = (wedding.giftPixKey ?? '').trim()
   const giftPixQrCode = wedding.giftPixQrCode ?? ''
   const canGiftWithPix = Boolean(giftPixKey)
+  const { brideName, groomName } = weddingDisplayNames(wedding)
+  const displayTitle = weddingDisplayTitle(wedding)
+  const displayVenue = weddingDisplayVenue(wedding)
+  const displayMessage = weddingDisplayMessage(wedding)
+  const displayStory = weddingDisplayStory(wedding)
 
   useEffect(() => {
+    if (!wedding.date) {
+      setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+      return
+    }
     const tick = () => {
       const diff = new Date(wedding.date) - new Date()
       if (diff <= 0) return setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
@@ -93,31 +103,31 @@ export default function BaliTemplate({ wedding }) {
     }
   }
 
-  const dateShort = new Date(wedding.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
-  const dateLong = new Date(wedding.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+  const dateShort = formatWeddingDate(wedding.date, { day: '2-digit', month: 'long', year: 'numeric' })
+  const dateLong = formatWeddingDate(wedding.date, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
 
   return (
     <div className="min-h-screen bg-[#FBF6EF] text-[#4B3328]" style={{ '--accent': accent }}>
       <section id="preview-cover" className="relative min-h-screen overflow-hidden flex items-center">
-        <img src={mediaUrl(wedding.coverImage)} alt={`${wedding.brideName} & ${wedding.groomName}`} className="absolute inset-0 w-full h-full object-cover" />
+        <img src={mediaUrl(wedding.coverImage)} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#5E2F1E]/80 via-[#8F4E2B]/35 to-transparent" />
         <div className="relative z-10 w-full max-w-6xl mx-auto px-6 py-24">
           <motion.div initial="hidden" animate="visible" variants={stagger} className="max-w-xl text-white">
             <motion.p variants={fadeUp} className="text-xs uppercase tracking-[0.34em] text-[#F7D8BF] mb-7">Celebração de amor</motion.p>
             <motion.h1 variants={fadeUp} className="font-serif italic text-6xl sm:text-8xl leading-[0.95]">
-              {wedding.brideName}
+              {brideName}
               <span className="block text-[#F7D8BF] text-4xl sm:text-5xl my-4">&</span>
-              {wedding.groomName}
+              {groomName}
             </motion.h1>
             <motion.p variants={fadeUp} className="mt-8 text-[#F7EDE4] capitalize">{dateShort}</motion.p>
-            <motion.p variants={fadeUp} className="mt-2 text-sm text-[#F7EDE4]/80">{wedding.venue}</motion.p>
+            <motion.p variants={fadeUp} className="mt-2 text-sm text-[#F7EDE4]/80">{displayVenue}</motion.p>
           </motion.div>
         </div>
       </section>
 
       <section id="preview-details" className="border-y border-[#E8D8C8] bg-[#FFF9F2]">
         <div className="max-w-5xl mx-auto px-6 py-10 grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {[{ icon: Calendar, label: 'Data', value: dateLong }, { icon: MapPin, label: 'Local', value: wedding.venue }, { icon: Heart, label: 'Recado', value: wedding.message }].map(({ icon: Icon, label, value }) => (
+          {[{ icon: Calendar, label: 'Data', value: dateLong }, { icon: MapPin, label: 'Local', value: displayVenue }, { icon: Heart, label: 'Recado', value: displayMessage }].map(({ icon: Icon, label, value }) => (
             <div key={label} className="text-center px-4">
               <Icon size={17} className="mx-auto text-[var(--accent)] mb-3" />
               <p className="text-[10px] uppercase tracking-[0.26em] text-[#A6785B] mb-2">{label}</p>
@@ -131,7 +141,7 @@ export default function BaliTemplate({ wedding }) {
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger} className="max-w-3xl mx-auto text-center">
           <motion.div variants={fadeUp}><SectionLabel>Nossa história</SectionLabel></motion.div>
           <motion.h2 variants={fadeUp} className="font-serif italic text-5xl text-[#6C3F2B] mb-8">Como tudo começou</motion.h2>
-          <motion.p variants={fadeUp} className="font-serif italic text-xl leading-loose text-[#7D5A49]">{wedding.story}</motion.p>
+          <motion.p variants={fadeUp} className="font-serif italic text-xl leading-loose text-[#7D5A49]">{displayStory}</motion.p>
         </motion.div>
       </section>
 
@@ -256,8 +266,8 @@ export default function BaliTemplate({ wedding }) {
       </section>
 
       <footer className="py-16 px-6 text-center bg-[#4B3328] text-[#F7EDE4]">
-        <p className="font-serif italic text-4xl mb-3">{wedding.brideName} & {wedding.groomName}</p>
-        <p className="text-xs uppercase tracking-[0.3em] text-[#F7D8BF]/70 capitalize">{dateShort} · {wedding.venue}</p>
+        <p className="font-serif italic text-4xl mb-3">{displayTitle}</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-[#F7D8BF]/70 capitalize">{dateShort} · {displayVenue}</p>
       </footer>
 
       <AnimatePresence>

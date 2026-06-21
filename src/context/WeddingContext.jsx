@@ -51,7 +51,7 @@ export function WeddingProvider({ children }) {
     }
 
     if (!user) {
-      setWedding(prev => ({ ...draftWedding(), ...prev, id: mockWedding.id }))
+      setWedding(prev => normalizeWedding({ ...prev, id: mockWedding.id }))
       return
     }
 
@@ -95,7 +95,7 @@ export function WeddingProvider({ children }) {
 
   const updateWedding = (updates) => {
     setWedding(prev => {
-      const next = { ...prev, ...updates }
+      const next = withGeneratedSlug({ ...prev, ...updates })
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
       } catch {
@@ -147,14 +147,15 @@ export function WeddingProvider({ children }) {
 export const useWedding = () => useContext(WeddingContext)
 
 function normalizeWedding(wedding) {
-  return {
+  const normalized = stripLegacyExampleDefaults(wedding)
+  return withGeneratedSlug({
     ...draftWedding(),
-    ...wedding,
-    template: normalizeTemplateId(wedding.template),
-    galleryCustomized: wedding.galleryCustomized ?? false,
-    gifts: wedding.gifts ?? sampleWeddingFields().gifts,
-    sections: wedding.sections ?? mockWedding.sections,
-  }
+    ...normalized,
+    template: normalizeTemplateId(normalized.template),
+    galleryCustomized: normalized.galleryCustomized ?? false,
+    gifts: normalized.gifts ?? [],
+    sections: normalized.sections ?? [],
+  })
 }
 
 function normalizeTemplateId(template) {
@@ -166,21 +167,35 @@ function normalizeTemplateId(template) {
 
 function draftWedding() {
   const sampleFields = sampleWeddingFields()
-  return {
-    ...mockWedding,
+  return withGeneratedSlug({
+    id: mockWedding.id,
+    slug: 'meu-casamento',
+    groomName: '',
+    brideName: '',
+    date: '',
+    venue: '',
+    message: '',
+    story: '',
+    template: mockWedding.template,
+    primaryColor: mockWedding.primaryColor,
+    guestCount: 0,
+    rsvpEnabled: true,
+    sections: [],
+    giftPixKey: '',
+    giftPixQrCode: '',
+    gifts: [],
     coverImage: sampleFields.coverImage,
     galleryImages: sampleFields.galleryImages,
     galleryCustomized: false,
-    gifts: sampleFields.gifts,
-  }
+  })
 }
 
 function mergeRemoteWedding(localWedding, remoteWedding) {
   const sampleFields = sampleWeddingFields()
   const hasRemoteGallery = Boolean(remoteWedding.galleryImages?.length)
   const galleryCustomized = Boolean(localWedding.galleryCustomized || hasRemoteGallery)
-  return {
-    ...mockWedding,
+  return withGeneratedSlug({
+    ...draftWedding(),
     ...localWedding,
     id: remoteWedding.id,
     template: normalizeTemplateId(localWedding.template),
@@ -192,15 +207,15 @@ function mergeRemoteWedding(localWedding, remoteWedding) {
       ? (localWedding.galleryImages ?? [])
       : sampleFields.galleryImages,
     giftPixQrCode: remoteWedding.giftPixQrCode ?? '',
-    gifts: remoteWedding.gifts?.length ? remoteWedding.gifts : sampleFields.gifts,
-  }
+    gifts: remoteWedding.gifts?.length ? remoteWedding.gifts : (localWedding.gifts ?? []),
+  })
 }
 
 function newDraftWedding(localWedding) {
   const sampleFields = sampleWeddingFields()
   const galleryCustomized = Boolean(localWedding.galleryCustomized)
-  return {
-    ...mockWedding,
+  return withGeneratedSlug({
+    ...draftWedding(),
     ...localWedding,
     id: mockWedding.id,
     template: normalizeTemplateId(localWedding.template),
@@ -208,9 +223,9 @@ function newDraftWedding(localWedding) {
     galleryCustomized,
     galleryImages: galleryCustomized ? (localWedding.galleryImages ?? []) : sampleFields.galleryImages,
     giftPixQrCode: '',
-    gifts: sampleFields.gifts,
+    gifts: localWedding.gifts ?? [],
     guestCount: 0,
-  }
+  })
 }
 
 function sampleWeddingFields() {
@@ -223,4 +238,54 @@ function sampleWeddingFields() {
       image: typeof gift.image === 'string' ? sampleMedia(gift.image, 'gift', gift.id) : gift.image,
     })),
   }
+}
+
+function stripLegacyExampleDefaults(wedding) {
+  if (
+    wedding?.slug === mockWedding.slug
+    && wedding?.brideName === mockWedding.brideName
+    && wedding?.groomName === mockWedding.groomName
+    && wedding?.date === mockWedding.date
+  ) {
+    return {
+      ...wedding,
+      slug: 'meu-casamento',
+      groomName: '',
+      brideName: '',
+      date: '',
+      venue: '',
+      message: '',
+      story: '',
+      sections: [],
+      gifts: [],
+      giftPixKey: '',
+      giftPixQrCode: '',
+    }
+  }
+  return wedding
+}
+
+function withGeneratedSlug(wedding) {
+  return {
+    ...wedding,
+    slug: buildWeddingSlug(wedding),
+  }
+}
+
+function buildWeddingSlug(wedding) {
+  const bride = slugify(wedding?.brideName)
+  const groom = slugify(wedding?.groomName)
+  const names = [bride, groom].filter(Boolean)
+  const namePart = names.length === 2 ? `${names[0]}-e-${names[1]}` : (names[0] ?? 'meu-casamento')
+  const datePart = /^\d{4}-\d{2}-\d{2}$/.test(wedding?.date ?? '') ? `-${wedding.date}` : ''
+  return `${namePart}${datePart}`
+}
+
+function slugify(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }

@@ -341,11 +341,13 @@ export default function Editor() {
                   </div>
                   <Input
                     label="Nome da noiva"
+                    placeholder="Ex: Ana"
                     value={wedding.brideName}
                     onChange={e => wrappedUpdate({ brideName: e.target.value })}
                   />
                   <Input
                     label="Nome do noivo"
+                    placeholder="Ex: Pedro"
                     value={wedding.groomName}
                     onChange={e => wrappedUpdate({ groomName: e.target.value })}
                   />
@@ -357,6 +359,7 @@ export default function Editor() {
                   />
                   <Input
                     label="Local da cerimônia"
+                    placeholder="Ex: Fazenda Santa Clara, Sao Paulo"
                     value={wedding.venue}
                     onChange={e => wrappedUpdate({ venue: e.target.value })}
                   />
@@ -365,6 +368,7 @@ export default function Editor() {
                     <textarea
                       value={wedding.message}
                       onChange={e => wrappedUpdate({ message: e.target.value })}
+                      placeholder="Escreva uma mensagem curta para os convidados."
                       rows={3}
                       className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-stone-400 focus:ring-2 focus:ring-stone-100 outline-none text-sm text-stone-900 placeholder-stone-400 transition-all resize-none"
                     />
@@ -377,6 +381,7 @@ export default function Editor() {
                     <textarea
                       value={wedding.story}
                       onChange={e => wrappedUpdate({ story: e.target.value })}
+                      placeholder="Conte um pouco da historia de voces."
                       rows={4}
                       className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-stone-400 focus:ring-2 focus:ring-stone-100 outline-none text-sm text-stone-900 placeholder-stone-400 transition-all resize-none"
                     />

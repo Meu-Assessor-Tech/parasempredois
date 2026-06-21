@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, MapPin, QrCode, X } from 'lucide-react'
 import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
+import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 28 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease } } }
@@ -50,8 +51,17 @@ export default function CelestialTemplate({ wedding }) {
   const giftPixKey = (wedding.giftPixKey ?? '').trim()
   const giftPixQrCode = wedding.giftPixQrCode ?? ''
   const canGiftWithPix = Boolean(giftPixKey)
+  const { brideName, groomName } = weddingDisplayNames(wedding)
+  const displayTitle = weddingDisplayTitle(wedding)
+  const displayVenue = weddingDisplayVenue(wedding)
+  const displayMessage = weddingDisplayMessage(wedding)
+  const displayStory = weddingDisplayStory(wedding)
 
   useEffect(() => {
+    if (!wedding.date) {
+      setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+      return
+    }
     const tick = () => {
       const diff = new Date(wedding.date) - new Date()
       if (diff <= 0) return setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
@@ -93,32 +103,32 @@ export default function CelestialTemplate({ wedding }) {
     }
   }
 
-  const dateShort = new Date(wedding.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
-  const dateLong = new Date(wedding.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+  const dateShort = formatWeddingDate(wedding.date, { day: '2-digit', month: 'long', year: 'numeric' })
+  const dateLong = formatWeddingDate(wedding.date, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
 
   return (
     <div className="min-h-screen bg-[#080713] text-white" style={{ '--accent': accent }}>
       <section id="preview-cover" className="relative min-h-screen overflow-hidden flex items-center justify-center text-center px-6">
-        <img src={mediaUrl(wedding.coverImage)} alt={`${wedding.brideName} & ${wedding.groomName}`} className="absolute inset-0 w-full h-full object-cover opacity-42" />
+        <img src={mediaUrl(wedding.coverImage)} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover opacity-42" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,7,19,0.45),rgba(8,7,19,0.88)_70%,#080713)]" />
         <motion.div initial="hidden" animate="visible" variants={stagger} className="relative z-10 max-w-5xl mx-auto">
           <motion.p variants={fadeUp} className="text-[10px] uppercase tracking-[0.55em] text-[var(--accent)] mb-8">Save the date</motion.p>
           <motion.h1 variants={fadeUp} className="font-serif text-6xl sm:text-8xl md:text-9xl leading-[0.9]">
-            {wedding.brideName}
+            {brideName}
             <span className="block text-[var(--accent)] text-4xl sm:text-6xl my-5">&</span>
-            {wedding.groomName}
+            {groomName}
           </motion.h1>
           <motion.div variants={fadeUp} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 text-white/65">
             <span className="capitalize">{dateShort}</span>
             <span className="hidden sm:block h-px w-10 bg-white/20" />
-            <span>{wedding.venue}</span>
+            <span>{displayVenue}</span>
           </motion.div>
         </motion.div>
       </section>
 
       <section id="preview-details" className="px-6 py-16 border-y border-white/10 bg-[#0D0B1A]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[{ icon: Calendar, label: 'Data', value: dateLong }, { icon: MapPin, label: 'Local', value: wedding.venue }, { icon: Heart, label: 'Recado', value: wedding.message }].map(({ icon: Icon, label, value }) => (
+          {[{ icon: Calendar, label: 'Data', value: dateLong }, { icon: MapPin, label: 'Local', value: displayVenue }, { icon: Heart, label: 'Recado', value: displayMessage }].map(({ icon: Icon, label, value }) => (
             <div key={label} className="border border-white/10 bg-white/[0.035] p-6 text-center">
               <Icon size={18} className="mx-auto mb-4 text-[var(--accent)]" />
               <p className="text-[10px] uppercase tracking-[0.35em] text-white/35 mb-3">{label}</p>
@@ -134,7 +144,7 @@ export default function CelestialTemplate({ wedding }) {
             <SectionLabel>Nossa história</SectionLabel>
             <h2 className="font-serif text-5xl sm:text-6xl leading-tight">Como tudo começou</h2>
           </div>
-          <p className="font-serif text-2xl leading-loose text-white/62 italic">{wedding.story}</p>
+          <p className="font-serif text-2xl leading-loose text-white/62 italic">{displayStory}</p>
         </div>
       </section>
 
@@ -259,8 +269,8 @@ export default function CelestialTemplate({ wedding }) {
       </section>
 
       <footer className="px-6 py-16 text-center border-t border-white/10">
-        <p className="font-serif text-4xl mb-3">{wedding.brideName} & {wedding.groomName}</p>
-        <p className="text-xs uppercase tracking-[0.34em] text-white/35 capitalize">{dateShort} · {wedding.venue}</p>
+        <p className="font-serif text-4xl mb-3">{displayTitle}</p>
+        <p className="text-xs uppercase tracking-[0.34em] text-white/35 capitalize">{dateShort} · {displayVenue}</p>
       </footer>
 
       <AnimatePresence>
