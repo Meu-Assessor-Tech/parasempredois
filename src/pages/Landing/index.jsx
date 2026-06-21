@@ -19,7 +19,7 @@ const stagger = {
 
 export default function Landing() {
   const navigate = useNavigate()
-  const startFreePath = `/login?next=${encodeURIComponent('/editor')}&template=ivory`
+  const startFreePath = `/login?next=${encodeURIComponent('/principal')}&template=ivory`
 
   return (
     <div className="min-h-screen bg-white">

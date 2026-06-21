@@ -44,8 +44,8 @@ export default function Navbar({ transparent = false }) {
         <div className="hidden md:flex items-center gap-6">
           {user ? (
             <div className="flex items-center gap-3">
-              <Link to="/dashboard">
-                <Button variant="outline" size="sm">Dashboard</Button>
+              <Link to="/principal">
+                <Button variant="outline" size="sm">Principal</Button>
               </Link>
               <Button variant="ghost" size="sm" onClick={handleLogout}>Sair</Button>
             </div>
@@ -69,7 +69,7 @@ export default function Navbar({ transparent = false }) {
         >
           {user ? (
             <>
-              <Link to="/dashboard" className="block"><Button variant="primary" size="sm" fullWidth>Dashboard</Button></Link>
+              <Link to="/principal" className="block"><Button variant="primary" size="sm" fullWidth>Principal</Button></Link>
               <Button variant="ghost" size="sm" fullWidth onClick={handleLogout}>Sair</Button>
             </>
           ) : (

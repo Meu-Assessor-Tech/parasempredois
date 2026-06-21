@@ -2,17 +2,22 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Heart, LayoutDashboard, Edit3, HandHeart, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-
-const navItems = [
-  { icon: Edit3, label: 'Editar', path: '/editor' },
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: HandHeart, label: 'Colaborar', path: '/dashboard?tab=colaborar' },
-]
+import { useWedding } from '../../context/WeddingContext'
+import { canSaveWedding } from '../../api/weddings'
 
 export default function Sidebar() {
   const location = useLocation()
   const { logout } = useAuth()
+  const { wedding } = useWedding()
   const navigate = useNavigate()
+  const hasWedding = canSaveWedding(wedding?.id)
+  const navItems = [
+    { icon: LayoutDashboard, label: 'Principal', path: '/principal' },
+    hasWedding
+      ? { icon: Edit3, label: 'Editar', path: '/editor' }
+      : { icon: Edit3, label: 'Criar site', path: '/criar-site' },
+    { icon: HandHeart, label: 'Colaborar', path: '/principal?tab=colaborar' },
+  ]
 
   const currentPath = `${location.pathname}${location.search}`
 

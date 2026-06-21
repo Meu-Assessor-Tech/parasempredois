@@ -41,8 +41,24 @@ export function saveWeddingMedia(wedding) {
   })
 }
 
+export function deleteWedding(weddingId) {
+  return api(`/weddings/${weddingId}`, {
+    method: 'DELETE',
+  })
+}
+
 function payloadForWedding(wedding) {
   return {
+    brideName: wedding?.brideName ?? '',
+    groomName: wedding?.groomName ?? '',
+    weddingDate: wedding?.date || null,
+    venue: wedding?.venue ?? '',
+    message: wedding?.message ?? '',
+    story: wedding?.story ?? '',
+    template: wedding?.template ?? '',
+    primaryColor: wedding?.primaryColor ?? '',
+    sections: wedding?.sections ?? [],
+    giftPixKey: wedding?.giftPixKey ?? '',
     coverImage: storedMedia(wedding?.coverImage),
     galleryImages: storedMediaList(wedding?.galleryImages),
     giftPixQrCode: storedMedia(wedding?.giftPixQrCode),

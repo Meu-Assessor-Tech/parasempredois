@@ -20,8 +20,8 @@ export default function Auth() {
   const { updateWedding } = useWedding()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const requestedNextPath = searchParams.get('next') || '/dashboard'
-  const nextPath = requestedNextPath.startsWith('/') ? requestedNextPath : '/dashboard'
+  const requestedNextPath = searchParams.get('next') || '/principal'
+  const nextPath = requestedNextPath.startsWith('/') ? requestedNextPath : '/principal'
   const templateFromUrl = searchParams.get('template')
 
   useEffect(() => {

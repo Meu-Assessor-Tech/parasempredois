@@ -6,7 +6,7 @@ import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { canUploadMedia, deleteWeddingDesignImages, deleteWeddingImage, uploadWeddingImage } from '../../api/media'
-import { saveWeddingMedia } from '../../api/weddings'
+import { canSaveWedding, saveWeddingMedia } from '../../api/weddings'
 import { useWedding } from '../../context/WeddingContext'
 import { mockTemplates } from '../../data/mockTemplates'
 import { mockWedding } from '../../data/mockWedding'
@@ -72,7 +72,7 @@ function PreviewJumpButton({ onClick }) {
 }
 
 export default function Editor() {
-  const { wedding, updateWedding, ensureWedding } = useWedding()
+  const { wedding, loadingWedding, updateWedding, ensureWedding } = useWedding()
   const [previewMode, setPreviewMode] = useState('desktop')
   const [saved, setSaved] = useState(false)
   const [previewKey, setPreviewKey] = useState(0)
@@ -174,7 +174,24 @@ export default function Editor() {
     try {
       const savedWedding = await saveWeddingMedia(wedding)
       if (savedWedding?.id) {
-        updateWedding({ id: savedWedding.id })
+        updateWedding({
+          id: savedWedding.id,
+          brideName: savedWedding.brideName ?? wedding.brideName,
+          groomName: savedWedding.groomName ?? wedding.groomName,
+          date: savedWedding.weddingDate ?? wedding.date,
+          slug: savedWedding.slug ?? wedding.slug,
+          venue: savedWedding.venue ?? '',
+          message: savedWedding.message ?? '',
+          story: savedWedding.story ?? '',
+          template: savedWedding.template ?? wedding.template,
+          primaryColor: savedWedding.primaryColor ?? wedding.primaryColor,
+          sections: savedWedding.sections ?? [],
+          giftPixKey: savedWedding.giftPixKey ?? '',
+          coverImage: savedWedding.coverImage ?? wedding.coverImage,
+          galleryImages: savedWedding.galleryImages ?? wedding.galleryImages,
+          giftPixQrCode: savedWedding.giftPixQrCode ?? wedding.giftPixQrCode,
+          gifts: savedWedding.gifts ?? wedding.gifts,
+        })
       }
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
@@ -277,6 +294,33 @@ export default function Editor() {
   const uploadGalleryCount = wedding.galleryCustomized ? visibleGalleryCount : realGalleryCount
   const galleryOpenSlots = Math.max(0, MAX_GALLERY_IMAGES - uploadGalleryCount)
   const showGalleryEmptySlots = Boolean(wedding.galleryCustomized && galleryOpenSlots > 0)
+
+  if (loadingWedding) {
+    return (
+      <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
+        <div className="rounded-3xl bg-white border border-stone-100 p-8 text-center shadow-sm">
+          <div className="w-8 h-8 border-2 border-stone-200 border-t-stone-800 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-stone-500">Carregando editor...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!canSaveWedding(wedding?.id)) {
+    return (
+      <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
+        <div className="max-w-md rounded-3xl bg-white border border-stone-100 p-8 text-center shadow-sm">
+          <h1 className="font-serif text-3xl text-stone-900 mb-3">Crie o site primeiro</h1>
+          <p className="text-sm text-stone-500 leading-relaxed mb-6">
+            Antes de abrir o editor, informe o nome dos noivos e a data do casamento para criar o registro.
+          </p>
+          <Button variant="primary" onClick={() => navigate('/criar-site')}>
+            Criar site
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen bg-stone-100">

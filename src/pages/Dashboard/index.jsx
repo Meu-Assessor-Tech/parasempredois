@@ -1,26 +1,22 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Copy, Eye, Edit3, Share2, Users, Gift, TrendingUp, ExternalLink, Plus, QrCode, HandHeart, Check } from 'lucide-react'
+import { Check, Copy, Edit3, Eye, HandHeart, Plus, QrCode, Share2, Trash2 } from 'lucide-react'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
-import { useAuth } from '../../context/AuthContext'
 import { useWedding } from '../../context/WeddingContext'
+import { canSaveWedding } from '../../api/weddings'
+import { ApiError } from '../../api/client'
 import { mediaUrl } from '../../utils/media'
 import { formatWeddingDate, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 
+const PIX_KEY = 'X'
+
 const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 18 },
   visible: { opacity: 1, y: 0 },
 }
-
-const stagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
-}
-
-const PIX_KEY = 'X'
 
 function CollaborationTab() {
   const [copied, setCopied] = useState(false)
@@ -36,222 +32,184 @@ function CollaborationTab() {
   }
 
   return (
-    <div className="flex min-h-screen bg-stone-50">
-      <div className="hidden md:flex">
-        <Sidebar />
-      </div>
+    <DashboardShell>
+      <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
+        <p className="text-xs text-stone-400 uppercase tracking-widest mb-1">Colaboracao opcional</p>
+        <h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-3">Ajude o Para sempre dois a continuar</h1>
+        <p className="text-stone-500 text-sm leading-relaxed max-w-2xl mb-6">
+          O projeto e gratuito. Se quiser colaborar para manter a plataforma no ar, a contribuicao por Pix e opcional.
+        </p>
 
-      <main className="flex-1 overflow-auto">
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-            className="mb-8"
-          >
-            <motion.p variants={fadeUp} className="text-xs text-stone-400 uppercase tracking-widest mb-1">
-              Colaboração opcional
-            </motion.p>
-            <motion.h1 variants={fadeUp} className="font-serif text-3xl sm:text-4xl text-stone-900 mb-3">
-              Ajude o Para sempre dois a continuar
-            </motion.h1>
-            <motion.p variants={fadeUp} className="text-stone-500 text-sm leading-relaxed max-w-2xl">
-              Eu não cobro nada para os casais criarem seus sites. Se algum casal quiser colaborar com o projeto, pode fazer uma contribuição voluntária por Pix.
-            </motion.p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-            <Card className="p-6 sm:p-8">
-              <div className="flex items-start gap-4 mb-8">
-                <div className="w-11 h-11 rounded-2xl bg-sand-100 text-sand-700 flex items-center justify-center flex-shrink-0">
-                  <HandHeart size={20} />
-                </div>
-                <div>
-                  <h2 className="font-serif text-2xl text-stone-900 mb-2">Contribuição por Pix</h2>
-                  <p className="text-sm text-stone-500 leading-relaxed">
-                    A contribuição é totalmente opcional e não muda o acesso ao site. O Para sempre dois segue gratuito para quem quiser criar uma página de casamento.
-                  </p>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+          <Card className="p-6">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-11 h-11 rounded-2xl bg-sand-100 text-sand-700 flex items-center justify-center">
+                <HandHeart size={20} />
               </div>
-
-              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 sm:p-5">
-                <p className="text-xs uppercase tracking-[0.24em] text-stone-400 mb-2">Chave Pix</p>
-                <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                  <code className="rounded-xl bg-white border border-stone-200 px-4 py-3 text-sm text-stone-800 break-all">
-                    {PIX_KEY}
-                  </code>
-                  <Button variant="primary" size="sm" onClick={handleCopyPix} className="flex-shrink-0">
-                    {copied ? <Check size={14} /> : <Copy size={14} />}
-                    {copied ? 'Copiado' : 'Copiar chave'}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="aspect-square rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50 flex flex-col items-center justify-center text-center p-6">
-                <QrCode size={42} className="text-stone-300 mb-4" />
-                <p className="font-medium text-stone-700 text-sm mb-1">QR Code Pix</p>
-                <p className="text-xs text-stone-400 leading-relaxed">
-                  Espaço reservado para inserir a imagem do QR Code.
+              <div>
+                <h2 className="font-serif text-2xl text-stone-900 mb-2">Contribuicao por Pix</h2>
+                <p className="text-sm text-stone-500 leading-relaxed">
+                  A contribuicao nao muda o acesso. O site segue gratuito para criar e compartilhar.
                 </p>
               </div>
-            </Card>
-          </div>
+            </div>
+            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+              <p className="text-xs uppercase tracking-[0.24em] text-stone-400 mb-2">Chave Pix</p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <code className="flex-1 rounded-xl bg-white border border-stone-200 px-4 py-3 text-sm text-stone-800 break-all">
+                  {PIX_KEY}
+                </code>
+                <Button variant="primary" size="sm" onClick={handleCopyPix}>
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? 'Copiado' : 'Copiar chave'}
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <div className="aspect-square rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50 flex flex-col items-center justify-center text-center p-6">
+              <QrCode size={42} className="text-stone-300 mb-4" />
+              <p className="font-medium text-stone-700 text-sm mb-1">QR Code Pix</p>
+              <p className="text-xs text-stone-400 leading-relaxed">Espaco reservado para inserir a imagem do QR Code.</p>
+            </div>
+          </Card>
         </div>
-      </main>
-    </div>
+      </div>
+    </DashboardShell>
   )
 }
 
 export default function Dashboard() {
-  const { user } = useAuth()
-  const { wedding } = useWedding()
+  const { wedding, loadingWedding, deleteWeddingSite } = useWedding()
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const navigate = useNavigate()
   const location = useLocation()
   const currentTab = new URLSearchParams(location.search).get('tab')
-
-  const stats = [
-    { label: 'Visualizações', value: '1.247', icon: Eye, trend: '+12%' },
-    { label: 'Confirmados', value: '47', icon: Users, trend: '+5' },
-    { label: 'Presentes', value: '8', icon: Gift, trend: 'de 24' },
-    { label: 'Dias restantes', value: '128', icon: TrendingUp, trend: 'para o grande dia' },
-  ]
-
-  const formattedDate = formatWeddingDate(wedding.date, { day: '2-digit', month: 'long', year: 'numeric' })
-  const weddingTitle = weddingDisplayTitle(wedding)
-  const weddingVenue = weddingDisplayVenue(wedding)
+  const hasWedding = canSaveWedding(wedding?.id)
 
   if (currentTab === 'colaborar') {
     return <CollaborationTab />
   }
 
+  if (loadingWedding) {
+    return (
+      <DashboardShell>
+        <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
+          <Card className="p-8 text-center">
+            <div className="w-8 h-8 border-2 border-stone-200 border-t-stone-800 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-sm text-stone-500">Carregando seu painel...</p>
+          </Card>
+        </div>
+      </DashboardShell>
+    )
+  }
+
+  if (!hasWedding) {
+    return (
+      <DashboardShell>
+        <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
+          <motion.div initial="hidden" animate="visible" variants={fadeUp}>
+            <Card className="p-8 sm:p-10 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-stone-900 text-white flex items-center justify-center mx-auto mb-6">
+                <Plus size={24} />
+              </div>
+              <p className="text-xs uppercase tracking-[0.26em] text-stone-400 mb-3">Primeiro passo</p>
+              <h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-3">Crie o site do seu casamento</h1>
+              <p className="text-sm text-stone-500 leading-relaxed max-w-xl mx-auto mb-7">
+                Para comecar, informe apenas o nome dos noivos e a data do casamento. Depois disso voce personaliza fotos, presentes e detalhes no editor.
+              </p>
+              <Button variant="primary" size="lg" onClick={() => navigate('/criar-site')}>
+                <Plus size={16} /> Criar site
+              </Button>
+            </Card>
+          </motion.div>
+        </div>
+      </DashboardShell>
+    )
+  }
+
+  const formattedDate = formatWeddingDate(wedding.date, { day: '2-digit', month: 'long', year: 'numeric' })
+  const weddingTitle = weddingDisplayTitle(wedding)
+  const weddingVenue = weddingDisplayVenue(wedding)
+
+  const handleDeleteSite = async () => {
+    const confirmed = confirm('Tem certeza que deseja excluir este site? Isso apaga textos, presentes e imagens enviadas.')
+    if (!confirmed) return
+
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      await deleteWeddingSite()
+      navigate('/principal')
+    } catch (err) {
+      setDeleteError(err instanceof ApiError ? err.message : 'Nao foi possivel excluir o site')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <DashboardShell>
+      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8">
+        <div className="mb-8">
+          <p className="text-xs text-stone-400 uppercase tracking-widest mb-1">Seu site</p>
+          <h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-2">{weddingTitle}</h1>
+          <p className="text-stone-500 text-sm">{formattedDate} · {weddingVenue}</p>
+        </div>
+
+        {deleteError && (
+          <div className="mb-5 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">
+            {deleteError}
+          </div>
+        )}
+
+        <Card className="overflow-hidden">
+          <div className="relative aspect-video">
+            <img src={mediaUrl(wedding.coverImage)} alt="Preview" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute bottom-4 left-4 right-4">
+              <p className="font-serif text-xl text-white mb-1">{weddingTitle}</p>
+              <p className="text-white/75 text-sm">{formattedDate}</p>
+            </div>
+          </div>
+          <div className="p-5">
+            <div className="flex flex-wrap gap-3">
+              <Button variant="primary" size="sm" onClick={() => navigate('/editor')}>
+                <Edit3 size={14} /> Editar site
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/site/${wedding.slug}`)}>
+                <Eye size={14} /> Visualizar
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/site/${wedding.slug}`)}>
+                <Share2 size={14} /> Copiar link
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDeleteSite}
+                disabled={deleting}
+                className="!text-red-600 hover:!bg-red-50"
+              >
+                <Trash2 size={14} />
+                {deleting ? 'Excluindo...' : 'Excluir site'}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </DashboardShell>
+  )
+}
+
+function DashboardShell({ children }) {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <div className="hidden md:flex">
         <Sidebar />
       </div>
-
-      <main className="flex-1 overflow-auto">
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-            className="mb-10"
-          >
-            <motion.p variants={fadeUp} className="text-xs text-stone-400 uppercase tracking-widest mb-1">
-              Bem-vindo de volta
-            </motion.p>
-            <motion.h1 variants={fadeUp} className="font-serif text-3xl sm:text-4xl text-stone-900 mb-2">
-              {weddingTitle}
-            </motion.h1>
-            <motion.p variants={fadeUp} className="text-stone-500 text-sm flex items-center gap-2">
-              <span>{formattedDate}</span>
-              <span className="w-1 h-1 bg-stone-300 rounded-full" />
-              <span>{weddingVenue}</span>
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-          >
-            {stats.map((stat) => (
-              <motion.div key={stat.label} variants={fadeUp}>
-                <Card className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <stat.icon size={18} className="text-stone-400" />
-                    <span className="text-xs text-stone-400">{stat.trend}</span>
-                  </div>
-                  <p className="font-serif text-2xl text-stone-900 mb-1">{stat.value}</p>
-                  <p className="text-xs text-stone-500">{stat.label}</p>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="lg:col-span-2"
-            >
-              <Card className="overflow-hidden">
-                <div className="relative aspect-video">
-                  <img
-                    src={mediaUrl(wedding.coverImage)}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <p className="font-serif text-xl text-white mb-1">
-                      {weddingTitle}
-                    </p>
-                    <p className="text-white/70 text-sm">{formattedDate}</p>
-                  </div>
-                </div>
-                <div className="p-5 flex flex-wrap gap-3">
-                  <Button variant="primary" size="sm" onClick={() => navigate('/editor')}>
-                    <Edit3 size={14} /> Editar site
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => navigate(`/site/${wedding.slug}`)}>
-                    <Eye size={14} /> Visualizar
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Share2 size={14} /> Compartilhar
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <ExternalLink size={14} />
-                    nossodia.com/{wedding.slug}
-                  </Button>
-                </div>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="space-y-4"
-            >
-              <Card className="p-5">
-                <h3 className="font-medium text-stone-900 mb-4 text-sm">Ações rápidas</h3>
-                <div className="space-y-2">
-                  {[
-                    { label: 'Mudar template', icon: Edit3, action: () => navigate('/templates') },
-                    { label: 'Adicionar fotos', icon: Plus, action: () => navigate('/editor') },
-                    { label: 'Lista de presentes', icon: Gift, action: () => navigate('/editor') },
-                    { label: 'Ver convidados', icon: Users, action: () => {} },
-                  ].map((item) => (
-                    <motion.button
-                      key={item.label}
-                      whileHover={{ x: 3 }}
-                      onClick={item.action}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-stone-50 transition-colors text-left"
-                    >
-                      <item.icon size={15} className="text-stone-400" />
-                      <span className="text-sm text-stone-700">{item.label}</span>
-                    </motion.button>
-                  ))}
-                </div>
-              </Card>
-
-              <Card className="p-5 bg-stone-900 border-0">
-                <p className="text-xs text-stone-400 mb-2">Seu link exclusivo</p>
-                <p className="text-white font-mono text-sm mb-4 break-all">nossodia.com/{wedding.slug}</p>
-                <Button variant="secondary" size="sm" fullWidth className="!bg-stone-700 !text-white hover:!bg-stone-600">
-                  <Share2 size={14} /> Copiar link
-                </Button>
-              </Card>
-            </motion.div>
-          </div>
-        </div>
-      </main>
+      <main className="flex-1 overflow-auto">{children}</main>
     </div>
   )
 }

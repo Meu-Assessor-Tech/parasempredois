@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { canSaveWedding, createWedding, getCurrentWedding } from '../api/weddings'
+import { canSaveWedding, createWedding, deleteWedding, getCurrentWedding } from '../api/weddings'
 import { useAuth } from './AuthContext'
 import { mockWedding } from '../data/mockWedding'
 import { sampleMedia } from '../utils/media'
@@ -10,7 +10,7 @@ const PREVIEW_STORAGE_KEY = 'baitacasamento_preview_wedding'
 const WeddingContext = createContext(null)
 
 export function WeddingProvider({ children }) {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const isExampleRoute = typeof window !== 'undefined'
     && window.location.pathname === '/site/ana-e-pedro'
     && new URLSearchParams(window.location.search).get('example') === '1'
@@ -24,6 +24,7 @@ export function WeddingProvider({ children }) {
     return previewKey ? `${PREVIEW_STORAGE_KEY}:${previewKey}` : PREVIEW_STORAGE_KEY
   })()
   const ensureWeddingRef = useRef(null)
+  const [loadingWedding, setLoadingWedding] = useState(false)
   const [wedding, setWedding] = useState(() => {
     try {
       if (isExampleRoute) {
@@ -45,20 +46,29 @@ export function WeddingProvider({ children }) {
   useEffect(() => {
     let cancelled = false
 
+    if (authLoading) {
+      setLoadingWedding(true)
+      return
+    }
+
     if (isExampleRoute) {
+      setLoadingWedding(false)
       setWedding(draftWedding())
       return
     }
 
     if (!user) {
+      setLoadingWedding(false)
       setWedding(prev => normalizeWedding({ ...prev, id: mockWedding.id }))
       return
     }
 
     if (isPreviewRoute) {
+      setLoadingWedding(false)
       return
     }
 
+    setLoadingWedding(true)
     getCurrentWedding()
       .then(remoteWedding => {
         if (cancelled) return
@@ -87,15 +97,18 @@ export function WeddingProvider({ children }) {
       .catch(() => {
         // Keep the local editor state available if the API is offline.
       })
+      .finally(() => {
+        if (!cancelled) setLoadingWedding(false)
+      })
 
     return () => {
       cancelled = true
     }
-  }, [user, isPreviewRoute, isExampleRoute])
+  }, [user, authLoading, isPreviewRoute, isExampleRoute])
 
   const updateWedding = (updates) => {
     setWedding(prev => {
-      const next = withGeneratedSlug({ ...prev, ...updates })
+      const next = { ...prev, ...updates }
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
       } catch {
@@ -108,6 +121,33 @@ export function WeddingProvider({ children }) {
   const resetWedding = () => {
     localStorage.removeItem(STORAGE_KEY)
     setWedding(draftWedding())
+  }
+
+  const createWeddingSite = async (identity) => {
+    const requestWedding = withGeneratedSlug({ ...draftWedding(), ...identity })
+    const remoteWedding = await createWedding(requestWedding)
+    let nextWedding = null
+    setWedding(prev => {
+      const next = mergeRemoteWedding({ ...prev, ...requestWedding }, remoteWedding)
+      nextWedding = next
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      } catch {
+        // localStorage quota exceeded (e.g. large base64 images)
+      }
+      return next
+    })
+    return nextWedding ?? mergeRemoteWedding(requestWedding, remoteWedding)
+  }
+
+  const deleteWeddingSite = async () => {
+    if (canSaveWedding(wedding.id)) {
+      await deleteWedding(wedding.id)
+    }
+    localStorage.removeItem(STORAGE_KEY)
+    const next = draftWedding()
+    setWedding(next)
+    return next
   }
 
   const ensureWedding = async () => {
@@ -138,7 +178,7 @@ export function WeddingProvider({ children }) {
   }
 
   return (
-    <WeddingContext.Provider value={{ wedding, updateWedding, ensureWedding, resetWedding }}>
+    <WeddingContext.Provider value={{ wedding, loadingWedding, updateWedding, ensureWedding, resetWedding, createWeddingSite, deleteWeddingSite }}>
       {children}
     </WeddingContext.Provider>
   )
@@ -148,7 +188,7 @@ export const useWedding = () => useContext(WeddingContext)
 
 function normalizeWedding(wedding) {
   const normalized = stripLegacyExampleDefaults(wedding)
-  return withGeneratedSlug({
+  return preserveOrGenerateSlug({
     ...draftWedding(),
     ...normalized,
     template: normalizeTemplateId(normalized.template),
@@ -194,11 +234,21 @@ function mergeRemoteWedding(localWedding, remoteWedding) {
   const sampleFields = sampleWeddingFields()
   const hasRemoteGallery = Boolean(remoteWedding.galleryImages?.length)
   const galleryCustomized = Boolean(localWedding.galleryCustomized || hasRemoteGallery)
-  return withGeneratedSlug({
+  return preserveOrGenerateSlug({
     ...draftWedding(),
     ...localWedding,
     id: remoteWedding.id,
-    template: normalizeTemplateId(localWedding.template),
+    brideName: remoteWedding.brideName ?? localWedding.brideName ?? '',
+    groomName: remoteWedding.groomName ?? localWedding.groomName ?? '',
+    date: remoteWedding.weddingDate ?? localWedding.date ?? '',
+    slug: remoteWedding.slug ?? localWedding.slug,
+    venue: remoteWedding.venue ?? localWedding.venue ?? '',
+    message: remoteWedding.message ?? localWedding.message ?? '',
+    story: remoteWedding.story ?? localWedding.story ?? '',
+    template: normalizeTemplateId(remoteWedding.template ?? localWedding.template),
+    primaryColor: remoteWedding.primaryColor ?? localWedding.primaryColor,
+    sections: remoteWedding.sections ?? localWedding.sections ?? [],
+    giftPixKey: remoteWedding.giftPixKey ?? localWedding.giftPixKey ?? '',
     coverImage: remoteWedding.coverImage ?? sampleFields.coverImage,
     galleryCustomized,
     galleryImages: hasRemoteGallery
@@ -214,7 +264,7 @@ function mergeRemoteWedding(localWedding, remoteWedding) {
 function newDraftWedding(localWedding) {
   const sampleFields = sampleWeddingFields()
   const galleryCustomized = Boolean(localWedding.galleryCustomized)
-  return withGeneratedSlug({
+  return preserveOrGenerateSlug({
     ...draftWedding(),
     ...localWedding,
     id: mockWedding.id,
@@ -272,13 +322,24 @@ function withGeneratedSlug(wedding) {
   }
 }
 
+function preserveOrGenerateSlug(wedding) {
+  return {
+    ...wedding,
+    slug: wedding.slug || buildWeddingSlug(wedding),
+  }
+}
+
 function buildWeddingSlug(wedding) {
-  const bride = slugify(wedding?.brideName)
-  const groom = slugify(wedding?.groomName)
+  const bride = slugify(firstName(wedding?.brideName))
+  const groom = slugify(firstName(wedding?.groomName))
   const names = [bride, groom].filter(Boolean)
   const namePart = names.length === 2 ? `${names[0]}-e-${names[1]}` : (names[0] ?? 'meu-casamento')
   const datePart = /^\d{4}-\d{2}-\d{2}$/.test(wedding?.date ?? '') ? `-${wedding.date}` : ''
   return `${namePart}${datePart}`
+}
+
+function firstName(value) {
+  return String(value ?? '').trim().split(/\s+/)[0] || ''
 }
 
 function slugify(value) {
