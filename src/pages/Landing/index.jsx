@@ -73,6 +73,9 @@ export default function Landing() {
                 Ver exemplo
               </Button>
             </div>
+            <p className="mt-4 text-sm text-white/80">
+              100% gratuito. Não há cobrança para criar o site; qualquer colaboração com o projeto é opcional.
+            </p>
           </motion.div>
         </div>
 
