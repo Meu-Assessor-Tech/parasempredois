@@ -19,6 +19,28 @@ export function mediaKey(media, fallback = '') {
   return media.storageKey || media.url || media.previewUrl || media.id || fallback
 }
 
+export function isSampleMedia(media) {
+  return Boolean(media && typeof media === 'object' && media.source === 'sample')
+}
+
+export function isStoredMedia(media) {
+  return Boolean(media && typeof media === 'object' && media.source === 'object-storage')
+}
+
+export function sampleMedia(url, kind = 'image', index = 0) {
+  return {
+    id: `sample-${kind}-${index}`,
+    url,
+    storageKey: null,
+    width: 0,
+    height: 0,
+    mimeType: '',
+    originalName: `sample-${kind}-${index}`,
+    size: 0,
+    source: 'sample',
+  }
+}
+
 export async function checkImageMagicBytes(file) {
   const buf = await file.slice(0, 12).arrayBuffer()
   const b = new Uint8Array(buf)

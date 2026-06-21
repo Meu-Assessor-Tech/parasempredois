@@ -5,12 +5,12 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import { canUploadMedia, uploadWeddingImage } from '../../api/media'
+import { canUploadMedia, deleteWeddingDesignImages, deleteWeddingImage, uploadWeddingImage } from '../../api/media'
 import { saveWeddingMedia } from '../../api/weddings'
 import { useWedding } from '../../context/WeddingContext'
 import { mockTemplates } from '../../data/mockTemplates'
 import { mockWedding } from '../../data/mockWedding'
-import { IMAGE_MIME_TYPES, mediaKey, mediaUrl, processImageFile } from '../../utils/media'
+import { IMAGE_MIME_TYPES, isSampleMedia, isStoredMedia, mediaKey, mediaUrl, processImageFile, sampleMedia } from '../../utils/media'
 
 const TABS = [
   { id: 'content', label: 'Conteúdo' },
@@ -52,6 +52,10 @@ const COLORS = [
 ]
 
 const MAX_GALLERY_IMAGES = 6
+
+function realMediaItems(items = []) {
+  return items.filter(item => !isSampleMedia(item) && typeof item !== 'string')
+}
 
 export default function Editor() {
   const { wedding, updateWedding, ensureWedding } = useWedding()
@@ -126,6 +130,11 @@ export default function Editor() {
     })
   }, [wedding.id, ensureWedding])
 
+  const deleteStoredMedia = useCallback(async (media) => {
+    if (!canUploadMedia(wedding.id) || !isStoredMedia(media)) return
+    await deleteWeddingImage(wedding.id, media.storageKey)
+  }, [wedding.id])
+
   const handleSave = async () => {
     try {
       const savedWedding = await saveWeddingMedia(wedding)
@@ -155,7 +164,7 @@ export default function Editor() {
   const handleGalleryUpload = async (e) => {
     const files = Array.from(e.target.files)
     if (!files.length) return
-    const currentImages = wedding.galleryImages ?? []
+    const currentImages = realMediaItems(wedding.galleryImages ?? [])
     const remainingSlots = MAX_GALLERY_IMAGES - currentImages.length
     if (remainingSlots <= 0) {
       alert(`A galeria aceita até ${MAX_GALLERY_IMAGES} fotos para manter o layout bonito.`)
@@ -163,13 +172,18 @@ export default function Editor() {
       return
     }
     const selectedFiles = files.slice(0, remainingSlots)
-    const images = await Promise.all(selectedFiles.map(file => uploadOrPreview(file, 'gallery'))).catch(err => {
-      alert(err.message)
-      return null
-    })
-    if (!images) {
-      e.target.value = ''
-      return
+    const images = []
+    for (const file of selectedFiles) {
+      try {
+        images.push(await uploadOrPreview(file, 'gallery'))
+      } catch (err) {
+        if (images.length) {
+          wrappedUpdate({ galleryImages: [...currentImages, ...images] })
+        }
+        alert(err.message)
+        e.target.value = ''
+        return
+      }
     }
     wrappedUpdate({ galleryImages: [...currentImages, ...images] })
     if (files.length > remainingSlots) {
@@ -178,8 +192,14 @@ export default function Editor() {
     e.target.value = ''
   }
 
-  const removeGalleryImage = (index) => {
-    wrappedUpdate({ galleryImages: wedding.galleryImages.filter((_, i) => i !== index) })
+  const removeGalleryImage = async (index) => {
+    const image = wedding.galleryImages?.[index]
+    try {
+      await deleteStoredMedia(image)
+      wrappedUpdate({ galleryImages: wedding.galleryImages.filter((_, i) => i !== index) })
+    } catch (err) {
+      alert(err.message)
+    }
   }
 
   const reorderGalleryImage = (fromIndex, toIndex) => {
@@ -195,19 +215,28 @@ export default function Editor() {
     wrappedUpdate({ template: template.id, primaryColor: template.colors[1] })
   }
 
-  const resetDesignData = () => {
+  const resetDesignData = async () => {
     if (!confirm('Resetar apenas template, cor de destaque, foto de capa e galeria?')) return
+    if (canUploadMedia(wedding.id)) {
+      try {
+        await deleteWeddingDesignImages(wedding.id)
+      } catch (err) {
+        alert(err.message)
+        return
+      }
+    }
     wrappedUpdate({
       template: mockWedding.template,
       primaryColor: mockWedding.primaryColor,
-      coverImage: mockWedding.coverImage,
-      galleryImages: mockWedding.galleryImages,
+      coverImage: sampleMedia(mockWedding.coverImage, 'cover'),
+      galleryImages: mockWedding.galleryImages.map((url, index) => sampleMedia(url, 'gallery', index)),
     })
   }
 
   const activeTemplate = mockTemplates.find(template => template.id === wedding.template) ?? mockTemplates[0]
   const defaultTemplateAccent = activeTemplate?.colors?.[1] ?? '#8B6F5E'
   const usesTemplateAccent = wedding.primaryColor?.toLowerCase() === defaultTemplateAccent.toLowerCase()
+  const realGalleryCount = realMediaItems(wedding.galleryImages ?? []).length
 
   return (
     <div className="flex min-h-screen bg-stone-100">
@@ -406,8 +435,13 @@ export default function Editor() {
 
                   <div>
                     <h2 className="font-medium text-stone-900 text-sm mb-3">Foto de capa</h2>
-                    <div className="aspect-video rounded-xl overflow-hidden mb-3 bg-stone-100">
+                    <div className="relative aspect-video rounded-xl overflow-hidden mb-3 bg-stone-100">
                       <img src={mediaUrl(wedding.coverImage)} alt="Cover" className="w-full h-full object-cover" />
+                      {isSampleMedia(wedding.coverImage) && (
+                        <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[10px] font-medium text-stone-600 shadow-sm">
+                          Imagem de exemplo
+                        </span>
+                      )}
                     </div>
                     <input
                       ref={coverInputRef}
@@ -430,7 +464,7 @@ export default function Editor() {
                         </p>
                       </div>
                       <span className="text-[11px] text-stone-400 flex-shrink-0">
-                        {(wedding.galleryImages ?? []).length}/{MAX_GALLERY_IMAGES}
+                        {realGalleryCount}/{MAX_GALLERY_IMAGES}
                       </span>
                     </div>
                     {(wedding.galleryImages ?? []).length > MAX_GALLERY_IMAGES && (
@@ -458,6 +492,11 @@ export default function Editor() {
                           }`}
                         >
                           <img src={mediaUrl(img)} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                          {isSampleMedia(img) && (
+                            <span className="absolute left-1 bottom-1 rounded-full bg-white/90 px-1.5 py-0.5 text-[9px] font-medium text-stone-600">
+                              Exemplo
+                            </span>
+                          )}
                           <div className="absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/45 text-white opacity-0 transition-opacity group-hover:opacity-100 cursor-grab">
                             <GripVertical size={13} />
                           </div>
@@ -468,7 +507,7 @@ export default function Editor() {
                           >
                             <Trash2 size={14} className="text-white" />
                           </button>
-                          <span className="absolute bottom-1 left-1 rounded-full bg-black/45 px-1.5 py-0.5 text-[10px] text-white">
+                          <span className={`absolute bottom-1 rounded-full bg-black/45 px-1.5 py-0.5 text-[10px] text-white ${isSampleMedia(img) ? 'right-1' : 'left-1'}`}>
                             {i + 1}
                           </span>
                         </div>
@@ -486,7 +525,7 @@ export default function Editor() {
                       variant="outline"
                       size="sm"
                       fullWidth
-                      disabled={(wedding.galleryImages ?? []).length >= MAX_GALLERY_IMAGES}
+                      disabled={realGalleryCount >= MAX_GALLERY_IMAGES}
                       onClick={() => galleryInputRef.current?.click()}
                     >
                       <Plus size={14} /> Adicionar fotos à galeria
@@ -768,6 +807,11 @@ function GiftsTab({ wedding, updateWedding }) {
     })
   }, [wedding.id, ensureWedding])
 
+  const deleteStoredMedia = useCallback(async (media) => {
+    if (!canUploadMedia(wedding.id) || !isStoredMedia(media)) return
+    await deleteWeddingImage(wedding.id, media.storageKey)
+  }, [wedding.id])
+
   const updatePixKey = (value) => {
     const safeValue = value.replace(/[\u0000-\u001F\u007F<>]/g, '').slice(0, 140)
     updateWedding({ giftPixKey: safeValue })
@@ -782,6 +826,19 @@ function GiftsTab({ wedding, updateWedding }) {
     try {
       const image = await uploadOrPreview(file, 'qrCode')
       updateWedding({ giftPixQrCode: image })
+    } catch (err) {
+      setQrError(err.message)
+    } finally {
+      setQrLoading(false)
+    }
+  }
+
+  const removeQrCode = async () => {
+    setQrLoading(true)
+    setQrError('')
+    try {
+      await deleteStoredMedia(wedding.giftPixQrCode)
+      updateWedding({ giftPixQrCode: '' })
     } catch (err) {
       setQrError(err.message)
     } finally {
@@ -819,7 +876,8 @@ function GiftsTab({ wedding, updateWedding }) {
   const saveGift = () => {
     const e = validate(form)
     if (Object.keys(e).length) { setErrors(e); return }
-    const gift = { ...form, price: Number(form.price) }
+    const { source, ...giftFields } = form
+    const gift = { ...giftFields, price: Number(form.price) }
     if (gift.id) {
       updateWedding({ gifts: gifts.map(g => g.id === gift.id ? gift : g) })
     } else {
@@ -886,7 +944,7 @@ function GiftsTab({ wedding, updateWedding }) {
                 {wedding.giftPixQrCode && (
                   <button
                     type="button"
-                    onClick={() => updateWedding({ giftPixQrCode: '' })}
+                    onClick={removeQrCode}
                     className="px-3 py-1.5 text-xs text-red-500 border border-red-100 rounded-lg hover:bg-red-50 transition-colors"
                   >
                     Remover

@@ -47,3 +47,19 @@ export async function uploadWeddingImage(weddingId, file, kind) {
     }),
   })
 }
+
+export function deleteWeddingImage(weddingId, storageKey) {
+  return api('/media', {
+    method: 'DELETE',
+    body: JSON.stringify({
+      weddingId,
+      storageKey,
+    }),
+  })
+}
+
+export function deleteWeddingDesignImages(weddingId) {
+  return api(`/media/design/${weddingId}`, {
+    method: 'DELETE',
+  })
+}

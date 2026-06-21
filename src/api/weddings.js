@@ -11,7 +11,7 @@ function storedMediaList(mediaList) {
 }
 
 function giftsForSave(gifts) {
-  return (gifts ?? []).map(gift => {
+  return (gifts ?? []).filter(gift => gift?.source !== 'sample').map(gift => {
     if (!gift?.image || typeof gift.image === 'string' || gift.image.source === 'object-storage') {
       return gift
     }
