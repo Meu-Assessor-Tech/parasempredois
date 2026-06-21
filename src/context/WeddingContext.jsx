@@ -242,13 +242,13 @@ function mergeRemoteWedding(localWedding, remoteWedding) {
     groomName: remoteWedding.groomName ?? localWedding.groomName ?? '',
     date: remoteWedding.weddingDate ?? localWedding.date ?? '',
     slug: remoteWedding.slug ?? localWedding.slug,
-    venue: remoteWedding.venue ?? localWedding.venue ?? '',
-    message: remoteWedding.message ?? localWedding.message ?? '',
-    story: remoteWedding.story ?? localWedding.story ?? '',
+    venue: remoteWedding.venue ?? '',
+    message: remoteWedding.message ?? '',
+    story: remoteWedding.story ?? '',
     template: normalizeTemplateId(remoteWedding.template ?? localWedding.template),
     primaryColor: remoteWedding.primaryColor ?? localWedding.primaryColor,
-    sections: remoteWedding.sections ?? localWedding.sections ?? [],
-    giftPixKey: remoteWedding.giftPixKey ?? localWedding.giftPixKey ?? '',
+    sections: remoteWedding.sections ?? [],
+    giftPixKey: remoteWedding.giftPixKey ?? '',
     coverImage: remoteWedding.coverImage ?? sampleFields.coverImage,
     galleryCustomized,
     galleryImages: hasRemoteGallery
@@ -257,7 +257,7 @@ function mergeRemoteWedding(localWedding, remoteWedding) {
       ? (localWedding.galleryImages ?? [])
       : sampleFields.galleryImages,
     giftPixQrCode: remoteWedding.giftPixQrCode ?? '',
-    gifts: remoteWedding.gifts?.length ? remoteWedding.gifts : (localWedding.gifts ?? []),
+    gifts: remoteWedding.gifts ?? [],
   })
 }
 

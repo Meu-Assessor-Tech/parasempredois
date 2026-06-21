@@ -6,7 +6,7 @@ import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { canUploadMedia, deleteWeddingDesignImages, deleteWeddingImage, uploadWeddingImage } from '../../api/media'
-import { canSaveWedding, saveWeddingMedia } from '../../api/weddings'
+import { canSaveWedding, saveWedding } from '../../api/weddings'
 import { useWedding } from '../../context/WeddingContext'
 import { mockTemplates } from '../../data/mockTemplates'
 import { mockWedding } from '../../data/mockWedding'
@@ -171,8 +171,12 @@ export default function Editor() {
   }, [wedding.id])
 
   const handleSave = async () => {
+    if (!wedding.brideName?.trim() || !wedding.groomName?.trim() || !wedding.date) {
+      alert('Informe o nome dos noivos e a data do casamento antes de salvar.')
+      return
+    }
     try {
-      const savedWedding = await saveWeddingMedia(wedding)
+      const savedWedding = await saveWedding(wedding)
       if (savedWedding?.id) {
         updateWedding({
           id: savedWedding.id,

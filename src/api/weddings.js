@@ -32,7 +32,7 @@ export function createWedding(wedding) {
   })
 }
 
-export function saveWeddingMedia(wedding) {
+export function saveWedding(wedding) {
   if (!canSaveWedding(wedding?.id)) return createWedding(wedding)
 
   return api(`/weddings/${wedding.id}`, {
