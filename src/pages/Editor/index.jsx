@@ -246,7 +246,10 @@ export default function Editor() {
   const activeTemplate = mockTemplates.find(template => template.id === wedding.template) ?? mockTemplates[0]
   const defaultTemplateAccent = activeTemplate?.colors?.[1] ?? '#8B6F5E'
   const usesTemplateAccent = wedding.primaryColor?.toLowerCase() === defaultTemplateAccent.toLowerCase()
+  const visibleGalleryCount = Math.min((wedding.galleryImages ?? []).length, MAX_GALLERY_IMAGES)
   const realGalleryCount = realMediaItems(wedding.galleryImages ?? []).length
+  const galleryOpenSlots = Math.max(0, MAX_GALLERY_IMAGES - visibleGalleryCount)
+  const showGalleryEmptySlots = Boolean(wedding.galleryCustomized && galleryOpenSlots > 0)
 
   return (
     <div className="flex min-h-screen bg-stone-100">
@@ -470,11 +473,11 @@ export default function Editor() {
                       <div>
                         <h2 className="font-medium text-stone-900 text-sm">Galeria de fotos</h2>
                         <p className="text-[11px] text-stone-400 mt-0.5">
-                          Até {MAX_GALLERY_IMAGES} fotos. Prefira verticais. Arraste para reorganizar.
+                          Envie até {MAX_GALLERY_IMAGES} fotos. Você pode escolher várias de uma vez e arrastar para definir a ordem.
                         </p>
                       </div>
                       <span className="text-[11px] text-stone-400 flex-shrink-0">
-                        {realGalleryCount}/{MAX_GALLERY_IMAGES}
+                        {visibleGalleryCount}/{MAX_GALLERY_IMAGES}
                       </span>
                     </div>
                     {(wedding.galleryImages ?? []).length > MAX_GALLERY_IMAGES && (
@@ -483,8 +486,13 @@ export default function Editor() {
                       </p>
                     )}
                     <p className="mb-3 rounded-xl bg-stone-50 border border-stone-100 px-3 py-2 text-[11px] leading-relaxed text-stone-500">
-                      Dica: use uma foto horizontal para a capa e fotos verticais ou quadradas na galeria. A primeira foto pode aparecer em destaque nos templates.
+                      Dica: a galeria fica mais completa com 4 a {MAX_GALLERY_IMAGES} fotos. Se enviar menos, o site mostra apenas as fotos escolhidas.
                     </p>
+                    {showGalleryEmptySlots && (
+                      <p className="mb-3 rounded-xl bg-sand-50 border border-sand-100 px-3 py-2 text-[11px] leading-relaxed text-sand-700">
+                        Você já adicionou {visibleGalleryCount} foto(s). Ainda pode adicionar mais {galleryOpenSlots} para completar a galeria.
+                      </p>
+                    )}
                     <div className="grid grid-cols-2 gap-2.5 mb-3">
                       {(wedding.galleryImages ?? []).map((img, i) => (
                         <div
@@ -522,6 +530,21 @@ export default function Editor() {
                           </span>
                         </div>
                       ))}
+                      {showGalleryEmptySlots && Array.from({ length: galleryOpenSlots }).map((_, i) => (
+                        <button
+                          key={`empty-gallery-slot-${i}`}
+                          type="button"
+                          onClick={() => galleryInputRef.current?.click()}
+                          className="aspect-[4/5] rounded-xl border-2 border-dashed border-stone-200 bg-stone-50 text-stone-400 transition-colors hover:border-stone-300 hover:bg-stone-100"
+                          aria-label={`Adicionar foto ${visibleGalleryCount + i + 1}`}
+                        >
+                          <div className="flex h-full flex-col items-center justify-center gap-1.5 px-3 text-center">
+                            <Plus size={16} />
+                            <span className="text-[10px] font-medium">Adicionar foto</span>
+                            <span className="text-[9px] text-stone-400">{visibleGalleryCount + i + 1}/{MAX_GALLERY_IMAGES}</span>
+                          </div>
+                        </button>
+                      ))}
                     </div>
                     <input
                       ref={galleryInputRef}
@@ -535,7 +558,7 @@ export default function Editor() {
                       variant="outline"
                       size="sm"
                       fullWidth
-                      disabled={realGalleryCount >= MAX_GALLERY_IMAGES}
+                      disabled={visibleGalleryCount >= MAX_GALLERY_IMAGES}
                       onClick={() => galleryInputRef.current?.click()}
                     >
                       <Plus size={14} /> Adicionar fotos à galeria
