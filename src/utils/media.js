@@ -13,6 +13,12 @@ export function mediaUrl(media) {
   return media.url || media.previewUrl || ''
 }
 
+export function giftImageUrl(gift, presetResolver) {
+  const customImageUrl = mediaUrl(gift?.image)
+  if (customImageUrl) return customImageUrl
+  return presetResolver?.(gift?.imagePreset)?.url || ''
+}
+
 export function mediaKey(media, fallback = '') {
   if (!media) return fallback
   if (typeof media === 'string') return media

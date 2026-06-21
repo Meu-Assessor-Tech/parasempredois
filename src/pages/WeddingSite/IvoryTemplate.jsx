@@ -11,7 +11,8 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, MapPin, Calendar, ChevronDown, Copy, Check, X, ChevronLeft, ChevronRight, QrCode } from 'lucide-react'
-import { mediaKey, mediaUrl } from '../../utils/media'
+import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
+import { giftImagePresetById } from '../../data/giftImagePresets'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.9, ease } } }
@@ -140,7 +141,7 @@ export default function IvoryTemplate({ wedding }) {
     <div className="min-h-screen bg-[#FAFAF8] text-stone-900" style={{ '--accent': wedding.primaryColor || '#8B6F5E' }}>
 
       {/* HERO */}
-      <section className="relative h-screen min-h-[640px] flex flex-col items-center justify-center overflow-hidden">
+      <section id="preview-cover" className="relative h-screen min-h-[640px] flex flex-col items-center justify-center overflow-hidden">
         <motion.div initial={{ scale: 1.07 }} animate={{ scale: 1 }} transition={{ duration: 4, ease: [0.25, 0.46, 0.45, 0.94] }} className="absolute inset-0">
           <img src={mediaUrl(wedding.coverImage)} alt={`${wedding.brideName} & ${wedding.groomName}`} className="w-full h-full object-cover" />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(14,11,8,0.46) 0%, rgba(14,11,8,0.06) 38%, rgba(14,11,8,0.52) 100%)' }} />
@@ -166,7 +167,7 @@ export default function IvoryTemplate({ wedding }) {
       </section>
 
       {/* INFO STRIP */}
-      <section className="bg-white border-y border-stone-100">
+      <section id="preview-details" className="bg-white border-y border-stone-100">
         <div className="max-w-3xl mx-auto px-6 py-12 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-0">
           {[
             { icon: Calendar, label: 'Data',   value: dateLong },
@@ -183,7 +184,7 @@ export default function IvoryTemplate({ wedding }) {
       </section>
 
       {/* COUNTDOWN */}
-      <section className="py-28 px-6 bg-[#FAFAF8]">
+      <section id="preview-countdown" className="py-28 px-6 bg-[#FAFAF8]">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger} className="max-w-2xl mx-auto text-center">
           <motion.div variants={fadeUp}><SectionLabel>Contagem regressiva</SectionLabel></motion.div>
           <motion.h2 variants={fadeUp} className="font-serif text-[2.2rem] sm:text-[2.6rem] font-normal text-stone-900 mb-14 leading-tight">O grande dia se aproxima</motion.h2>
@@ -206,7 +207,7 @@ export default function IvoryTemplate({ wedding }) {
       <Ornament className="max-w-64 mx-auto" />
 
       {/* NOSSA HISTÓRIA */}
-      <section className="py-28 px-6 bg-[#FAFAF8]">
+      <section id="preview-story" className="py-28 px-6 bg-[#FAFAF8]">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger} className="max-w-xl mx-auto">
           <motion.div variants={fadeUp} className="text-center mb-16">
             <SectionLabel>Nossa história</SectionLabel>
@@ -227,7 +228,7 @@ export default function IvoryTemplate({ wedding }) {
 
       {/* SEÇÕES PERSONALIZADAS */}
       {(wedding.sections ?? []).length > 0 && (wedding.sections ?? []).map(section => (
-        <section key={section.id} className="py-20 px-6 bg-white border-t border-stone-100">
+        <section key={section.id} id={`preview-section-${section.id}`} className="py-20 px-6 bg-white border-t border-stone-100">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -250,7 +251,7 @@ export default function IvoryTemplate({ wedding }) {
 
       {/* GALERIA */}
       {galleryImages.length > 0 && (
-        <section className="py-24 px-4 sm:px-6 bg-white">
+        <section id="preview-gallery" className="py-24 px-4 sm:px-6 bg-white">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger} className="max-w-5xl mx-auto">
             <motion.div variants={fadeUp} className="text-center mb-14">
               <SectionLabel>Galeria</SectionLabel>
@@ -334,7 +335,7 @@ export default function IvoryTemplate({ wedding }) {
 
       {/* LISTA DE PRESENTES */}
       {((wedding.gifts ?? []).length > 0 || canGiftWithPix || giftPixQrCode) && (
-        <section className="py-28 px-4 sm:px-6 bg-[#FAFAF8]">
+        <section id="preview-gifts" className="py-28 px-4 sm:px-6 bg-[#FAFAF8]">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger} className="max-w-5xl mx-auto">
             <motion.div variants={fadeUp} className="text-center mb-14">
               <SectionLabel>Lista de presentes</SectionLabel>
@@ -387,40 +388,42 @@ export default function IvoryTemplate({ wedding }) {
             )}
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
-              {(wedding.gifts ?? []).map((gift, i) => (
-                <motion.div key={gift.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                  transition={{ delay: i * 0.06, duration: 0.7, ease }} whileHover={{ y: -5 }}
-                  className="group bg-white rounded-2xl overflow-hidden border border-stone-100 hover:border-stone-200 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300">
-                  <div className="aspect-square overflow-hidden bg-stone-50">
-                    <img src={mediaUrl(gift.image)} alt={gift.name} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]" />
-                  </div>
-                  <div className="p-4">
-                    <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-stone-400 mb-1.5">{gift.category}</p>
-                    <h3 className="font-medium text-stone-900 text-sm leading-snug mb-0.5">{gift.name}</h3>
-                    <p className="text-xs text-stone-400 font-light mb-4">{gift.store}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-stone-800">R$ {gift.price.toLocaleString('pt-BR')}</span>
-                      <button
-                        type="button"
-                        onClick={copyGiftPixKey}
-                        disabled={!canGiftWithPix}
-                        className="flex items-center gap-1 text-[11px] font-medium text-white px-3 py-1.5 rounded-full active:scale-95 transition-all duration-150"
-                        style={{ backgroundColor: canGiftWithPix ? wedding.primaryColor : '#D4D4D4' }}
-                      >
-                        {pixCopied ? <Check size={9} /> : <Copy size={9} />}
-                        {pixCopied ? 'Copiado' : 'Pix'}
-                      </button>
+              {(wedding.gifts ?? []).map((gift, i) => {
+                const imageUrl = giftImageUrl(gift, giftImagePresetById)
+                return (
+                  <motion.div key={gift.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                    transition={{ delay: i * 0.06, duration: 0.7, ease }} whileHover={{ y: -5 }}
+                    className="group bg-white rounded-2xl overflow-hidden border border-stone-100 hover:border-stone-200 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300">
+                    <div className="aspect-square overflow-hidden bg-stone-50">
+                      {imageUrl && <img src={imageUrl} alt={gift.name} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]" />}
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="p-4">
+                      <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-stone-400 mb-1.5">{gift.category}</p>
+                      <h3 className="font-medium text-stone-900 text-sm leading-snug mb-0.5">{gift.name}</h3>
+                      <div className="mt-4 flex items-center justify-between">
+                        <span className="text-sm font-semibold text-stone-800">R$ {gift.price.toLocaleString('pt-BR')}</span>
+                        <button
+                          type="button"
+                          onClick={copyGiftPixKey}
+                          disabled={!canGiftWithPix}
+                          className="flex items-center gap-1 text-[11px] font-medium text-white px-3 py-1.5 rounded-full active:scale-95 transition-all duration-150"
+                          style={{ backgroundColor: canGiftWithPix ? wedding.primaryColor : '#D4D4D4' }}
+                        >
+                          {pixCopied ? <Check size={9} /> : <Copy size={9} />}
+                          {pixCopied ? 'Copiado' : 'Pix'}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+              })}
             </div>
           </motion.div>
         </section>
       )}
 
       {/* RSVP */}
-      <section className="py-28 px-6 bg-white">
+      <section id="preview-rsvp" className="py-28 px-6 bg-white">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger} className="max-w-[400px] mx-auto">
           <motion.div variants={fadeUp} className="text-center mb-12">
             <SectionLabel>Confirmação de presença</SectionLabel>

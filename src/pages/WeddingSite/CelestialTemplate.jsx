@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, MapPin, QrCode, X } from 'lucide-react'
-import { mediaKey, mediaUrl } from '../../utils/media'
+import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
+import { giftImagePresetById } from '../../data/giftImagePresets'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 28 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease } } }
@@ -97,7 +98,7 @@ export default function CelestialTemplate({ wedding }) {
 
   return (
     <div className="min-h-screen bg-[#080713] text-white" style={{ '--accent': accent }}>
-      <section className="relative min-h-screen overflow-hidden flex items-center justify-center text-center px-6">
+      <section id="preview-cover" className="relative min-h-screen overflow-hidden flex items-center justify-center text-center px-6">
         <img src={mediaUrl(wedding.coverImage)} alt={`${wedding.brideName} & ${wedding.groomName}`} className="absolute inset-0 w-full h-full object-cover opacity-42" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,7,19,0.45),rgba(8,7,19,0.88)_70%,#080713)]" />
         <motion.div initial="hidden" animate="visible" variants={stagger} className="relative z-10 max-w-5xl mx-auto">
@@ -115,7 +116,7 @@ export default function CelestialTemplate({ wedding }) {
         </motion.div>
       </section>
 
-      <section className="px-6 py-16 border-y border-white/10 bg-[#0D0B1A]">
+      <section id="preview-details" className="px-6 py-16 border-y border-white/10 bg-[#0D0B1A]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
           {[{ icon: Calendar, label: 'Data', value: dateLong }, { icon: MapPin, label: 'Local', value: wedding.venue }, { icon: Heart, label: 'Recado', value: wedding.message }].map(({ icon: Icon, label, value }) => (
             <div key={label} className="border border-white/10 bg-white/[0.035] p-6 text-center">
@@ -127,7 +128,7 @@ export default function CelestialTemplate({ wedding }) {
         </div>
       </section>
 
-      <section className="px-6 py-28">
+      <section id="preview-story" className="px-6 py-28">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-14 items-start">
           <div>
             <SectionLabel>Nossa história</SectionLabel>
@@ -137,7 +138,7 @@ export default function CelestialTemplate({ wedding }) {
         </div>
       </section>
 
-      <section className="px-6 py-20 bg-[#13101F] border-y border-white/10">
+      <section id="preview-countdown" className="px-6 py-20 bg-[#13101F] border-y border-white/10">
         <div className="max-w-4xl mx-auto text-center">
           <SectionLabel>Contagem regressiva</SectionLabel>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/10 border border-white/10">
@@ -150,7 +151,7 @@ export default function CelestialTemplate({ wedding }) {
       </section>
 
       {(wedding.sections ?? []).map(section => (
-        <section key={section.id} className="px-6 py-20 border-b border-white/10">
+        <section key={section.id} id={`preview-section-${section.id}`} className="px-6 py-20 border-b border-white/10">
           <div className="max-w-3xl mx-auto">
             <SectionLabel>{section.title}</SectionLabel>
             <p className="text-white/65 leading-relaxed whitespace-pre-line">{section.content}</p>
@@ -159,7 +160,7 @@ export default function CelestialTemplate({ wedding }) {
       ))}
 
       {galleryImages.length > 0 && (
-        <section className="px-4 sm:px-6 py-28 bg-[#0D0B1A]">
+        <section id="preview-gallery" className="px-4 sm:px-6 py-28 bg-[#0D0B1A]">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-12">
               <div>
@@ -180,7 +181,7 @@ export default function CelestialTemplate({ wedding }) {
       )}
 
       {((wedding.gifts ?? []).length > 0 || canGiftWithPix || giftPixQrCode) && (
-        <section className="px-4 sm:px-6 py-28">
+        <section id="preview-gifts" className="px-4 sm:px-6 py-28">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <SectionLabel>Presentes</SectionLabel>
@@ -207,23 +208,28 @@ export default function CelestialTemplate({ wedding }) {
               </div>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10">
-              {(wedding.gifts ?? []).map(gift => (
-                <div key={gift.id} className="bg-[#0D0B1A] p-4 grid grid-cols-[96px_1fr] gap-4">
-                  <img src={mediaUrl(gift.image)} alt={gift.name} className="w-24 h-24 object-cover" />
-                  <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.26em] text-white/35 mb-1">{gift.category}</p>
-                    <h3 className="font-medium text-white truncate">{gift.name}</h3>
-                    <p className="mt-1 text-sm text-white/45">R$ {gift.price.toLocaleString('pt-BR')}</p>
-                    <button type="button" onClick={copyPix} disabled={!canGiftWithPix} className="mt-3 px-4 py-2 text-xs font-medium text-[#080713] disabled:bg-stone-500" style={{ backgroundColor: canGiftWithPix ? accent : '#737373' }}>{pixCopied ? 'Copiado' : 'Pix'}</button>
+              {(wedding.gifts ?? []).map(gift => {
+                const imageUrl = giftImageUrl(gift, giftImagePresetById)
+                return (
+                  <div key={gift.id} className="bg-[#0D0B1A] p-4 grid grid-cols-[96px_1fr] gap-4">
+                    <div className="w-24 h-24 bg-white/5">
+                      {imageUrl && <img src={imageUrl} alt={gift.name} className="w-full h-full object-cover" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-[0.26em] text-white/35 mb-1">{gift.category}</p>
+                      <h3 className="font-medium text-white truncate">{gift.name}</h3>
+                      <p className="mt-1 text-sm text-white/45">R$ {gift.price.toLocaleString('pt-BR')}</p>
+                      <button type="button" onClick={copyPix} disabled={!canGiftWithPix} className="mt-3 px-4 py-2 text-xs font-medium text-[#080713] disabled:bg-stone-500" style={{ backgroundColor: canGiftWithPix ? accent : '#737373' }}>{pixCopied ? 'Copiado' : 'Pix'}</button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </section>
       )}
 
-      <section className="px-6 py-28 bg-[#13101F] border-t border-white/10">
+      <section id="preview-rsvp" className="px-6 py-28 bg-[#13101F] border-t border-white/10">
         <div className="max-w-md mx-auto text-center">
           <SectionLabel>Confirmação de presença</SectionLabel>
           <h2 className="font-serif text-5xl mb-8">Você virá?</h2>

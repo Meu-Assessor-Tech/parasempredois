@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, MapPin, QrCode, X } from 'lucide-react'
-import { mediaKey, mediaUrl } from '../../utils/media'
+import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
+import { giftImagePresetById } from '../../data/giftImagePresets'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 26 }, visible: { opacity: 1, y: 0, transition: { duration: 0.75, ease } } }
@@ -97,7 +98,7 @@ export default function BaliTemplate({ wedding }) {
 
   return (
     <div className="min-h-screen bg-[#FBF6EF] text-[#4B3328]" style={{ '--accent': accent }}>
-      <section className="relative min-h-screen overflow-hidden flex items-center">
+      <section id="preview-cover" className="relative min-h-screen overflow-hidden flex items-center">
         <img src={mediaUrl(wedding.coverImage)} alt={`${wedding.brideName} & ${wedding.groomName}`} className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#5E2F1E]/80 via-[#8F4E2B]/35 to-transparent" />
         <div className="relative z-10 w-full max-w-6xl mx-auto px-6 py-24">
@@ -114,7 +115,7 @@ export default function BaliTemplate({ wedding }) {
         </div>
       </section>
 
-      <section className="border-y border-[#E8D8C8] bg-[#FFF9F2]">
+      <section id="preview-details" className="border-y border-[#E8D8C8] bg-[#FFF9F2]">
         <div className="max-w-5xl mx-auto px-6 py-10 grid grid-cols-1 sm:grid-cols-3 gap-6">
           {[{ icon: Calendar, label: 'Data', value: dateLong }, { icon: MapPin, label: 'Local', value: wedding.venue }, { icon: Heart, label: 'Recado', value: wedding.message }].map(({ icon: Icon, label, value }) => (
             <div key={label} className="text-center px-4">
@@ -126,7 +127,7 @@ export default function BaliTemplate({ wedding }) {
         </div>
       </section>
 
-      <section className="py-24 px-6">
+      <section id="preview-story" className="py-24 px-6">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger} className="max-w-3xl mx-auto text-center">
           <motion.div variants={fadeUp}><SectionLabel>Nossa história</SectionLabel></motion.div>
           <motion.h2 variants={fadeUp} className="font-serif italic text-5xl text-[#6C3F2B] mb-8">Como tudo começou</motion.h2>
@@ -134,7 +135,7 @@ export default function BaliTemplate({ wedding }) {
         </motion.div>
       </section>
 
-      <section className="py-20 px-6 bg-[#F2E8DC]">
+      <section id="preview-countdown" className="py-20 px-6 bg-[#F2E8DC]">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger} className="max-w-3xl mx-auto text-center">
           <motion.div variants={fadeUp}><SectionLabel>Contagem regressiva</SectionLabel></motion.div>
           <motion.div variants={fadeUp} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -147,7 +148,7 @@ export default function BaliTemplate({ wedding }) {
       </section>
 
       {(wedding.sections ?? []).map(section => (
-        <section key={section.id} className="py-18 px-6 border-t border-[#E8D8C8] bg-[#FFF9F2]">
+        <section key={section.id} id={`preview-section-${section.id}`} className="py-18 px-6 border-t border-[#E8D8C8] bg-[#FFF9F2]">
           <div className="max-w-2xl mx-auto text-center">
             <SectionLabel>{section.title}</SectionLabel>
             <p className="text-[#7D5A49] leading-relaxed whitespace-pre-line">{section.content}</p>
@@ -156,7 +157,7 @@ export default function BaliTemplate({ wedding }) {
       ))}
 
       {galleryImages.length > 0 && (
-        <section className="py-24 px-4 sm:px-6 bg-[#FBF6EF]">
+        <section id="preview-gallery" className="py-24 px-4 sm:px-6 bg-[#FBF6EF]">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <SectionLabel>Galeria</SectionLabel>
@@ -174,7 +175,7 @@ export default function BaliTemplate({ wedding }) {
       )}
 
       {((wedding.gifts ?? []).length > 0 || canGiftWithPix || giftPixQrCode) && (
-        <section className="py-24 px-4 sm:px-6 bg-[#FFF9F2]">
+        <section id="preview-gifts" className="py-24 px-4 sm:px-6 bg-[#FFF9F2]">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <SectionLabel>Presentes</SectionLabel>
@@ -202,25 +203,30 @@ export default function BaliTemplate({ wedding }) {
               </div>
             )}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {(wedding.gifts ?? []).map(gift => (
-                <div key={gift.id} className="rounded-[1.5rem] overflow-hidden bg-[#FBF6EF] border border-[#E8D8C8]">
-                  <img src={mediaUrl(gift.image)} alt={gift.name} className="aspect-square w-full object-cover" />
-                  <div className="p-4">
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#A6785B] mb-1">{gift.category}</p>
-                    <h3 className="text-sm font-medium text-[#4B3328]">{gift.name}</h3>
-                    <div className="mt-4 flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold">R$ {gift.price.toLocaleString('pt-BR')}</span>
-                      <button type="button" onClick={copyPix} disabled={!canGiftWithPix} className="rounded-full px-3 py-1.5 text-xs text-white disabled:bg-stone-300" style={{ backgroundColor: canGiftWithPix ? accent : '#D4D4D4' }}>{pixCopied ? 'Copiado' : 'Pix'}</button>
+              {(wedding.gifts ?? []).map(gift => {
+                const imageUrl = giftImageUrl(gift, giftImagePresetById)
+                return (
+                  <div key={gift.id} className="rounded-[1.5rem] overflow-hidden bg-[#FBF6EF] border border-[#E8D8C8]">
+                    <div className="aspect-square bg-[#E8D8C8]">
+                      {imageUrl && <img src={imageUrl} alt={gift.name} className="w-full h-full object-cover" />}
+                    </div>
+                    <div className="p-4">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-[#A6785B] mb-1">{gift.category}</p>
+                      <h3 className="text-sm font-medium text-[#4B3328]">{gift.name}</h3>
+                      <div className="mt-4 flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold">R$ {gift.price.toLocaleString('pt-BR')}</span>
+                        <button type="button" onClick={copyPix} disabled={!canGiftWithPix} className="rounded-full px-3 py-1.5 text-xs text-white disabled:bg-stone-300" style={{ backgroundColor: canGiftWithPix ? accent : '#D4D4D4' }}>{pixCopied ? 'Copiado' : 'Pix'}</button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </section>
       )}
 
-      <section className="py-24 px-6 bg-[#FBF6EF]">
+      <section id="preview-rsvp" className="py-24 px-6 bg-[#FBF6EF]">
         <div className="max-w-md mx-auto text-center">
           <SectionLabel>Confirmação de presença</SectionLabel>
           <h2 className="font-serif italic text-5xl text-[#6C3F2B] mb-8">Você virá?</h2>

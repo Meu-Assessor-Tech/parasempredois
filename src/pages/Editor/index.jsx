@@ -10,7 +10,8 @@ import { saveWeddingMedia } from '../../api/weddings'
 import { useWedding } from '../../context/WeddingContext'
 import { mockTemplates } from '../../data/mockTemplates'
 import { mockWedding } from '../../data/mockWedding'
-import { IMAGE_MIME_TYPES, isSampleMedia, isStoredMedia, mediaKey, mediaUrl, processImageFile, sampleMedia } from '../../utils/media'
+import { giftImageUrl, IMAGE_MIME_TYPES, isSampleMedia, isStoredMedia, mediaKey, mediaUrl, processImageFile, sampleMedia } from '../../utils/media'
+import { giftImagePresetById, giftImagePresetCategories } from '../../data/giftImagePresets'
 
 const TABS = [
   { id: 'content', label: 'Conteúdo' },
@@ -56,6 +57,18 @@ const PREVIEW_STORAGE_KEY = 'baitacasamento_preview_wedding'
 
 function realMediaItems(items = []) {
   return items.filter(item => !isSampleMedia(item) && typeof item !== 'string')
+}
+
+function PreviewJumpButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-full border border-stone-200 px-2.5 py-1 text-[10px] font-medium text-stone-500 transition-colors hover:border-stone-300 hover:bg-stone-50 hover:text-stone-800"
+    >
+      Ir para
+    </button>
+  )
 }
 
 export default function Editor() {
@@ -104,6 +117,16 @@ export default function Editor() {
         // Same-origin preview should be accessible; ignore browser restrictions.
       }
     }, 80)
+  }, [])
+
+  const scrollPreviewTo = useCallback((sectionId) => {
+    try {
+      const doc = previewIframeRef.current?.contentDocument
+      const target = doc?.getElementById(sectionId)
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } catch {
+      // Same-origin preview should be accessible; ignore browser restrictions.
+    }
   }, [])
 
   const schedulePreviewReload = useCallback(() => {
@@ -248,7 +271,8 @@ export default function Editor() {
   const usesTemplateAccent = wedding.primaryColor?.toLowerCase() === defaultTemplateAccent.toLowerCase()
   const visibleGalleryCount = Math.min((wedding.galleryImages ?? []).length, MAX_GALLERY_IMAGES)
   const realGalleryCount = realMediaItems(wedding.galleryImages ?? []).length
-  const galleryOpenSlots = Math.max(0, MAX_GALLERY_IMAGES - visibleGalleryCount)
+  const uploadGalleryCount = wedding.galleryCustomized ? visibleGalleryCount : realGalleryCount
+  const galleryOpenSlots = Math.max(0, MAX_GALLERY_IMAGES - uploadGalleryCount)
   const showGalleryEmptySlots = Boolean(wedding.galleryCustomized && galleryOpenSlots > 0)
 
   return (
@@ -304,11 +328,14 @@ export default function Editor() {
         </div>
 
         <div className="flex-1 min-h-0 flex overflow-hidden">
-          <div className="w-72 bg-white border-r border-stone-100 overflow-y-auto overscroll-contain flex-shrink-0 h-[calc(100vh-3.5rem)]">
+          <div className="w-[440px] bg-white border-r border-stone-100 overflow-y-auto overscroll-contain flex-shrink-0 h-[calc(100vh-3.5rem)]">
             <div className="p-5">
               {activeTab === 'content' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
-                  <h2 className="font-medium text-stone-900 text-sm">Informações do casal</h2>
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="font-medium text-stone-900 text-sm">Informações do casal</h2>
+                    <PreviewJumpButton onClick={() => scrollPreviewTo('preview-details')} />
+                  </div>
                   <Input
                     label="Nome da noiva"
                     value={wedding.brideName}
@@ -340,7 +367,10 @@ export default function Editor() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1.5">Nossa história</label>
+                    <div className="mb-1.5 flex items-center justify-between gap-3">
+                      <label className="block text-sm font-medium text-stone-700">Nossa história</label>
+                      <PreviewJumpButton onClick={() => scrollPreviewTo('preview-story')} />
+                    </div>
                     <textarea
                       value={wedding.story}
                       onChange={e => wrappedUpdate({ story: e.target.value })}
@@ -350,7 +380,7 @@ export default function Editor() {
                   </div>
 
                   <div className="pt-2 border-t border-stone-100">
-                    <SectionsEditor wedding={wedding} updateWedding={wrappedUpdate} />
+                    <SectionsEditor wedding={wedding} updateWedding={wrappedUpdate} scrollPreviewTo={scrollPreviewTo} />
                   </div>
                 </motion.div>
               )}
@@ -447,7 +477,10 @@ export default function Editor() {
                   </div>
 
                   <div>
-                    <h2 className="font-medium text-stone-900 text-sm mb-3">Foto de capa</h2>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h2 className="font-medium text-stone-900 text-sm">Foto de capa</h2>
+                      <PreviewJumpButton onClick={() => scrollPreviewTo('preview-cover')} />
+                    </div>
                     <div className="relative aspect-video rounded-xl overflow-hidden mb-3 bg-stone-100">
                       <img src={mediaUrl(wedding.coverImage)} alt="Cover" className="w-full h-full object-cover" />
                       {isSampleMedia(wedding.coverImage) && (
@@ -479,18 +512,11 @@ export default function Editor() {
                       <span className="text-[11px] text-stone-400 flex-shrink-0">
                         {visibleGalleryCount}/{MAX_GALLERY_IMAGES}
                       </span>
+                      <PreviewJumpButton onClick={() => scrollPreviewTo('preview-gallery')} />
                     </div>
                     {(wedding.galleryImages ?? []).length > MAX_GALLERY_IMAGES && (
                       <p className="mb-3 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
                         O site exibe apenas as primeiras {MAX_GALLERY_IMAGES} fotos. Arraste as imagens para escolher quais aparecem.
-                      </p>
-                    )}
-                    <p className="mb-3 rounded-xl bg-stone-50 border border-stone-100 px-3 py-2 text-[11px] leading-relaxed text-stone-500">
-                      Dica: a galeria fica mais completa com 4 a {MAX_GALLERY_IMAGES} fotos. Se enviar menos, o site mostra apenas as fotos escolhidas.
-                    </p>
-                    {showGalleryEmptySlots && (
-                      <p className="mb-3 rounded-xl bg-sand-50 border border-sand-100 px-3 py-2 text-[11px] leading-relaxed text-sand-700">
-                        Você já adicionou {visibleGalleryCount} foto(s). Ainda pode adicionar mais {galleryOpenSlots} para completar a galeria.
                       </p>
                     )}
                     <div className="grid grid-cols-2 gap-2.5 mb-3">
@@ -558,7 +584,7 @@ export default function Editor() {
                       variant="outline"
                       size="sm"
                       fullWidth
-                      disabled={visibleGalleryCount >= MAX_GALLERY_IMAGES}
+                      disabled={uploadGalleryCount >= MAX_GALLERY_IMAGES}
                       onClick={() => galleryInputRef.current?.click()}
                     >
                       <Plus size={14} /> Adicionar fotos à galeria
@@ -580,12 +606,15 @@ export default function Editor() {
               )}
 
               {activeTab === 'gifts' && (
-                <GiftsTab wedding={wedding} updateWedding={wrappedUpdate} />
+                <GiftsTab wedding={wedding} updateWedding={wrappedUpdate} scrollPreviewTo={scrollPreviewTo} />
               )}
 
               {activeTab === 'share' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
-                  <h2 className="font-medium text-stone-900 text-sm">Compartilhar site</h2>
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="font-medium text-stone-900 text-sm">Compartilhar site</h2>
+                    <PreviewJumpButton onClick={() => scrollPreviewTo('preview-rsvp')} />
+                  </div>
                   <div className="bg-stone-50 rounded-xl p-4">
                     <p className="text-xs text-stone-500 mb-2">Seu link exclusivo</p>
                     <p className="font-mono text-sm text-stone-900 break-all">nossodia.com/{wedding.slug}</p>
@@ -647,8 +676,16 @@ const SECTION_PRESETS = [
 ]
 
 const EMPTY_SECTION = { title: '', content: '' }
+const EMPTY_GIFT = { name: '', price: '', category: '', image: '', imagePreset: '' }
+const DEFAULT_GIFT_PRESET_CATEGORY = giftImagePresetCategories[0]?.id ?? 'cozinha'
 
-function SectionsEditor({ wedding, updateWedding }) {
+function giftPresetCategoryId(presetId, fallback = DEFAULT_GIFT_PRESET_CATEGORY) {
+  return giftImagePresetCategories.find(category =>
+    category.presets.some(preset => preset.id === presetId)
+  )?.id ?? fallback
+}
+
+function SectionsEditor({ wedding, updateWedding, scrollPreviewTo }) {
   const sections = wedding.sections ?? []
   const [form, setForm] = useState(null)
   const [errors, setErrors] = useState({})
@@ -765,6 +802,7 @@ function SectionsEditor({ wedding, updateWedding }) {
             <p className="text-xs text-stone-400 line-clamp-2 mt-0.5">{s.content}</p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
+            <PreviewJumpButton onClick={() => scrollPreviewTo(`preview-section-${s.id}`)} />
             <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-colors">
               <Pencil size={13} />
             </button>
@@ -793,40 +831,17 @@ function SectionsEditor({ wedding, updateWedding }) {
   )
 }
 
-
-
-const PHOTO_SUGGESTIONS = [
-  { label: 'Panelas',       url: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400' },
-  { label: 'Cafeteira',     url: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400' },
-  { label: 'Vinhos',        url: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400' },
-  { label: 'Jogo de Cama',  url: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400' },
-  { label: 'Toalhas',       url: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?w=400' },
-  { label: 'Viagem',        url: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=400' },
-  { label: 'Louças',        url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400' },
-  { label: 'Taças',         url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400' },
-  { label: 'Liquidificador',url: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400' },
-  { label: 'Micro-ondas',   url: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400' },
-  { label: 'Ar-cond.',      url: 'https://images.unsplash.com/photo-1625961332771-3f40b0e2bdcf?w=400' },
-  { label: 'Smart TV',      url: 'https://images.unsplash.com/photo-1461151304267-38535e780c79?w=400' },
-  { label: 'Batedeira',     url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400' },
-  { label: 'Churrasqueira', url: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400' },
-  { label: 'Decoração',     url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400' },
-  { label: 'Perfume',       url: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=400' },
-  { label: 'Flores',        url: 'https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=400' },
-  { label: 'Spa / Relax',   url: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400' },
-]
-
-function GiftsTab({ wedding, updateWedding }) {
+function GiftsTab({ wedding, updateWedding, scrollPreviewTo }) {
   const { ensureWedding } = useWedding()
   const gifts = wedding.gifts ?? []
   const [form, setForm] = useState(null)
   const [errors, setErrors] = useState({})
-  const [imageLoading, setImageLoading] = useState(false)
-  const [imageError, setImageError] = useState('')
+  const [selectedPresetCategory, setSelectedPresetCategory] = useState(DEFAULT_GIFT_PRESET_CATEGORY)
   const [qrLoading, setQrLoading] = useState(false)
   const [qrError, setQrError] = useState('')
-  const imageInputRef = useRef(null)
   const qrInputRef = useRef(null)
+  const formImageUrl = form ? giftImageUrl(form, giftImagePresetById) : ''
+  const selectedGiftPreset = form?.imagePreset ? giftImagePresetById(form.imagePreset) : null
 
   const uploadOrPreview = useCallback((file, kind) => {
     if (canUploadMedia(wedding.id)) {
@@ -879,25 +894,17 @@ function GiftsTab({ wedding, updateWedding }) {
     }
   }
 
-  const openNew = () => { setForm({ ...EMPTY_GIFT }); setErrors({}); setImageError('') }
-  const openEdit = (gift) => { setForm({ ...gift }); setErrors({}); setImageError('') }
-  const closeForm = () => { setForm(null); setErrors({}); setImageError('') }
-
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0]
-    e.target.value = ''
-    if (!file) return
-    setImageLoading(true)
-    setImageError('')
-    try {
-      const image = await uploadOrPreview(file, 'gift')
-      setForm(f => ({ ...f, image }))
-    } catch (err) {
-      setImageError(err.message)
-    } finally {
-      setImageLoading(false)
-    }
+  const openNew = () => {
+    setSelectedPresetCategory(DEFAULT_GIFT_PRESET_CATEGORY)
+    setForm({ ...EMPTY_GIFT })
+    setErrors({})
   }
+  const openEdit = (gift) => {
+    setSelectedPresetCategory(giftPresetCategoryId(gift.imagePreset))
+    setForm({ ...gift, image: '' })
+    setErrors({})
+  }
+  const closeForm = () => { setForm(null); setErrors({}) }
 
   const validate = (f) => {
     const e = {}
@@ -909,8 +916,8 @@ function GiftsTab({ wedding, updateWedding }) {
   const saveGift = () => {
     const e = validate(form)
     if (Object.keys(e).length) { setErrors(e); return }
-    const { source, ...giftFields } = form
-    const gift = { ...giftFields, price: Number(form.price) }
+    const { source, store, ...giftFields } = form
+    const gift = { ...giftFields, image: '', price: Number(form.price) }
     if (gift.id) {
       updateWedding({ gifts: gifts.map(g => g.id === gift.id ? gift : g) })
     } else {
@@ -924,11 +931,16 @@ function GiftsTab({ wedding, updateWedding }) {
     updateWedding({ gifts: gifts.filter(g => g.id !== id) })
   }
 
+  const selectedPresetCategoryData = giftImagePresetCategories.find(category => category.id === selectedPresetCategory) ?? giftImagePresetCategories[0]
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-4">
         <div>
-          <h2 className="font-medium text-stone-900 text-sm">Pix dos presentes</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-medium text-stone-900 text-sm">Pix dos presentes</h2>
+            <PreviewJumpButton onClick={() => scrollPreviewTo('preview-gifts')} />
+          </div>
           <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
             A chave fica pública no site dos noivos. O pagamento acontece fora da plataforma, no app do banco do convidado.
           </p>
@@ -1015,12 +1027,6 @@ function GiftsTab({ wedding, updateWedding }) {
             />
             {errors.name && <p className="text-[11px] text-red-400 mt-0.5">{errors.name}</p>}
           </div>
-          <input
-            placeholder="Loja / Fornecedor"
-            value={form.store}
-            onChange={e => setForm(f => ({ ...f, store: e.target.value }))}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-stone-200 focus:outline-none focus:border-stone-400"
-          />
           <div>
             <input
               placeholder="Valor (R$) *"
@@ -1039,22 +1045,45 @@ function GiftsTab({ wedding, updateWedding }) {
             className="w-full px-3 py-2 text-sm rounded-lg border border-stone-200 focus:outline-none focus:border-stone-400"
           />
           <div className="space-y-2">
-            <p className="text-[11px] text-stone-500 font-medium">Foto — sugestões rápidas</p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {PHOTO_SUGGESTIONS.map(s => (
+            <p className="text-[11px] text-stone-500 font-medium">Foto do presente</p>
+            <div className="flex gap-1.5 overflow-x-auto pb-1">
+              {giftImagePresetCategories.map(category => (
                 <button
-                  key={s.url}
+                  key={category.id}
                   type="button"
-                  onClick={() => setForm(f => ({ ...f, image: s.url }))}
-                  className={`relative rounded-lg overflow-hidden aspect-square border-2 transition-all ${
-                    form.image === s.url ? 'border-stone-900 scale-[0.97]' : 'border-transparent hover:border-stone-300'
+                  onClick={() => setSelectedPresetCategory(category.id)}
+                  className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                    selectedPresetCategory === category.id
+                      ? 'border-stone-900 bg-stone-900 text-white'
+                      : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-800'
                   }`}
                 >
-                  <img src={s.url} alt={s.label} className="w-full h-full object-cover" />
+                  {category.label}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-4 gap-1.5 lg:grid-cols-8">
+              {(selectedPresetCategoryData?.presets ?? []).map(preset => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => {
+                    setForm(f => ({
+                      ...f,
+                      image: '',
+                      imagePreset: preset.id,
+                      category: f.category?.trim() ? f.category : selectedPresetCategoryData.label,
+                    }))
+                  }}
+                  className={`relative rounded-lg overflow-hidden aspect-square border-2 transition-all ${
+                    form.imagePreset === preset.id ? 'border-stone-900 scale-[0.97]' : 'border-transparent hover:border-stone-300'
+                  }`}
+                >
+                  <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
                   <div className="absolute inset-x-0 bottom-0 bg-black/50 py-0.5">
-                    <span className="text-[9px] text-white font-medium leading-none block text-center">{s.label}</span>
+                    <span className="text-[8px] text-white font-medium leading-none block text-center px-0.5 truncate">{preset.label}</span>
                   </div>
-                  {form.image === s.url && (
+                  {form.imagePreset === preset.id && (
                     <div className="absolute inset-0 bg-stone-900/20 flex items-center justify-center">
                       <Check size={16} className="text-white drop-shadow" />
                     </div>
@@ -1063,46 +1092,33 @@ function GiftsTab({ wedding, updateWedding }) {
               ))}
             </div>
 
-            <div className="flex gap-2 pt-1">
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept={IMAGE_MIME_TYPES.join(',')}
-                className="hidden"
-                onChange={handleImageUpload}
-              />
-              <button
-                type="button"
-                disabled={imageLoading}
-                onClick={() => imageInputRef.current?.click()}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-stone-600 border border-stone-200 rounded-lg hover:bg-stone-100 transition-colors disabled:opacity-50 disabled:cursor-wait"
-              >
-                <Upload size={12} /> {imageLoading ? 'Processando…' : 'Subir imagem'}
-              </button>
-              <input
-                placeholder="Ou cole uma URL"
-                value={mediaUrl(form.image).startsWith('data:') ? '' : mediaUrl(form.image)}
-                onChange={e => { setImageError(''); setForm(f => ({ ...f, image: e.target.value })) }}
-                className="flex-1 px-3 py-2 text-xs rounded-lg border border-stone-200 focus:outline-none focus:border-stone-400 min-w-0"
-              />
-            </div>
-            {imageError && <p className="text-[11px] text-red-400">{imageError}</p>}
-
-            {form.image && (
-              <div className="relative">
+            {formImageUrl && (
+              <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+                <div className="relative aspect-square bg-stone-100">
                 <img
-                  src={mediaUrl(form.image)}
+                  src={formImageUrl}
                   alt="preview"
-                  className="w-full h-20 object-cover rounded-lg border border-stone-100"
+                  className="w-full h-full object-cover"
                   onError={e => { e.target.style.display = 'none' }}
                 />
                 <button
                   type="button"
-                  onClick={() => setForm(f => ({ ...f, image: '' }))}
-                  className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 hover:bg-black/70"
+                  onClick={() => setForm(f => ({ ...f, image: '', imagePreset: '' }))}
+                  className="absolute top-2 right-2 bg-black/55 text-white rounded-full p-1.5 hover:bg-black/75"
+                  aria-label="Remover foto do presente"
                 >
-                  <X size={10} />
+                  <X size={13} />
                 </button>
+                </div>
+                <div className="flex items-center justify-between gap-3 px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-stone-700 truncate">{selectedGiftPreset?.label ?? 'Imagem selecionada'}</p>
+                    <p className="text-[10px] text-stone-400">Prévia da foto do presente</p>
+                  </div>
+                  <span className="rounded-full bg-stone-100 px-2 py-1 text-[10px] font-medium text-stone-500">
+                    Selecionada
+                  </span>
+                </div>
               </div>
             )}
           </div>
@@ -1119,35 +1135,38 @@ function GiftsTab({ wedding, updateWedding }) {
         <p className="text-xs text-stone-400 text-center py-6">Nenhum presente ainda. Clique em "Adicionar".</p>
       )}
 
-      {gifts.map(gift => (
-        <div key={gift.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 bg-stone-50">
-          {gift.image ? (
-            <img src={mediaUrl(gift.image)} alt={gift.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-          ) : (
-            <div className="w-10 h-10 rounded-lg bg-stone-200 flex-shrink-0" />
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-stone-900 truncate">{gift.name}</p>
-            <p className="text-xs text-stone-400">R$ {Number(gift.price).toLocaleString('pt-BR')}{gift.store ? ` · ${gift.store}` : ''}</p>
+      {gifts.map(gift => {
+        const imageUrl = giftImageUrl(gift, giftImagePresetById)
+        return (
+          <div key={gift.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 bg-stone-50">
+            {imageUrl ? (
+              <img src={imageUrl} alt={gift.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-stone-200 flex-shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-stone-900 truncate">{gift.name}</p>
+              <p className="text-xs text-stone-400">R$ {Number(gift.price).toLocaleString('pt-BR')}</p>
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                title="Editar"
+                onClick={() => openEdit(gift)}
+                className="p-1.5 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-colors"
+              >
+                <Pencil size={13} />
+              </button>
+              <button
+                title="Remover"
+                onClick={() => deleteGift(gift.id)}
+                className="p-1.5 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <button
-              title="Editar"
-              onClick={() => openEdit(gift)}
-              className="p-1.5 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-colors"
-            >
-              <Pencil size={13} />
-            </button>
-            <button
-              title="Remover"
-              onClick={() => deleteGift(gift.id)}
-              className="p-1.5 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </motion.div>
   )
 }
