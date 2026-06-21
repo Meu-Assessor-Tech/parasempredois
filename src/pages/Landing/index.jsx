@@ -51,7 +51,7 @@ export default function Landing() {
               <em>amor merece</em>
             </h1>
             <p className="text-white/90 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed mb-10">
-              Crie um site de casamento bonito e simples, com templates elegantes, lista de presentes e RSVP para compartilhar com seus convidados.
+              Crie um site bonito para compartilhar com seus convidados, reunir fotos, contar a história do casal, indicar presentes e receber confirmações de presença.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -229,7 +229,7 @@ export default function Landing() {
           >
             {[
               { icon: Globe, title: 'Site personalizado', desc: 'URL exclusiva com o nome de vocês.' },
-              { icon: Heart, title: 'RSVP elegante', desc: 'Confirmação de presença para seus convidados.' },
+              { icon: Heart, title: 'Confirmação de presença', desc: 'Seus convidados confirmam pelo próprio site, de forma simples.' },
               { icon: Gift, title: 'Lista de presentes', desc: 'Organize ideias de presentes com facilidade.' },
               { icon: Sparkles, title: 'Galeria de fotos', desc: 'Compartilhe momentos especiais.' },
               { icon: Check, title: 'Contagem regressiva', desc: 'Acompanhe quanto falta para o grande dia.' },
