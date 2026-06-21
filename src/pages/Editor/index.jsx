@@ -81,6 +81,7 @@ export default function Editor() {
   const galleryInputRef = useRef(null)
   const previewIframeRef = useRef(null)
   const previewScrollRef = useRef({ top: 0, left: 0 })
+  const previewSessionKeyRef = useRef(`${Date.now()}-${Math.random().toString(36).slice(2)}`)
   const debounceRef = useRef(null)
   const navigate = useNavigate()
   const location = useLocation()
@@ -144,7 +145,9 @@ export default function Editor() {
 
   useEffect(() => {
     try {
-      sessionStorage.setItem(PREVIEW_STORAGE_KEY, JSON.stringify(wedding))
+      const previewJson = JSON.stringify(wedding)
+      sessionStorage.setItem(PREVIEW_STORAGE_KEY, previewJson)
+      sessionStorage.setItem(`${PREVIEW_STORAGE_KEY}:${previewSessionKeyRef.current}`, previewJson)
     } catch {
       // Preview falls back to local storage if the current draft is too large.
     }
@@ -650,7 +653,7 @@ export default function Editor() {
               <iframe
                 ref={previewIframeRef}
                 key={previewKey}
-                src={`/site/${wedding.slug}?preview=1`}
+                src={`/site/${wedding.slug}?preview=1&previewKey=${encodeURIComponent(previewSessionKeyRef.current)}&rev=${previewKey}`}
                 title="Preview do site"
                 className="w-full h-full border-0"
                 onLoad={restorePreviewScroll}

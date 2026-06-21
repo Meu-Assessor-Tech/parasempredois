@@ -14,11 +14,17 @@ export function WeddingProvider({ children }) {
   const isPreviewRoute = typeof window !== 'undefined'
     && window.location.pathname.startsWith('/site/')
     && new URLSearchParams(window.location.search).get('preview') === '1'
+  const previewStorageKey = (() => {
+    if (typeof window === 'undefined') return PREVIEW_STORAGE_KEY
+    const params = new URLSearchParams(window.location.search)
+    const previewKey = params.get('previewKey')
+    return previewKey ? `${PREVIEW_STORAGE_KEY}:${previewKey}` : PREVIEW_STORAGE_KEY
+  })()
   const ensureWeddingRef = useRef(null)
   const [wedding, setWedding] = useState(() => {
     try {
       if (isPreviewRoute) {
-        const preview = sessionStorage.getItem(PREVIEW_STORAGE_KEY)
+        const preview = sessionStorage.getItem(previewStorageKey) ?? sessionStorage.getItem(PREVIEW_STORAGE_KEY)
         if (preview) return normalizeWedding(JSON.parse(preview))
       }
       const saved = localStorage.getItem(STORAGE_KEY)
