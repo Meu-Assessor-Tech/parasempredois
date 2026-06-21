@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -7,6 +7,8 @@ import { useAuth } from '../../context/AuthContext'
 import { ApiError } from '../../api/client'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import { mockTemplates } from '../../data/mockTemplates'
+import { useWedding } from '../../context/WeddingContext'
 
 export default function Auth() {
   const [mode, setMode] = useState('login')
@@ -15,10 +17,18 @@ export default function Auth() {
   const [error, setError] = useState('')
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const { login, loginWithGoogle, register } = useAuth()
+  const { updateWedding } = useWedding()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const requestedNextPath = searchParams.get('next') || '/dashboard'
   const nextPath = requestedNextPath.startsWith('/') ? requestedNextPath : '/dashboard'
+  const templateFromUrl = searchParams.get('template')
+
+  useEffect(() => {
+    if (mockTemplates.some(template => template.id === templateFromUrl && !template.comingSoon)) {
+      updateWedding({ template: templateFromUrl })
+    }
+  }, [templateFromUrl])
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 

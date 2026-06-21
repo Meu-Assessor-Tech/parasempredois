@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -52,6 +52,7 @@ const COLORS = [
 ]
 
 const MAX_GALLERY_IMAGES = 6
+const PREVIEW_STORAGE_KEY = 'baitacasamento_preview_wedding'
 
 function realMediaItems(items = []) {
   return items.filter(item => !isSampleMedia(item) && typeof item !== 'string')
@@ -118,6 +119,14 @@ export default function Editor() {
     schedulePreviewReload()
   }, [updateWedding, schedulePreviewReload])
 
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(PREVIEW_STORAGE_KEY, JSON.stringify(wedding))
+    } catch {
+      // Preview falls back to local storage if the current draft is too large.
+    }
+  }, [wedding])
+
   const uploadOrPreview = useCallback((file, kind) => {
     if (canUploadMedia(wedding.id)) {
       return uploadWeddingImage(wedding.id, file, kind)
@@ -178,14 +187,14 @@ export default function Editor() {
         images.push(await uploadOrPreview(file, 'gallery'))
       } catch (err) {
         if (images.length) {
-          wrappedUpdate({ galleryImages: [...currentImages, ...images] })
+          wrappedUpdate({ galleryImages: [...currentImages, ...images], galleryCustomized: true })
         }
         alert(err.message)
         e.target.value = ''
         return
       }
     }
-    wrappedUpdate({ galleryImages: [...currentImages, ...images] })
+    wrappedUpdate({ galleryImages: [...currentImages, ...images], galleryCustomized: true })
     if (files.length > remainingSlots) {
       alert(`Foram adicionadas ${remainingSlots} foto(s). O limite da galeria é ${MAX_GALLERY_IMAGES}.`)
     }
@@ -196,7 +205,7 @@ export default function Editor() {
     const image = wedding.galleryImages?.[index]
     try {
       await deleteStoredMedia(image)
-      wrappedUpdate({ galleryImages: wedding.galleryImages.filter((_, i) => i !== index) })
+      wrappedUpdate({ galleryImages: wedding.galleryImages.filter((_, i) => i !== index), galleryCustomized: true })
     } catch (err) {
       alert(err.message)
     }
@@ -207,7 +216,7 @@ export default function Editor() {
     const nextImages = [...(wedding.galleryImages ?? [])]
     const [movedImage] = nextImages.splice(fromIndex, 1)
     nextImages.splice(toIndex, 0, movedImage)
-    wrappedUpdate({ galleryImages: nextImages })
+    wrappedUpdate({ galleryImages: nextImages, galleryCustomized: true })
   }
 
   const handleTemplateSelect = (template) => {
@@ -230,6 +239,7 @@ export default function Editor() {
       primaryColor: mockWedding.primaryColor,
       coverImage: sampleMedia(mockWedding.coverImage, 'cover'),
       galleryImages: mockWedding.galleryImages.map((url, index) => sampleMedia(url, 'gallery', index)),
+      galleryCustomized: false,
     })
   }
 
@@ -588,7 +598,7 @@ export default function Editor() {
               <iframe
                 ref={previewIframeRef}
                 key={previewKey}
-                src={`/site/${wedding.slug}`}
+                src={`/site/${wedding.slug}?preview=1`}
                 title="Preview do site"
                 className="w-full h-full border-0"
                 onLoad={restorePreviewScroll}

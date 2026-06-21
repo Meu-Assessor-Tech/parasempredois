@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, Lock } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import Navbar from '../../components/layout/Navbar'
 import Button from '../../components/ui/Button'
 import { mockTemplates } from '../../data/mockTemplates'
@@ -11,7 +11,7 @@ const stagger = { visible: { transition: { staggerChildren: 0.08 } } }
 const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } } }
 
 export default function Templates() {
-  const { wedding, updateWedding } = useWedding()
+  const { updateWedding } = useWedding()
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -41,17 +41,13 @@ export default function Templates() {
             variants={stagger}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {mockTemplates.map((template) => {
-              const isActive = wedding.template === template.id
-              return (
+            {mockTemplates.map((template) => (
                 <motion.div key={template.id} variants={fadeUp}>
                   <button
                     onClick={() => handleSelect(template)}
                     disabled={template.comingSoon}
                     className={`w-full text-left rounded-2xl overflow-hidden border-2 transition-all duration-200 group ${
-                      isActive
-                        ? 'border-stone-900 shadow-lg'
-                        : template.comingSoon
+                      template.comingSoon
                         ? 'border-stone-100 opacity-60 cursor-not-allowed'
                         : 'border-stone-100 hover:border-stone-300 hover:shadow-md'
                     }`}
@@ -67,19 +63,10 @@ export default function Templates() {
 
                       {/* Tag */}
                       <div className="absolute top-3 left-3">
-                        <span className={`text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full font-medium ${
-                          isActive ? 'bg-stone-900 text-white' : 'bg-white/90 text-stone-700'
-                        }`}>
+                        <span className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full font-medium bg-white/90 text-stone-700">
                           {template.tag}
                         </span>
                       </div>
-
-                      {/* Active check */}
-                      {isActive && (
-                        <div className="absolute top-3 right-3 w-7 h-7 bg-stone-900 rounded-full flex items-center justify-center">
-                          <Check size={13} className="text-white" />
-                        </div>
-                      )}
 
                       {/* Coming soon lock */}
                       {template.comingSoon && (
@@ -107,15 +94,14 @@ export default function Templates() {
                         </div>
                         {!template.comingSoon && (
                           <span className="text-xs font-medium text-stone-500">
-                            {isActive ? 'Ativo' : 'Selecionar →'}
+                            Selecionar →
                           </span>
                         )}
                       </div>
                     </div>
                   </button>
                 </motion.div>
-              )
-            })}
+              ))}
           </motion.div>
         </div>
       </main>

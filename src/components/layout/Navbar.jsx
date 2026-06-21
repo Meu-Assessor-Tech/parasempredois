@@ -9,6 +9,7 @@ export default function Navbar({ transparent = false }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const startFreePath = `/login?next=${encodeURIComponent('/editor')}&template=classic`
 
   const handleLogout = () => {
     logout()
@@ -51,7 +52,7 @@ export default function Navbar({ transparent = false }) {
               <Button variant="ghost" size="sm" onClick={handleLogout}>Sair</Button>
             </div>
           ) : (
-            <Link to="/templates">
+            <Link to={startFreePath}>
               <Button variant="primary" size="sm">Comece grátis</Button>
             </Link>
           )}
@@ -76,7 +77,7 @@ export default function Navbar({ transparent = false }) {
               <Button variant="ghost" size="sm" fullWidth onClick={handleLogout}>Sair</Button>
             </>
           ) : (
-            <Link to="/templates" className="block"><Button variant="primary" size="sm" fullWidth>Comece grátis</Button></Link>
+            <Link to={startFreePath} className="block"><Button variant="primary" size="sm" fullWidth>Comece grátis</Button></Link>
           )}
         </motion.div>
       )}

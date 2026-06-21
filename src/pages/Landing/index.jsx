@@ -19,6 +19,7 @@ const stagger = {
 
 export default function Landing() {
   const navigate = useNavigate()
+  const startFreePath = `/login?next=${encodeURIComponent('/editor')}&template=classic`
 
   return (
     <div className="min-h-screen bg-white">
@@ -57,7 +58,7 @@ export default function Landing() {
               <Button
                 variant="primary"
                 size="lg"
-                onClick={() => navigate('/templates')}
+                onClick={() => navigate(startFreePath)}
                 className="!bg-white !text-stone-900 hover:!bg-stone-100 shadow-xl"
               >
                 Comece grátis
@@ -317,7 +318,7 @@ export default function Landing() {
               Escolha um template, personalize os detalhes e compartilhe com seus convidados.
             </motion.p>
             <motion.div variants={fadeUp}>
-              <Button variant="primary" size="xl" onClick={() => navigate('/templates')}>
+              <Button variant="primary" size="xl" onClick={() => navigate(startFreePath)}>
                 Comece grátis
                 <ArrowRight size={18} />
               </Button>

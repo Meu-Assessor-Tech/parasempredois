@@ -5,26 +5,28 @@ import { mockWedding } from '../data/mockWedding'
 import { sampleMedia } from '../utils/media'
 
 const STORAGE_KEY = 'baitacasamento_wedding'
+const PREVIEW_STORAGE_KEY = 'baitacasamento_preview_wedding'
 
 const WeddingContext = createContext(null)
 
 export function WeddingProvider({ children }) {
   const { user } = useAuth()
+  const isPreviewRoute = typeof window !== 'undefined'
+    && window.location.pathname.startsWith('/site/')
+    && new URLSearchParams(window.location.search).get('preview') === '1'
   const ensureWeddingRef = useRef(null)
   const [wedding, setWedding] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (!saved) return mockWedding
-      const parsed = JSON.parse(saved)
-      // Prefer saved gifts array; fall back to mockWedding gifts if absent
-      return {
-        ...mockWedding,
-        ...parsed,
-        gifts:    parsed.gifts    ?? mockWedding.gifts,
-        sections: parsed.sections ?? mockWedding.sections,
+      if (isPreviewRoute) {
+        const preview = sessionStorage.getItem(PREVIEW_STORAGE_KEY)
+        if (preview) return normalizeWedding(JSON.parse(preview))
       }
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (!saved) return draftWedding()
+      const parsed = JSON.parse(saved)
+      return normalizeWedding(parsed)
     } catch {
-      return mockWedding
+      return draftWedding()
     }
   })
 
@@ -32,7 +34,11 @@ export function WeddingProvider({ children }) {
     let cancelled = false
 
     if (!user) {
-      setWedding(prev => ({ ...mockWedding, ...prev, id: mockWedding.id }))
+      setWedding(prev => ({ ...draftWedding(), ...prev, id: mockWedding.id }))
+      return
+    }
+
+    if (isPreviewRoute) {
       return
     }
 
@@ -68,7 +74,7 @@ export function WeddingProvider({ children }) {
     return () => {
       cancelled = true
     }
-  }, [user])
+  }, [user, isPreviewRoute])
 
   const updateWedding = (updates) => {
     setWedding(prev => {
@@ -84,7 +90,7 @@ export function WeddingProvider({ children }) {
 
   const resetWedding = () => {
     localStorage.removeItem(STORAGE_KEY)
-    setWedding(mockWedding)
+    setWedding(draftWedding())
   }
 
   const ensureWedding = async () => {
@@ -123,14 +129,42 @@ export function WeddingProvider({ children }) {
 
 export const useWedding = () => useContext(WeddingContext)
 
+function normalizeWedding(wedding) {
+  return {
+    ...draftWedding(),
+    ...wedding,
+    galleryCustomized: wedding.galleryCustomized ?? false,
+    gifts: wedding.gifts ?? sampleWeddingFields().gifts,
+    sections: wedding.sections ?? mockWedding.sections,
+  }
+}
+
+function draftWedding() {
+  const sampleFields = sampleWeddingFields()
+  return {
+    ...mockWedding,
+    coverImage: sampleFields.coverImage,
+    galleryImages: sampleFields.galleryImages,
+    galleryCustomized: false,
+    gifts: sampleFields.gifts,
+  }
+}
+
 function mergeRemoteWedding(localWedding, remoteWedding) {
   const sampleFields = sampleWeddingFields()
+  const hasRemoteGallery = Boolean(remoteWedding.galleryImages?.length)
+  const galleryCustomized = Boolean(localWedding.galleryCustomized || hasRemoteGallery)
   return {
     ...mockWedding,
     ...localWedding,
     id: remoteWedding.id,
     coverImage: remoteWedding.coverImage ?? sampleFields.coverImage,
-    galleryImages: remoteWedding.galleryImages?.length ? remoteWedding.galleryImages : sampleFields.galleryImages,
+    galleryCustomized,
+    galleryImages: hasRemoteGallery
+      ? remoteWedding.galleryImages
+      : galleryCustomized
+      ? (localWedding.galleryImages ?? [])
+      : sampleFields.galleryImages,
     giftPixQrCode: remoteWedding.giftPixQrCode ?? '',
     gifts: remoteWedding.gifts?.length ? remoteWedding.gifts : sampleFields.gifts,
   }
@@ -138,12 +172,14 @@ function mergeRemoteWedding(localWedding, remoteWedding) {
 
 function newDraftWedding(localWedding) {
   const sampleFields = sampleWeddingFields()
+  const galleryCustomized = Boolean(localWedding.galleryCustomized)
   return {
     ...mockWedding,
     ...localWedding,
     id: mockWedding.id,
     coverImage: sampleFields.coverImage,
-    galleryImages: sampleFields.galleryImages,
+    galleryCustomized,
+    galleryImages: galleryCustomized ? (localWedding.galleryImages ?? []) : sampleFields.galleryImages,
     giftPixQrCode: '',
     gifts: sampleFields.gifts,
     guestCount: 0,
