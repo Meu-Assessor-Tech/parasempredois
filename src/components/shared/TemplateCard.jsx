@@ -4,13 +4,16 @@ import Badge from '../ui/Badge'
 import { templateConfigs } from '../../data/templateConfigs'
 
 const PREVIEW_BG = {
+  ivory: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600',
+  bali: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=600',
+  celestial: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600',
   classic: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600',
   minimal: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=600',
   floral: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600',
 }
 
 export default function TemplateCard({ template, selected, onSelect }) {
-  const cfg = templateConfigs[template.id] || templateConfigs.classic
+  const cfg = templateConfigs[template.id] || templateConfigs.ivory
   const bg = PREVIEW_BG[template.id] || template.preview
 
   return (
@@ -35,7 +38,7 @@ export default function TemplateCard({ template, selected, onSelect }) {
           </p>
           <p
             className={`${cfg.nameClass} leading-tight text-white`}
-            style={{ fontSize: template.id === 'minimal' ? '1.1rem' : '1.25rem', ...cfg.nameStyle }}
+            style={{ fontSize: template.id === 'bali' || template.id === 'minimal' ? '1.1rem' : '1.25rem', ...cfg.nameStyle }}
           >
             Sofia <span className={cfg.ampersandClass} style={{ fontSize: '0.9rem' }}>&</span> Lucas
           </p>

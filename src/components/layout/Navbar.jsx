@@ -9,7 +9,7 @@ export default function Navbar({ transparent = false }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const startFreePath = `/login?next=${encodeURIComponent('/editor')}&template=classic`
+  const loginPath = '/login'
 
   const handleLogout = () => {
     logout()
@@ -42,8 +42,7 @@ export default function Navbar({ transparent = false }) {
         </Link>
 
         <div className="hidden md:flex items-center gap-6">
-          <Link to="/templates" className={linkClass}>Templates</Link>
-          <Link to="/site/ana-e-pedro" className={linkClass}>Exemplo</Link>
+          <Link to="/site/ana-e-pedro?example=1" className={linkClass}>Exemplo</Link>
           {user ? (
             <div className="flex items-center gap-3">
               <Link to="/dashboard">
@@ -52,8 +51,8 @@ export default function Navbar({ transparent = false }) {
               <Button variant="ghost" size="sm" onClick={handleLogout}>Sair</Button>
             </div>
           ) : (
-            <Link to={startFreePath}>
-              <Button variant="primary" size="sm">Comece grátis</Button>
+            <Link to={loginPath}>
+              <Button variant="primary" size="sm">Login</Button>
             </Link>
           )}
         </div>
@@ -69,15 +68,14 @@ export default function Navbar({ transparent = false }) {
           animate={{ opacity: 1, y: 0 }}
           className="md:hidden bg-white border-t border-stone-100 px-4 py-4 space-y-3"
         >
-          <Link to="/templates" className="block text-sm text-stone-600 py-2">Templates</Link>
-          <Link to="/site/ana-e-pedro" className="block text-sm text-stone-600 py-2">Exemplo</Link>
+          <Link to="/site/ana-e-pedro?example=1" className="block text-sm text-stone-600 py-2">Exemplo</Link>
           {user ? (
             <>
               <Link to="/dashboard" className="block"><Button variant="primary" size="sm" fullWidth>Dashboard</Button></Link>
               <Button variant="ghost" size="sm" fullWidth onClick={handleLogout}>Sair</Button>
             </>
           ) : (
-            <Link to={startFreePath} className="block"><Button variant="primary" size="sm" fullWidth>Comece grátis</Button></Link>
+            <Link to={loginPath} className="block"><Button variant="primary" size="sm" fullWidth>Login</Button></Link>
           )}
         </motion.div>
       )}

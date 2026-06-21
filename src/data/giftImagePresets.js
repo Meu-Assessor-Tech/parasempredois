@@ -4,8 +4,8 @@ function unsplashPhoto(photoId) {
 
 export const giftImagePresetCategories = [
   {
-    id: 'cozinha',
-    label: 'Cozinha',
+    id: 'lar',
+    label: '🏠 Começando Nosso Lar',
     presets: [
       { id: 'cozinha-panelas', label: 'Jogo de panelas', url: unsplashPhoto('photo-1556909114-f6e7ad7d3136') },
       { id: 'cozinha-frigideira', label: 'Frigideira', url: unsplashPhoto('photo-1556911220-e15b29be8c8f') },
@@ -13,23 +13,10 @@ export const giftImagePresetCategories = [
       { id: 'cozinha-liquidificador', label: 'Liquidificador', url: unsplashPhoto('photo-1570222094114-d054a817e56b') },
       { id: 'cozinha-cafeteira', label: 'Cafeteira', url: unsplashPhoto('photo-1495474472287-4d71bcdd2085') },
       { id: 'cozinha-facas', label: 'Conjunto de facas', url: unsplashPhoto('photo-1593618998160-e34014e67546') },
-    ],
-  },
-  {
-    id: 'mesa',
-    label: 'Mesa',
-    presets: [
       { id: 'mesa-pratos', label: 'Jogo de pratos', url: unsplashPhoto('photo-1467003909585-2f8a72700288') },
       { id: 'mesa-copos', label: 'Jogo de copos', url: unsplashPhoto('photo-1523362628745-0c100150b504') },
-      { id: 'cozinha-tacas', label: 'Taças', url: unsplashPhoto('photo-1558618666-fcd25c85cd64') },
       { id: 'mesa-talheres', label: 'Jogo de talheres', url: unsplashPhoto('photo-1603199506016-b9a594b593c0') },
       { id: 'mesa-travessa', label: 'Travessa', url: unsplashPhoto('photo-1543353071-10c8ba85a904') },
-    ],
-  },
-  {
-    id: 'casa',
-    label: 'Casa',
-    presets: [
       { id: 'casa-sofa', label: 'Sofá', url: unsplashPhoto('photo-1555041469-a586c61ea9bc') },
       { id: 'casa-mesa-jantar', label: 'Mesa de jantar', url: unsplashPhoto('photo-1615874694520-474822394e73') },
       { id: 'casa-cama', label: 'Cama', url: unsplashPhoto('photo-1631049307264-da0ec9d70304') },
@@ -41,8 +28,31 @@ export const giftImagePresetCategories = [
     ],
   },
   {
-    id: 'decoracao',
-    label: 'Decoração',
+    id: 'celebrando',
+    label: '🍷 Celebrando Juntos',
+    presets: [
+      { id: 'cozinha-tacas', label: 'Taças', url: unsplashPhoto('photo-1558618666-fcd25c85cd64') },
+      { id: 'lua-de-mel-jantar-romantico', label: 'Jantar romântico', url: unsplashPhoto('photo-1414235077428-338989a2e8c0') },
+      { id: 'experiencias-vinhos', label: 'Degustação de vinhos', url: unsplashPhoto('photo-1510812431401-41d2bd2722f3') },
+      { id: 'experiencias-culinaria', label: 'Aula de culinária', url: unsplashPhoto('photo-1556911220-e15b29be8c8f') },
+      { id: 'experiencias-piquenique', label: 'Piquenique', url: unsplashPhoto('photo-1500530855697-b586d89ba3ee') },
+      { id: 'experiencias-show', label: 'Show', url: unsplashPhoto('photo-1501386761578-eac5c94b800a') },
+    ],
+  },
+  {
+    id: 'lua-de-mel',
+    label: '✈️ Nossa Lua de Mel',
+    presets: [
+      { id: 'lua-de-mel-passagens', label: 'Passagens', url: unsplashPhoto('photo-1436491865332-7a61a109cc05') },
+      { id: 'lua-de-mel-hospedagem', label: 'Hospedagem', url: unsplashPhoto('photo-1566073771259-6a8506099945') },
+      { id: 'lua-de-mel-passeio', label: 'Passeio', url: unsplashPhoto('photo-1499856871958-5b9627545d1a') },
+      { id: 'lua-de-mel-carro', label: 'Aluguel de carro', url: unsplashPhoto('photo-1503376780353-7e6692767b70') },
+      { id: 'lua-de-mel-cafe', label: 'Café da manhã especial', url: unsplashPhoto('photo-1533089860892-a7c6f0a88666') },
+    ],
+  },
+  {
+    id: 'memorias',
+    label: '🌿 Construindo Memórias',
     presets: [
       { id: 'decoracao-quadros', label: 'Quadros', url: unsplashPhoto('photo-1513519245088-0e12902e5a38') },
       { id: 'decoracao-plantas', label: 'Plantas', url: unsplashPhoto('photo-1487530811176-3780de880c2d') },
@@ -50,35 +60,13 @@ export const giftImagePresetCategories = [
       { id: 'decoracao-luminaria', label: 'Luminária', url: unsplashPhoto('photo-1507473885765-e6ed057f782c') },
       { id: 'decoracao-espelho', label: 'Espelho', url: unsplashPhoto('photo-1618220179428-22790b461013') },
       { id: 'decoracao-tapete', label: 'Tapete', url: unsplashPhoto('photo-1600210492493-0946911123ea') },
-    ],
-  },
-  {
-    id: 'lua-de-mel',
-    label: 'Lua de Mel',
-    presets: [
-      { id: 'lua-de-mel-passagens', label: 'Passagens', url: unsplashPhoto('photo-1436491865332-7a61a109cc05') },
-      { id: 'lua-de-mel-hospedagem', label: 'Hospedagem', url: unsplashPhoto('photo-1566073771259-6a8506099945') },
-      { id: 'lua-de-mel-jantar-romantico', label: 'Jantar romântico', url: unsplashPhoto('photo-1414235077428-338989a2e8c0') },
-      { id: 'lua-de-mel-passeio', label: 'Passeio', url: unsplashPhoto('photo-1499856871958-5b9627545d1a') },
-      { id: 'lua-de-mel-carro', label: 'Aluguel de carro', url: unsplashPhoto('photo-1503376780353-7e6692767b70') },
-      { id: 'lua-de-mel-cafe', label: 'Café da manhã especial', url: unsplashPhoto('photo-1533089860892-a7c6f0a88666') },
-    ],
-  },
-  {
-    id: 'experiencias',
-    label: 'Experiências',
-    presets: [
       { id: 'experiencias-massagem', label: 'Massagem para casal', url: unsplashPhoto('photo-1544161515-4ab6ce6db874') },
-      { id: 'experiencias-vinhos', label: 'Degustação de vinhos', url: unsplashPhoto('photo-1510812431401-41d2bd2722f3') },
-      { id: 'experiencias-culinaria', label: 'Aula de culinária', url: unsplashPhoto('photo-1556911220-e15b29be8c8f') },
-      { id: 'experiencias-piquenique', label: 'Piquenique', url: unsplashPhoto('photo-1500530855697-b586d89ba3ee') },
-      { id: 'experiencias-show', label: 'Show', url: unsplashPhoto('photo-1501386761578-eac5c94b800a') },
       { id: 'experiencias-day-spa', label: 'Day Spa', url: unsplashPhoto('photo-1544161515-4ab6ce6db874') },
     ],
   },
   {
     id: 'sonhos',
-    label: 'Sonhos',
+    label: '✨ Realizando Sonhos',
     presets: [
       { id: 'sonhos-entrada-casa', label: 'Entrada da casa', url: unsplashPhoto('photo-1560518883-ce09059eeffa') },
       { id: 'sonhos-reforma', label: 'Reforma', url: unsplashPhoto('photo-1503387762-592deb58ef4e') },

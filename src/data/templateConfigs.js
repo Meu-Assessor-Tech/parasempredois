@@ -3,18 +3,18 @@
  * Used by TemplateCard (preview), Editor (preview) and WeddingSite (rendered site).
  *
  * Templates:
- *  - classic  → "Couture"   — Editorial fashion, B&W, bold uppercase
- *  - minimal  → "Bali"      — Warm boho modern, terracota/creme, orgânico
- *  - floral   → "Celestial" — Dark luxury, fundo escuro, dourado dramático
+ *  - ivory     → "Ivory"
+ *  - bali      → "Bali"
+ *  - celestial → "Celestial"
  */
 export const templateConfigs = {
 
   // ─────────────────────────────────────────────────────────────────
   // COUTURE — editorial fashion magazine
   // ─────────────────────────────────────────────────────────────────
-  classic: {
-    id: 'classic',
-    label: 'Couture',
+  ivory: {
+    id: 'ivory',
+    label: 'Ivory',
 
     // Hero
     heroBg: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.7) 100%)',
@@ -53,8 +53,8 @@ export const templateConfigs = {
   // ─────────────────────────────────────────────────────────────────
   // BALI — warm boho modern, terracota & creme
   // ─────────────────────────────────────────────────────────────────
-  minimal: {
-    id: 'minimal',
+  bali: {
+    id: 'bali',
     label: 'Bali',
 
     // Hero
@@ -89,8 +89,8 @@ export const templateConfigs = {
   // ─────────────────────────────────────────────────────────────────
   // CELESTIAL — dark luxury, indigo/charcoal + dourado
   // ─────────────────────────────────────────────────────────────────
-  floral: {
-    id: 'floral',
+  celestial: {
+    id: 'celestial',
     label: 'Celestial',
 
     // Hero
@@ -122,4 +122,8 @@ export const templateConfigs = {
     btnBgClass: 'bg-yellow-400 text-stone-900',
   },
 }
+
+templateConfigs.classic = templateConfigs.ivory
+templateConfigs.minimal = templateConfigs.bali
+templateConfigs.floral = templateConfigs.celestial
 

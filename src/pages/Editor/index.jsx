@@ -680,7 +680,7 @@ const SECTION_PRESETS = [
 
 const EMPTY_SECTION = { title: '', content: '' }
 const EMPTY_GIFT = { name: '', price: '', category: '', image: '', imagePreset: '' }
-const DEFAULT_GIFT_PRESET_CATEGORY = giftImagePresetCategories[0]?.id ?? 'cozinha'
+const DEFAULT_GIFT_PRESET_CATEGORY = giftImagePresetCategories[0]?.id ?? 'lar'
 
 function giftPresetCategoryId(presetId, fallback = DEFAULT_GIFT_PRESET_CATEGORY) {
   return giftImagePresetCategories.find(category =>
@@ -1041,14 +1041,11 @@ function GiftsTab({ wedding, updateWedding, scrollPreviewTo }) {
             />
             {errors.price && <p className="text-[11px] text-red-400 mt-0.5">{errors.price}</p>}
           </div>
-          <input
-            placeholder="Categoria (ex: Cozinha)"
-            value={form.category}
-            onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-stone-200 focus:outline-none focus:border-stone-400"
-          />
           <div className="space-y-2">
-            <p className="text-[11px] text-stone-500 font-medium">Foto do presente</p>
+            <div>
+              <p className="text-[11px] text-stone-500 font-medium">Foto do presente</p>
+              <p className="text-[10px] text-stone-400 mt-0.5">Use as categorias apenas para filtrar as imagens.</p>
+            </div>
             <div className="flex gap-1.5 overflow-x-auto pb-1">
               {giftImagePresetCategories.map(category => (
                 <button
@@ -1075,7 +1072,7 @@ function GiftsTab({ wedding, updateWedding, scrollPreviewTo }) {
                       ...f,
                       image: '',
                       imagePreset: preset.id,
-                      category: f.category?.trim() ? f.category : selectedPresetCategoryData.label,
+                      category: selectedPresetCategoryData.label,
                     }))
                   }}
                   className={`relative rounded-lg overflow-hidden aspect-square border-2 transition-all ${

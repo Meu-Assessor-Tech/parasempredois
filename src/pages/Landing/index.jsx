@@ -19,7 +19,7 @@ const stagger = {
 
 export default function Landing() {
   const navigate = useNavigate()
-  const startFreePath = `/login?next=${encodeURIComponent('/editor')}&template=classic`
+  const startFreePath = `/login?next=${encodeURIComponent('/editor')}&template=ivory`
 
   return (
     <div className="min-h-screen bg-white">
@@ -67,7 +67,7 @@ export default function Landing() {
               <Button
                 variant="ghost"
                 size="lg"
-                onClick={() => navigate('/site/ana-e-pedro')}
+                onClick={() => navigate('/site/ana-e-pedro?example=1')}
                 className="!text-white hover:!bg-white/10"
               >
                 Ver exemplo

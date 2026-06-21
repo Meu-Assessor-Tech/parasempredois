@@ -11,6 +11,9 @@ const WeddingContext = createContext(null)
 
 export function WeddingProvider({ children }) {
   const { user } = useAuth()
+  const isExampleRoute = typeof window !== 'undefined'
+    && window.location.pathname === '/site/ana-e-pedro'
+    && new URLSearchParams(window.location.search).get('example') === '1'
   const isPreviewRoute = typeof window !== 'undefined'
     && window.location.pathname.startsWith('/site/')
     && new URLSearchParams(window.location.search).get('preview') === '1'
@@ -23,6 +26,9 @@ export function WeddingProvider({ children }) {
   const ensureWeddingRef = useRef(null)
   const [wedding, setWedding] = useState(() => {
     try {
+      if (isExampleRoute) {
+        return draftWedding()
+      }
       if (isPreviewRoute) {
         const preview = sessionStorage.getItem(previewStorageKey) ?? sessionStorage.getItem(PREVIEW_STORAGE_KEY)
         if (preview) return normalizeWedding(JSON.parse(preview))
@@ -38,6 +44,11 @@ export function WeddingProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false
+
+    if (isExampleRoute) {
+      setWedding(draftWedding())
+      return
+    }
 
     if (!user) {
       setWedding(prev => ({ ...draftWedding(), ...prev, id: mockWedding.id }))
@@ -80,7 +91,7 @@ export function WeddingProvider({ children }) {
     return () => {
       cancelled = true
     }
-  }, [user, isPreviewRoute])
+  }, [user, isPreviewRoute, isExampleRoute])
 
   const updateWedding = (updates) => {
     setWedding(prev => {
@@ -139,10 +150,18 @@ function normalizeWedding(wedding) {
   return {
     ...draftWedding(),
     ...wedding,
+    template: normalizeTemplateId(wedding.template),
     galleryCustomized: wedding.galleryCustomized ?? false,
     gifts: wedding.gifts ?? sampleWeddingFields().gifts,
     sections: wedding.sections ?? mockWedding.sections,
   }
+}
+
+function normalizeTemplateId(template) {
+  if (template === 'classic') return 'ivory'
+  if (template === 'minimal') return 'bali'
+  if (template === 'floral') return 'celestial'
+  return template || mockWedding.template
 }
 
 function draftWedding() {
@@ -164,6 +183,7 @@ function mergeRemoteWedding(localWedding, remoteWedding) {
     ...mockWedding,
     ...localWedding,
     id: remoteWedding.id,
+    template: normalizeTemplateId(localWedding.template),
     coverImage: remoteWedding.coverImage ?? sampleFields.coverImage,
     galleryCustomized,
     galleryImages: hasRemoteGallery
@@ -183,6 +203,7 @@ function newDraftWedding(localWedding) {
     ...mockWedding,
     ...localWedding,
     id: mockWedding.id,
+    template: normalizeTemplateId(localWedding.template),
     coverImage: sampleFields.coverImage,
     galleryCustomized,
     galleryImages: galleryCustomized ? (localWedding.galleryImages ?? []) : sampleFields.galleryImages,

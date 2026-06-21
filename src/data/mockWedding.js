@@ -16,7 +16,7 @@ export const mockWedding = {
     'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600',
     'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=600',
   ],
-  template: 'classic',
+  template: 'ivory',
   primaryColor: '#8B6F5E',
   guestCount: 47,
   rsvpEnabled: true,

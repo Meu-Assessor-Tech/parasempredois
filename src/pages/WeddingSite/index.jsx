@@ -4,6 +4,9 @@ import BaliTemplate from './BaliTemplate'
 import CelestialTemplate from './CelestialTemplate'
 
 const TEMPLATE_MAP = {
+  ivory: IvoryTemplate,
+  bali: BaliTemplate,
+  celestial: CelestialTemplate,
   classic: IvoryTemplate,
   minimal: BaliTemplate,
   floral: CelestialTemplate,

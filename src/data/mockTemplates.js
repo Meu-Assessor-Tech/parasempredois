@@ -1,6 +1,6 @@
 export const mockTemplates = [
   {
-    id: 'classic',
+    id: 'ivory',
     name: 'Ivory',
     description: 'Moderno, elegante e atemporal. Tipografia sofisticada, tons marfim e detalhes em dourado suave.',
     preview: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800',
@@ -8,7 +8,7 @@ export const mockTemplates = [
     tag: 'Disponível',
   },
   {
-    id: 'minimal',
+    id: 'bali',
     name: 'Bali',
     description: 'Boho moderno e caloroso. Tipografia serifada itálica, tons terracota e creme, estilo orgânico.',
     preview: 'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=800',
@@ -16,7 +16,7 @@ export const mockTemplates = [
     tag: 'Disponível',
   },
   {
-    id: 'floral',
+    id: 'celestial',
     name: 'Celestial',
     description: 'Luxo dramático e sofisticado. Fundo escuro, detalhes dourados e tipografia serifada imponente.',
     preview: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800',
