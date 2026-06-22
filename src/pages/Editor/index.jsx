@@ -6,7 +6,7 @@ import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { canUploadMedia, deleteWeddingDesignImages, deleteWeddingImage, uploadWeddingImage } from '../../api/media'
-import { canSaveWedding, saveWedding } from '../../api/weddings'
+import { canSaveWedding, saveWeddingContent, saveWeddingDesign, saveWeddingGifts } from '../../api/weddings'
 import { useWedding } from '../../context/WeddingContext'
 import { mockTemplates } from '../../data/mockTemplates'
 import { mockWedding } from '../../data/mockWedding'
@@ -19,6 +19,14 @@ const TABS = [
   { id: 'gifts', label: 'Presentes' },
   { id: 'share', label: 'Compartilhar' },
 ]
+
+const SAVEABLE_TABS = new Set(['content', 'design', 'gifts'])
+const SAVE_TAB_LABELS = {
+  content: 'Conteúdo',
+  design: 'Design',
+  gifts: 'Presentes',
+  share: 'Compartilhar',
+}
 
 const COLORS = [
   // Neutros & clássicos
@@ -75,6 +83,8 @@ export default function Editor() {
   const { wedding, loadingWedding, updateWedding, ensureWedding } = useWedding()
   const [previewMode, setPreviewMode] = useState('desktop')
   const [saved, setSaved] = useState(false)
+  const [savedSection, setSavedSection] = useState(null)
+  const [dirtyTabs, setDirtyTabs] = useState({})
   const [previewKey, setPreviewKey] = useState(0)
   const [draggedGalleryIndex, setDraggedGalleryIndex] = useState(null)
   const coverInputRef = useRef(null)
@@ -140,8 +150,13 @@ export default function Editor() {
 
   const wrappedUpdate = useCallback((updates) => {
     updateWedding(updates)
+    if (SAVEABLE_TABS.has(activeTab)) {
+      setDirtyTabs(current => ({ ...current, [activeTab]: true }))
+      setSaved(false)
+      setSavedSection(null)
+    }
     schedulePreviewReload()
-  }, [updateWedding, schedulePreviewReload])
+  }, [activeTab, updateWedding, schedulePreviewReload])
 
   useEffect(() => {
     try {
@@ -176,7 +191,7 @@ export default function Editor() {
       return
     }
     try {
-      const savedWedding = await saveWedding(wedding)
+      const savedWedding = await saveCurrentTab(wedding, activeTab)
       if (savedWedding?.id) {
         updateWedding({
           id: savedWedding.id,
@@ -197,11 +212,22 @@ export default function Editor() {
           gifts: savedWedding.gifts ?? wedding.gifts,
         })
       }
+      if (SAVEABLE_TABS.has(activeTab)) {
+        setDirtyTabs(current => ({ ...current, [activeTab]: false }))
+        setSavedSection(activeTab)
+      }
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
       alert(err.message)
     }
+  }
+
+  const saveCurrentTab = async (currentWedding, tab) => {
+    if (tab === 'content') return saveWeddingContent(currentWedding)
+    if (tab === 'design') return saveWeddingDesign(currentWedding)
+    if (tab === 'gifts') return saveWeddingGifts(currentWedding)
+    return currentWedding
   }
 
   const handleCoverUpload = async (e) => {
@@ -298,6 +324,11 @@ export default function Editor() {
   const uploadGalleryCount = wedding.galleryCustomized ? visibleGalleryCount : realGalleryCount
   const galleryOpenSlots = Math.max(0, MAX_GALLERY_IMAGES - uploadGalleryCount)
   const showGalleryEmptySlots = Boolean(wedding.galleryCustomized && galleryOpenSlots > 0)
+  const activeTabConfig = TABS.find(tab => tab.id === activeTab) ?? TABS[0]
+  const activeTabLabel = SAVE_TAB_LABELS[activeTab] ?? activeTabConfig.label
+  const canSaveActiveTab = SAVEABLE_TABS.has(activeTab)
+  const activeTabHasChanges = Boolean(dirtyTabs[activeTab])
+  const saveButtonLabel = saved && savedSection === activeTab ? `${activeTabLabel} salvo` : `Salvar ${activeTabLabel}`
 
   if (loadingWedding) {
     return (
@@ -339,13 +370,21 @@ export default function Editor() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                className={`relative px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   activeTab === tab.id
                     ? 'bg-stone-900 text-white'
                     : 'text-stone-500 hover:text-stone-800 hover:bg-stone-50'
                 }`}
               >
                 {tab.label}
+                {dirtyTabs[tab.id] && (
+                  <span
+                    className={`absolute right-2 top-1.5 h-1.5 w-1.5 rounded-full ${
+                      activeTab === tab.id ? 'bg-white' : 'bg-amber-500'
+                    }`}
+                    aria-label={`${tab.label} com alteracoes nao salvas`}
+                  />
+                )}
               </button>
             ))}
           </div>
@@ -372,9 +411,21 @@ export default function Editor() {
                 <Smartphone size={14} className="text-stone-600" />
               </button>
             </div>
-            <Button variant="primary" size="sm" onClick={handleSave}>
-              {saved ? <><Check size={14} /> Salvo!</> : <><Save size={14} /> Salvar</>}
-            </Button>
+            <div className="hidden lg:flex flex-col items-end leading-tight">
+              <span className="text-[11px] font-medium text-stone-700">Editando {activeTabLabel}</span>
+              <span className={`text-[10px] ${activeTabHasChanges ? 'text-amber-600' : 'text-stone-400'}`}>
+                {canSaveActiveTab
+                  ? activeTabHasChanges
+                    ? 'Alteracoes nao salvas nesta secao'
+                    : 'Esta secao esta salva'
+                  : 'Esta aba nao precisa salvar'}
+              </span>
+            </div>
+            {canSaveActiveTab && (
+              <Button variant="primary" size="sm" onClick={handleSave}>
+                {saved && savedSection === activeTab ? <><Check size={14} /> {saveButtonLabel}</> : <><Save size={14} /> {saveButtonLabel}</>}
+              </Button>
+            )}
           </div>
         </div>
 
