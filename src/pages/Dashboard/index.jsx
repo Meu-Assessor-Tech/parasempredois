@@ -171,7 +171,7 @@ export default function Dashboard() {
               <Button variant="primary" size="sm" onClick={() => navigate('/editor')}>
                 <Edit3 size={14} /> Editar site
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/site/${wedding.slug}`)}>
+              <Button variant="outline" size="sm" onClick={() => window.open(`/site/${wedding.slug}`, '_blank', 'noopener,noreferrer')}>
                 <Eye size={14} /> Visualizar
               </Button>
               <Button variant="outline" size="sm" onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/site/${wedding.slug}`)}>

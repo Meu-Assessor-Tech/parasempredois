@@ -407,7 +407,7 @@ export default function Editor() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(`/site/${wedding.slug}`)}
+              onClick={() => window.open(`/site/${wedding.slug}`, '_blank', 'noopener,noreferrer')}
               title="Ver site publicado"
             >
               <Eye size={14} /> Ver site
