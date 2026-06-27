@@ -14,6 +14,7 @@ import { Heart, MapPin, Calendar, ChevronDown, Copy, Check, X, ChevronLeft, Chev
 import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
 import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
+import { submitRsvp } from '../../api/rsvps'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.9, ease } } }
@@ -74,6 +75,8 @@ export default function IvoryTemplate({ wedding }) {
   const [rsvpName, setRsvpName] = useState('')
   const [rsvpGuests, setRsvpGuests] = useState('0')
   const [rsvpSent, setRsvpSent] = useState(false)
+  const [rsvpLoading, setRsvpLoading] = useState(false)
+  const [rsvpError, setRsvpError] = useState('')
   const [lightboxIndex, setLightboxIndex] = useState(null)
   const [pixCopied, setPixCopied] = useState(false)
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
@@ -98,7 +101,19 @@ export default function IvoryTemplate({ wedding }) {
     return () => clearInterval(id)
   }, [wedding.date])
 
-  const handleRsvp = (e) => { e.preventDefault(); setRsvpSent(true) }
+  const handleRsvp = async (e) => {
+    e.preventDefault()
+    setRsvpLoading(true)
+    setRsvpError('')
+    try {
+      await submitRsvp(wedding.slug, { name: rsvpName, companions: rsvpGuests })
+      setRsvpSent(true)
+    } catch (err) {
+      setRsvpError(err.message || 'Não foi possível confirmar presença.')
+    } finally {
+      setRsvpLoading(false)
+    }
+  }
   const giftPixKey = (wedding.giftPixKey ?? '').trim()
   const giftPixQrCode = wedding.giftPixQrCode ?? ''
   const galleryImages = (wedding.galleryImages ?? []).slice(0, 6)
@@ -455,7 +470,10 @@ export default function IvoryTemplate({ wedding }) {
                   <ChevronDown size={13} className="absolute right-4 bottom-4 text-stone-400 pointer-events-none" />
                 </motion.div>
                 <motion.div variants={fadeUp} className="pt-1">
-                  <button type="submit" className="w-full py-4 text-white text-sm font-medium tracking-[0.08em] rounded-xl active:scale-[0.98] transition-all duration-200" style={{ backgroundColor: wedding.primaryColor }}>Confirmar presença</button>
+                  {rsvpError && <p className="mb-3 text-center text-xs text-red-500">{rsvpError}</p>}
+                  <button type="submit" disabled={rsvpLoading} className="w-full py-4 text-white text-sm font-medium tracking-[0.08em] rounded-xl active:scale-[0.98] transition-all duration-200 disabled:opacity-60" style={{ backgroundColor: wedding.primaryColor }}>
+                    {rsvpLoading ? 'Confirmando...' : 'Confirmar presença'}
+                  </button>
                 </motion.div>
               </motion.form>
             )}

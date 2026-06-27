@@ -4,6 +4,7 @@ import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, M
 import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
 import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
+import { submitRsvp } from '../../api/rsvps'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 28 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease } } }
@@ -42,6 +43,8 @@ export default function CelestialTemplate({ wedding }) {
   const [rsvpName, setRsvpName] = useState('')
   const [rsvpGuests, setRsvpGuests] = useState('0')
   const [rsvpSent, setRsvpSent] = useState(false)
+  const [rsvpLoading, setRsvpLoading] = useState(false)
+  const [rsvpError, setRsvpError] = useState('')
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   const [lightboxIndex, setLightboxIndex] = useState(null)
   const [pixCopied, setPixCopied] = useState(false)
@@ -100,6 +103,20 @@ export default function CelestialTemplate({ wedding }) {
       window.setTimeout(() => setPixCopied(false), 1800)
     } catch {
       setPixCopied(false)
+    }
+  }
+
+  const handleRsvp = async (event) => {
+    event.preventDefault()
+    setRsvpLoading(true)
+    setRsvpError('')
+    try {
+      await submitRsvp(wedding.slug, { name: rsvpName, companions: rsvpGuests })
+      setRsvpSent(true)
+    } catch (err) {
+      setRsvpError(err.message || 'Não foi possível confirmar presença.')
+    } finally {
+      setRsvpLoading(false)
     }
   }
 
@@ -249,7 +266,7 @@ export default function CelestialTemplate({ wedding }) {
                 <p className="font-serif text-3xl">Presença confirmada!</p>
               </motion.div>
             ) : (
-              <motion.form key="form" onSubmit={(event) => { event.preventDefault(); setRsvpSent(true) }} className="space-y-4">
+              <motion.form key="form" onSubmit={handleRsvp} className="space-y-4">
                 <input value={rsvpName} onChange={e => setRsvpName(e.target.value)} placeholder="Nome completo" required className="w-full border border-white/10 bg-black/20 px-5 py-4 text-white placeholder-white/30 outline-none focus:border-[var(--accent)]" />
                 <div className="relative">
                   <select value={rsvpGuests} onChange={e => setRsvpGuests(e.target.value)} className="w-full border border-white/10 bg-black/20 px-5 py-4 text-white outline-none appearance-none focus:border-[var(--accent)]">
@@ -260,7 +277,10 @@ export default function CelestialTemplate({ wedding }) {
                   </select>
                   <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-white/40" />
                 </div>
-                <button type="submit" className="w-full px-5 py-4 font-medium text-[#080713]" style={{ backgroundColor: accent }}>Confirmar presença</button>
+                {rsvpError && <p className="text-center text-xs text-red-300">{rsvpError}</p>}
+                <button type="submit" disabled={rsvpLoading} className="w-full px-5 py-4 font-medium text-[#080713] disabled:opacity-60" style={{ backgroundColor: accent }}>
+                  {rsvpLoading ? 'Confirmando...' : 'Confirmar presença'}
+                </button>
               </motion.form>
             )}
           </AnimatePresence>

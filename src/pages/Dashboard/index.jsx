@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Check, Copy, Edit3, Eye, HandHeart, Plus, Share2, Trash2 } from 'lucide-react'
@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import { useWedding } from '../../context/WeddingContext'
 import { canSaveWedding } from '../../api/weddings'
+import { getGuestConfirmations } from '../../api/rsvps'
 import { ApiError } from '../../api/client'
 import { mediaUrl } from '../../utils/media'
 import { formatWeddingDate, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
@@ -76,10 +77,31 @@ export default function Dashboard() {
   const { wedding, loadingWedding, deleteWeddingSite } = useWedding()
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [confirmations, setConfirmations] = useState([])
+  const [confirmationsLoading, setConfirmationsLoading] = useState(false)
+  const [confirmationsError, setConfirmationsError] = useState('')
   const navigate = useNavigate()
   const location = useLocation()
   const currentTab = new URLSearchParams(location.search).get('tab')
   const hasWedding = canSaveWedding(wedding?.id)
+
+  useEffect(() => {
+    if (!hasWedding) return
+    let cancelled = false
+    setConfirmationsLoading(true)
+    setConfirmationsError('')
+    getGuestConfirmations(wedding.id)
+      .then(data => {
+        if (!cancelled) setConfirmations(data ?? [])
+      })
+      .catch(err => {
+        if (!cancelled) setConfirmationsError(err.message)
+      })
+      .finally(() => {
+        if (!cancelled) setConfirmationsLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [hasWedding, wedding.id])
 
   if (currentTab === 'colaborar') {
     return <CollaborationTab />
@@ -125,6 +147,7 @@ export default function Dashboard() {
   const formattedDate = formatWeddingDate(wedding.date, { day: '2-digit', month: 'long', year: 'numeric' })
   const weddingTitle = weddingDisplayTitle(wedding)
   const weddingVenue = weddingDisplayVenue(wedding)
+  const totalConfirmedGuests = confirmations.reduce((sum, confirmation) => sum + (confirmation.totalGuests ?? 1), 0)
 
   const handleDeleteSite = async () => {
     const confirmed = confirm('Tem certeza que deseja excluir este site? Isso apaga textos, presentes e imagens enviadas.')
@@ -189,6 +212,52 @@ export default function Dashboard() {
               </Button>
             </div>
           </div>
+        </Card>
+
+        <Card className="mt-6 p-5">
+          <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.22em] text-stone-400 mb-1">Confirmações</p>
+              <h2 className="font-serif text-2xl text-stone-900">Convidados confirmados</h2>
+            </div>
+            <p className="text-sm text-stone-500">
+              {confirmations.length} confirmação(ões) · {totalConfirmedGuests} pessoa(s)
+            </p>
+          </div>
+
+          {confirmationsLoading && (
+            <p className="rounded-xl bg-stone-50 px-4 py-5 text-center text-sm text-stone-400">Carregando confirmações...</p>
+          )}
+
+          {confirmationsError && (
+            <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{confirmationsError}</p>
+          )}
+
+          {!confirmationsLoading && !confirmationsError && confirmations.length === 0 && (
+            <p className="rounded-xl bg-stone-50 px-4 py-5 text-center text-sm text-stone-400">
+              Nenhuma presença confirmada ainda.
+            </p>
+          )}
+
+          {!confirmationsLoading && !confirmationsError && confirmations.length > 0 && (
+            <div className="divide-y divide-stone-100 rounded-xl border border-stone-100">
+              {confirmations.map(confirmation => (
+                <div key={confirmation.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-stone-900">{confirmation.name}</p>
+                    <p className="text-xs text-stone-400">
+                      {confirmation.companions > 0
+                        ? `${confirmation.companions} acompanhante(s)`
+                        : 'Sem acompanhantes'}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
+                    {confirmation.totalGuests} pessoa(s)
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
     </DashboardShell>
