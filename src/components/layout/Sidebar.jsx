@@ -22,7 +22,7 @@ export default function Sidebar() {
   const currentPath = `${location.pathname}${location.search}`
 
   return (
-    <div className="w-60 min-h-screen bg-white border-r border-stone-100 flex flex-col py-6">
+    <div className="sticky top-0 h-screen w-60 bg-white border-r border-stone-100 flex flex-col py-6">
       <div className="px-6 mb-8">
         <Link to="/" className="flex items-center gap-2">
           <Heart size={16} className="text-sand-600 fill-sand-600" />
@@ -54,7 +54,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="px-3">
+      <div className="mt-auto px-3">
         <motion.button
           whileHover={{ x: 2 }}
           onClick={() => { logout(); navigate('/') }}

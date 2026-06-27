@@ -215,11 +215,16 @@ export const useWedding = () => useContext(WeddingContext)
 
 function normalizeWedding(wedding) {
   const normalized = stripLegacyExampleDefaults(wedding)
+  const sampleFields = sampleWeddingFields()
   return preserveOrGenerateSlug({
     ...draftWedding(),
     ...normalized,
     template: normalizeTemplateId(normalized.template),
     galleryCustomized: normalized.galleryCustomized ?? false,
+    coverImage: normalized.coverImage || sampleFields.coverImage,
+    galleryImages: normalized.galleryCustomized
+      ? (normalized.galleryImages ?? [])
+      : (normalized.galleryImages?.length ? normalized.galleryImages : sampleFields.galleryImages),
     gifts: normalized.gifts ?? [],
     giftsCustomized: normalized.giftsCustomized ?? false,
     sections: normalized.sections ?? [],
@@ -400,8 +405,13 @@ function buildWeddingSlug(wedding) {
   const groom = slugify(firstName(wedding?.groomName))
   const names = [bride, groom].filter(Boolean)
   const namePart = names.length === 2 ? `${names[0]}-e-${names[1]}` : (names[0] ?? 'meu-casamento')
-  const datePart = /^\d{4}-\d{2}-\d{2}$/.test(wedding?.date ?? '') ? `-${wedding.date}` : ''
+  const datePart = slugDate(wedding?.date)
   return `${namePart}${datePart}`
+}
+
+function slugDate(date) {
+  const match = String(date ?? '').match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  return match ? `-${match[3]}-${match[2]}-${match[1]}` : ''
 }
 
 function firstName(value) {

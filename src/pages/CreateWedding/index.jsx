@@ -86,7 +86,7 @@ export default function CreateWedding() {
               <div className="rounded-2xl bg-stone-50 border border-stone-100 p-4 flex gap-3 text-sm text-stone-500 leading-relaxed">
                 <Calendar size={18} className="text-stone-400 flex-shrink-0 mt-0.5" />
                 <p>
-                  O link do site sera criado automaticamente com o primeiro nome de cada um e a data, por exemplo: ana-e-pedro-2026-09-20.
+                  O link do site será criado automaticamente com o primeiro nome de cada um e a data, por exemplo: ana-e-pedro-20-09-2026.
                 </p>
               </div>
 
