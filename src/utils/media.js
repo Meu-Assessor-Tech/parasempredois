@@ -81,7 +81,7 @@ function canvasToBlob(canvas, mimeType, quality) {
   const outputType = outputMimeTypeFor(mimeType)
   return new Promise((resolve, reject) => {
     canvas.toBlob(
-      blob => blob ? resolve(blob) : reject(new Error('Nao foi possivel processar a imagem.')),
+      blob => blob ? resolve(blob) : reject(new Error('Não foi possível processar a imagem.')),
       outputType,
       outputType === 'image/jpeg' ? quality : undefined,
     )
@@ -92,7 +92,7 @@ function blobToDataUrl(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = e => resolve(e.target.result)
-    reader.onerror = () => reject(new Error('Nao foi possivel processar a imagem.'))
+    reader.onerror = () => reject(new Error('Não foi possível processar a imagem.'))
     reader.readAsDataURL(blob)
   })
 }
@@ -144,7 +144,7 @@ export async function prepareImageFile(file, kind = 'gallery') {
   const maxBytes = limits.maxRawMb * 1024 * 1024
 
   if (blob.size > maxBytes) {
-    throw new Error(`A imagem processada deve ter no maximo ${limits.maxRawMb} MB.`)
+    throw new Error(`A imagem processada deve ter no máximo ${limits.maxRawMb} MB.`)
   }
 
   return {

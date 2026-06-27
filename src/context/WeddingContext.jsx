@@ -5,6 +5,7 @@ import { mockWedding } from '../data/mockWedding'
 import { sampleMedia } from '../utils/media'
 
 const STORAGE_KEY = 'baitacasamento_wedding'
+const PUBLISHED_STORAGE_KEY = 'baitacasamento_published_wedding'
 const PREVIEW_STORAGE_KEY = 'baitacasamento_preview_wedding'
 
 const WeddingContext = createContext(null)
@@ -42,6 +43,15 @@ export function WeddingProvider({ children }) {
       return draftWedding()
     }
   })
+  const [publishedWedding, setPublishedWedding] = useState(() => {
+    try {
+      const saved = localStorage.getItem(PUBLISHED_STORAGE_KEY)
+      if (!saved) return draftWedding()
+      return normalizeWedding(JSON.parse(saved))
+    } catch {
+      return draftWedding()
+    }
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -54,6 +64,7 @@ export function WeddingProvider({ children }) {
     if (isExampleRoute) {
       setLoadingWedding(false)
       setWedding(draftWedding())
+      setPublishedWedding(draftWedding())
       return
     }
 
@@ -86,6 +97,8 @@ export function WeddingProvider({ children }) {
         }
         setWedding(prev => {
           const next = mergeRemoteWedding(prev, remoteWedding)
+          setPublishedWedding(next)
+          savePublishedWedding(next)
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
           } catch {
@@ -118,9 +131,19 @@ export function WeddingProvider({ children }) {
     })
   }
 
+  const publishWedding = (updates) => {
+    setPublishedWedding(prev => {
+      const next = preserveOrGenerateSlug({ ...prev, ...updates })
+      savePublishedWedding(next)
+      return next
+    })
+  }
+
   const resetWedding = () => {
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(PUBLISHED_STORAGE_KEY)
     setWedding(draftWedding())
+    setPublishedWedding(draftWedding())
   }
 
   const createWeddingSite = async (identity) => {
@@ -130,6 +153,8 @@ export function WeddingProvider({ children }) {
     setWedding(prev => {
       const next = mergeRemoteWedding({ ...prev, ...requestWedding }, remoteWedding)
       nextWedding = next
+      setPublishedWedding(next)
+      savePublishedWedding(next)
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
       } catch {
@@ -145,8 +170,10 @@ export function WeddingProvider({ children }) {
       await deleteWedding(wedding.id)
     }
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(PUBLISHED_STORAGE_KEY)
     const next = draftWedding()
     setWedding(next)
+    setPublishedWedding(next)
     return next
   }
 
@@ -178,7 +205,7 @@ export function WeddingProvider({ children }) {
   }
 
   return (
-    <WeddingContext.Provider value={{ wedding, loadingWedding, updateWedding, ensureWedding, resetWedding, createWeddingSite, deleteWeddingSite }}>
+    <WeddingContext.Provider value={{ wedding, publishedWedding, loadingWedding, updateWedding, publishWedding, ensureWedding, resetWedding, createWeddingSite, deleteWeddingSite }}>
       {children}
     </WeddingContext.Provider>
   )
@@ -194,6 +221,7 @@ function normalizeWedding(wedding) {
     template: normalizeTemplateId(normalized.template),
     galleryCustomized: normalized.galleryCustomized ?? false,
     gifts: normalized.gifts ?? [],
+    giftsCustomized: normalized.giftsCustomized ?? false,
     sections: normalized.sections ?? [],
   })
 }
@@ -223,7 +251,8 @@ function draftWedding() {
     sections: [],
     giftPixKey: '',
     giftPixQrCode: '',
-    gifts: [],
+    gifts: sampleFields.gifts,
+    giftsCustomized: false,
     coverImage: sampleFields.coverImage,
     galleryImages: sampleFields.galleryImages,
     galleryCustomized: false,
@@ -234,6 +263,8 @@ function mergeRemoteWedding(localWedding, remoteWedding) {
   const sampleFields = sampleWeddingFields()
   const hasRemoteGallery = Boolean(remoteWedding.galleryImages?.length)
   const galleryCustomized = Boolean(localWedding.galleryCustomized || hasRemoteGallery)
+  const hasRemoteGifts = Boolean(remoteWedding.gifts?.length)
+  const giftsCustomized = Boolean(localWedding.giftsCustomized || hasRemoteGifts)
   return preserveOrGenerateSlug({
     ...draftWedding(),
     ...localWedding,
@@ -252,12 +283,19 @@ function mergeRemoteWedding(localWedding, remoteWedding) {
     coverImage: remoteWedding.coverImage ?? sampleFields.coverImage,
     galleryCustomized,
     galleryImages: hasRemoteGallery
-      ? remoteWedding.galleryImages
+      ? localWedding.galleryCustomized
+        ? fillGalleryWithCurrentSamples(remoteWedding.galleryImages, localWedding.galleryImages, sampleFields.galleryImages)
+        : fillGalleryWithSamples(remoteWedding.galleryImages, sampleFields.galleryImages)
       : galleryCustomized
       ? (localWedding.galleryImages ?? [])
       : sampleFields.galleryImages,
     giftPixQrCode: remoteWedding.giftPixQrCode ?? '',
-    gifts: remoteWedding.gifts ?? [],
+    gifts: hasRemoteGifts
+      ? remoteWedding.gifts
+      : giftsCustomized
+      ? (localWedding.gifts ?? [])
+      : sampleFields.gifts,
+    giftsCustomized,
   })
 }
 
@@ -273,7 +311,8 @@ function newDraftWedding(localWedding) {
     galleryCustomized,
     galleryImages: galleryCustomized ? (localWedding.galleryImages ?? []) : sampleFields.galleryImages,
     giftPixQrCode: '',
-    gifts: localWedding.gifts ?? [],
+    gifts: localWedding.giftsCustomized ? (localWedding.gifts ?? []) : sampleFields.gifts,
+    giftsCustomized: Boolean(localWedding.giftsCustomized),
     guestCount: 0,
   })
 }
@@ -282,12 +321,26 @@ function sampleWeddingFields() {
   return {
     coverImage: sampleMedia(mockWedding.coverImage, 'cover'),
     galleryImages: mockWedding.galleryImages.map((url, index) => sampleMedia(url, 'gallery', index)),
-    gifts: mockWedding.gifts.map(gift => ({
-      ...gift,
-      source: 'sample',
-      image: typeof gift.image === 'string' ? sampleMedia(gift.image, 'gift', gift.id) : gift.image,
-    })),
+    gifts: mockWedding.gifts.slice(0, 4).map(({ source, ...gift }) => ({ ...gift })),
   }
+}
+
+function fillGalleryWithSamples(galleryImages = [], sampleImages = []) {
+  const realImages = realMediaItems(galleryImages)
+  return [...realImages, ...sampleImages.slice(realImages.length)].slice(0, sampleImages.length)
+}
+
+function fillGalleryWithCurrentSamples(galleryImages = [], currentImages = [], fallbackSampleImages = []) {
+  const realImages = realMediaItems(galleryImages)
+  const currentSamples = (currentImages ?? []).filter(item => item?.source === 'sample' || typeof item === 'string')
+  const samples = currentSamples.length || (currentImages ?? []).length < fallbackSampleImages.length
+    ? currentSamples
+    : fallbackSampleImages.slice(realImages.length)
+  return [...realImages, ...samples].slice(0, fallbackSampleImages.length)
+}
+
+function realMediaItems(items = []) {
+  return items.filter(item => item && item.source !== 'sample' && typeof item !== 'string')
 }
 
 function stripLegacyExampleDefaults(wedding) {
@@ -308,6 +361,7 @@ function stripLegacyExampleDefaults(wedding) {
       story: '',
       sections: [],
       gifts: [],
+      giftsCustomized: true,
       giftPixKey: '',
       giftPixQrCode: '',
     }
@@ -326,6 +380,18 @@ function preserveOrGenerateSlug(wedding) {
   return {
     ...wedding,
     slug: wedding.slug || buildWeddingSlug(wedding),
+  }
+}
+
+function savePublishedWedding(wedding) {
+  setLocalStorageJson(PUBLISHED_STORAGE_KEY, wedding)
+}
+
+function setLocalStorageJson(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // localStorage quota exceeded (e.g. large base64 images)
   }
 }
 

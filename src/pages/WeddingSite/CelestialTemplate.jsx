@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, MapPin, QrCode, X } from 'lucide-react'
+import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, MapPin, X } from 'lucide-react'
 import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
 import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
@@ -190,30 +190,30 @@ export default function CelestialTemplate({ wedding }) {
         </section>
       )}
 
-      {((wedding.gifts ?? []).length > 0 || canGiftWithPix || giftPixQrCode) && (
+      {((wedding.gifts ?? []).length > 0 || canGiftWithPix) && (
         <section id="preview-gifts" className="px-4 sm:px-6 py-28">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <SectionLabel>Presentes</SectionLabel>
               <h2 className="font-serif text-5xl mb-4">Um gesto para celebrar</h2>
-              <p className="text-sm text-white/50">Copie a chave Pix e conclua no app do seu banco. A plataforma não processa pagamentos.</p>
+              <p className="text-sm text-white/50">Os presentes abaixo são sugestões simbólicas.</p>
             </div>
-            {(canGiftWithPix || giftPixQrCode) && (
-              <div className="max-w-3xl mx-auto mb-12 border border-white/10 bg-white/[0.035] p-5 grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-5">
-                <div className="aspect-square border border-white/10 bg-[#080713] flex items-center justify-center overflow-hidden">
-                  {giftPixQrCode ? <img src={mediaUrl(giftPixQrCode)} alt="QR Code Pix" className="w-full h-full object-cover" /> : <QrCode size={40} className="text-white/20" />}
-                </div>
+            {canGiftWithPix && (
+              <div className={`max-w-3xl mx-auto mb-12 border border-white/10 bg-white/[0.035] p-5 ${giftPixQrCode ? 'grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-5' : ''}`}>
+                {giftPixQrCode && (
+                  <div className="aspect-square border border-white/10 bg-[#080713] flex items-center justify-center overflow-hidden">
+                    <img src={mediaUrl(giftPixQrCode)} alt="QR Code Pix" className="w-full h-full object-cover" />
+                  </div>
+                )}
                 <div className="min-w-0 self-center">
                   <p className="text-xs uppercase tracking-[0.35em] text-[var(--accent)] mb-3">Pix dos noivos</p>
-                  {canGiftWithPix && (
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <code className="flex-1 border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/75 break-all">{giftPixKey}</code>
-                      <button type="button" onClick={copyPix} className="px-5 py-3 text-sm font-medium text-[#080713] flex items-center justify-center gap-2" style={{ backgroundColor: accent }}>
-                        {pixCopied ? <Check size={14} /> : <Copy size={14} />}
-                        {pixCopied ? 'Copiado' : 'Copiar'}
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <code className="flex-1 border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/75 break-all">{giftPixKey}</code>
+                    <button type="button" onClick={copyPix} className="px-5 py-3 text-sm font-medium text-[#080713] flex items-center justify-center gap-2" style={{ backgroundColor: accent }}>
+                      {pixCopied ? <Check size={14} /> : <Copy size={14} />}
+                      {pixCopied ? 'Copiado' : 'Copiar'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -226,7 +226,6 @@ export default function CelestialTemplate({ wedding }) {
                       {imageUrl && <img src={imageUrl} alt={gift.name} className="w-full h-full object-cover" />}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-[0.26em] text-white/35 mb-1">{gift.category}</p>
                       <h3 className="font-medium text-white truncate">{gift.name}</h3>
                       <p className="mt-1 text-sm text-white/45">R$ {gift.price.toLocaleString('pt-BR')}</p>
                       <button type="button" onClick={copyPix} disabled={!canGiftWithPix} className="mt-3 px-4 py-2 text-xs font-medium text-[#080713] disabled:bg-stone-500" style={{ backgroundColor: canGiftWithPix ? accent : '#737373' }}>{pixCopied ? 'Copiado' : 'Pix'}</button>

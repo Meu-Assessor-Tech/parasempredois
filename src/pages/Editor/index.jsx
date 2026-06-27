@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical } from 'lucide-react'
+import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical, MessageCircle } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
@@ -10,7 +10,7 @@ import { canSaveWedding, saveWeddingContent, saveWeddingDesign, saveWeddingGifts
 import { useWedding } from '../../context/WeddingContext'
 import { mockTemplates } from '../../data/mockTemplates'
 import { mockWedding } from '../../data/mockWedding'
-import { giftImageUrl, IMAGE_MIME_TYPES, isSampleMedia, isStoredMedia, mediaKey, mediaUrl, processImageFile, sampleMedia } from '../../utils/media'
+import { giftImageUrl, IMAGE_MIME_TYPES, isSampleMedia, mediaKey, mediaUrl, processImageFile, sampleMedia } from '../../utils/media'
 import { giftImagePresetById, giftImagePresetCategories } from '../../data/giftImagePresets'
 
 const TABS = [
@@ -26,6 +26,12 @@ const SAVE_TAB_LABELS = {
   design: 'Design',
   gifts: 'Presentes',
   share: 'Compartilhar',
+}
+
+const SAVE_BUTTON_LABELS = {
+  content: { idle: 'Salvar conteúdo', saved: 'Conteúdo salvo' },
+  design: { idle: 'Salvar Design', saved: 'Design salvo' },
+  gifts: { idle: 'Salvar presentes', saved: 'Presentes salvos' },
 }
 
 const COLORS = [
@@ -67,20 +73,26 @@ function realMediaItems(items = []) {
   return items.filter(item => !isSampleMedia(item) && typeof item !== 'string')
 }
 
-function PreviewJumpButton({ onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-full border border-stone-200 px-2.5 py-1 text-[10px] font-medium text-stone-500 transition-colors hover:border-stone-300 hover:bg-stone-50 hover:text-stone-800"
-    >
-      Ir para
-    </button>
-  )
+function mergeUploadedGalleryImages(currentImages = [], uploadedImages = []) {
+  const nextImages = [...currentImages]
+  for (const image of uploadedImages) {
+    const sampleIndex = nextImages.findIndex(item => isSampleMedia(item) || typeof item === 'string')
+    if (sampleIndex >= 0) {
+      nextImages[sampleIndex] = image
+    } else if (nextImages.length < MAX_GALLERY_IMAGES) {
+      nextImages.push(image)
+    }
+  }
+  return nextImages.slice(0, MAX_GALLERY_IMAGES)
+}
+
+function fillGalleryWithCurrentSamples(realImages = [], currentImages = []) {
+  const sampleImages = currentImages.filter(item => isSampleMedia(item) || typeof item === 'string')
+  return [...realImages, ...sampleImages].slice(0, MAX_GALLERY_IMAGES)
 }
 
 export default function Editor() {
-  const { wedding, loadingWedding, updateWedding, ensureWedding } = useWedding()
+  const { wedding, loadingWedding, updateWedding, publishWedding, ensureWedding } = useWedding()
   const [previewMode, setPreviewMode] = useState('desktop')
   const [saved, setSaved] = useState(false)
   const [savedSection, setSavedSection] = useState(null)
@@ -130,16 +142,6 @@ export default function Editor() {
     }, 80)
   }, [])
 
-  const scrollPreviewTo = useCallback((sectionId) => {
-    try {
-      const doc = previewIframeRef.current?.contentDocument
-      const target = doc?.getElementById(sectionId)
-      target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    } catch {
-      // Same-origin preview should be accessible; ignore browser restrictions.
-    }
-  }, [])
-
   const schedulePreviewReload = useCallback(() => {
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
@@ -181,7 +183,7 @@ export default function Editor() {
   }, [wedding.id, ensureWedding])
 
   const deleteStoredMedia = useCallback(async (media) => {
-    if (!canUploadMedia(wedding.id) || !isStoredMedia(media)) return
+    if (!canUploadMedia(wedding.id) || !media?.storageKey) return
     await deleteWeddingImage(wedding.id, media.storageKey)
   }, [wedding.id])
 
@@ -193,7 +195,7 @@ export default function Editor() {
     try {
       const savedWedding = await saveCurrentTab(wedding, activeTab)
       if (savedWedding?.id) {
-        updateWedding({
+        const savedUpdates = {
           id: savedWedding.id,
           brideName: savedWedding.brideName ?? wedding.brideName,
           groomName: savedWedding.groomName ?? wedding.groomName,
@@ -207,10 +209,15 @@ export default function Editor() {
           sections: savedWedding.sections ?? [],
           giftPixKey: savedWedding.giftPixKey ?? '',
           coverImage: savedWedding.coverImage ?? wedding.coverImage,
-          galleryImages: savedWedding.galleryImages ?? wedding.galleryImages,
+          galleryImages: savedWedding.galleryImages ? fillGalleryWithCurrentSamples(savedWedding.galleryImages, wedding.galleryImages) : wedding.galleryImages,
           giftPixQrCode: savedWedding.giftPixQrCode ?? wedding.giftPixQrCode,
-          gifts: savedWedding.gifts ?? wedding.gifts,
-        })
+          gifts: activeTab === 'gifts'
+            ? (Array.isArray(savedWedding.gifts) ? savedWedding.gifts : wedding.gifts)
+            : savedWedding.gifts ?? wedding.gifts,
+          giftsCustomized: wedding.giftsCustomized,
+        }
+        updateWedding(savedUpdates)
+        publishWedding(savedUpdates)
       }
       if (SAVEABLE_TABS.has(activeTab)) {
         setDirtyTabs(current => ({ ...current, [activeTab]: false }))
@@ -226,7 +233,12 @@ export default function Editor() {
   const saveCurrentTab = async (currentWedding, tab) => {
     if (tab === 'content') return saveWeddingContent(currentWedding)
     if (tab === 'design') return saveWeddingDesign(currentWedding)
-    if (tab === 'gifts') return saveWeddingGifts(currentWedding)
+    if (tab === 'gifts') {
+      if (currentWedding.giftPixQrCode && !currentWedding.giftPixKey?.trim()) {
+        throw new Error('Informe a chave Pix antes de salvar um QR Code.')
+      }
+      return saveWeddingGifts(currentWedding)
+    }
     return currentWedding
   }
 
@@ -246,8 +258,8 @@ export default function Editor() {
   const handleGalleryUpload = async (e) => {
     const files = Array.from(e.target.files)
     if (!files.length) return
-    const currentImages = realMediaItems(wedding.galleryImages ?? [])
-    const remainingSlots = MAX_GALLERY_IMAGES - currentImages.length
+    const currentImages = wedding.galleryImages ?? []
+    const remainingSlots = MAX_GALLERY_IMAGES - realMediaItems(currentImages).length
     if (remainingSlots <= 0) {
       alert(`A galeria aceita até ${MAX_GALLERY_IMAGES} fotos para manter o layout bonito.`)
       e.target.value = ''
@@ -260,14 +272,14 @@ export default function Editor() {
         images.push(await uploadOrPreview(file, 'gallery'))
       } catch (err) {
         if (images.length) {
-          wrappedUpdate({ galleryImages: [...currentImages, ...images], galleryCustomized: true })
+          wrappedUpdate({ galleryImages: mergeUploadedGalleryImages(currentImages, images), galleryCustomized: true })
         }
         alert(err.message)
         e.target.value = ''
         return
       }
     }
-    wrappedUpdate({ galleryImages: [...currentImages, ...images], galleryCustomized: true })
+    wrappedUpdate({ galleryImages: mergeUploadedGalleryImages(currentImages, images), galleryCustomized: true })
     if (files.length > remainingSlots) {
       alert(`Foram adicionadas ${remainingSlots} foto(s). O limite da galeria é ${MAX_GALLERY_IMAGES}.`)
     }
@@ -319,16 +331,19 @@ export default function Editor() {
   const activeTemplate = mockTemplates.find(template => template.id === wedding.template) ?? mockTemplates[0]
   const defaultTemplateAccent = activeTemplate?.colors?.[1] ?? '#8B6F5E'
   const usesTemplateAccent = wedding.primaryColor?.toLowerCase() === defaultTemplateAccent.toLowerCase()
-  const visibleGalleryCount = Math.min((wedding.galleryImages ?? []).length, MAX_GALLERY_IMAGES)
   const realGalleryCount = realMediaItems(wedding.galleryImages ?? []).length
-  const uploadGalleryCount = wedding.galleryCustomized ? visibleGalleryCount : realGalleryCount
-  const galleryOpenSlots = Math.max(0, MAX_GALLERY_IMAGES - uploadGalleryCount)
-  const showGalleryEmptySlots = Boolean(wedding.galleryCustomized && galleryOpenSlots > 0)
+  const uploadGalleryCount = realGalleryCount
   const activeTabConfig = TABS.find(tab => tab.id === activeTab) ?? TABS[0]
   const activeTabLabel = SAVE_TAB_LABELS[activeTab] ?? activeTabConfig.label
   const canSaveActiveTab = SAVEABLE_TABS.has(activeTab)
   const activeTabHasChanges = Boolean(dirtyTabs[activeTab])
-  const saveButtonLabel = saved && savedSection === activeTab ? `${activeTabLabel} salvo` : `Salvar ${activeTabLabel}`
+  const saveButtonCopy = SAVE_BUTTON_LABELS[activeTab]
+  const saveButtonLabel = saved && savedSection === activeTab
+    ? saveButtonCopy?.saved ?? `${activeTabLabel} salvo`
+    : saveButtonCopy?.idle ?? `Salvar ${activeTabLabel}`
+  const siteUrl = `${window.location.origin}/site/${wedding.slug}`
+  const whatsappShareText = `Oi! Criamos nosso site de casamento: ${siteUrl}`
+  const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(whatsappShareText)}`
 
   if (loadingWedding) {
     return (
@@ -382,7 +397,7 @@ export default function Editor() {
                     className={`absolute right-2 top-1.5 h-1.5 w-1.5 rounded-full ${
                       activeTab === tab.id ? 'bg-white' : 'bg-amber-500'
                     }`}
-                    aria-label={`${tab.label} com alteracoes nao salvas`}
+                    aria-label={`${tab.label} com alterações não salvas`}
                   />
                 )}
               </button>
@@ -411,32 +426,35 @@ export default function Editor() {
                 <Smartphone size={14} className="text-stone-600" />
               </button>
             </div>
-            <div className="hidden lg:flex flex-col items-end leading-tight">
-              <span className="text-[11px] font-medium text-stone-700">Editando {activeTabLabel}</span>
-              <span className={`text-[10px] ${activeTabHasChanges ? 'text-amber-600' : 'text-stone-400'}`}>
-                {canSaveActiveTab
-                  ? activeTabHasChanges
-                    ? 'Alteracoes nao salvas nesta secao'
-                    : 'Esta secao esta salva'
-                  : 'Esta aba nao precisa salvar'}
-              </span>
-            </div>
-            {canSaveActiveTab && (
-              <Button variant="primary" size="sm" onClick={handleSave}>
-                {saved && savedSection === activeTab ? <><Check size={14} /> {saveButtonLabel}</> : <><Save size={14} /> {saveButtonLabel}</>}
-              </Button>
-            )}
           </div>
         </div>
 
         <div className="flex-1 min-h-0 flex overflow-hidden">
           <div className="w-[440px] bg-white border-r border-stone-100 overflow-y-auto overscroll-contain flex-shrink-0 h-[calc(100vh-3.5rem)]">
             <div className="p-5">
+              <div className="sticky top-0 z-10 -mx-5 -mt-5 mb-5 border-b border-stone-100 bg-white/95 px-5 py-4 backdrop-blur">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-stone-900">Editando {activeTabLabel}</p>
+                    <p className={`mt-0.5 text-[11px] ${activeTabHasChanges ? 'text-amber-600' : 'text-stone-400'}`}>
+                      {canSaveActiveTab
+                        ? activeTabHasChanges
+                          ? 'Alterações não salvas nesta seção'
+                          : 'Esta seção está salva'
+                        : 'Esta aba não precisa salvar'}
+                    </p>
+                  </div>
+                  {canSaveActiveTab && (
+                    <Button variant="primary" size="sm" onClick={handleSave}>
+                      {saved && savedSection === activeTab ? <><Check size={14} /> {saveButtonLabel}</> : <><Save size={14} /> {saveButtonLabel}</>}
+                    </Button>
+                  )}
+                </div>
+              </div>
               {activeTab === 'content' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="font-medium text-stone-900 text-sm">Informações do casal</h2>
-                    <PreviewJumpButton onClick={() => scrollPreviewTo('preview-details')} />
                   </div>
                   <Input
                     label="Nome da noiva"
@@ -458,7 +476,7 @@ export default function Editor() {
                   />
                   <Input
                     label="Local da cerimônia"
-                    placeholder="Ex: Fazenda Santa Clara, Sao Paulo"
+                    placeholder="Ex: Fazenda Santa Clara, São Paulo"
                     value={wedding.venue}
                     onChange={e => wrappedUpdate({ venue: e.target.value })}
                   />
@@ -475,19 +493,18 @@ export default function Editor() {
                   <div>
                     <div className="mb-1.5 flex items-center justify-between gap-3">
                       <label className="block text-sm font-medium text-stone-700">Nossa história</label>
-                      <PreviewJumpButton onClick={() => scrollPreviewTo('preview-story')} />
                     </div>
                     <textarea
                       value={wedding.story}
                       onChange={e => wrappedUpdate({ story: e.target.value })}
-                      placeholder="Conte um pouco da historia de voces."
+                      placeholder="Conte um pouco da história de vocês."
                       rows={4}
                       className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-stone-400 focus:ring-2 focus:ring-stone-100 outline-none text-sm text-stone-900 placeholder-stone-400 transition-all resize-none"
                     />
                   </div>
 
                   <div className="pt-2 border-t border-stone-100">
-                    <SectionsEditor wedding={wedding} updateWedding={wrappedUpdate} scrollPreviewTo={scrollPreviewTo} />
+                    <SectionsEditor wedding={wedding} updateWedding={wrappedUpdate} />
                   </div>
                 </motion.div>
               )}
@@ -586,7 +603,6 @@ export default function Editor() {
                   <div>
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <h2 className="font-medium text-stone-900 text-sm">Foto de capa</h2>
-                      <PreviewJumpButton onClick={() => scrollPreviewTo('preview-cover')} />
                     </div>
                     <div className="relative aspect-video rounded-xl overflow-hidden mb-3 bg-stone-100">
                       <img src={mediaUrl(wedding.coverImage)} alt="Cover" className="w-full h-full object-cover" />
@@ -617,9 +633,8 @@ export default function Editor() {
                         </p>
                       </div>
                       <span className="text-[11px] text-stone-400 flex-shrink-0">
-                        {visibleGalleryCount}/{MAX_GALLERY_IMAGES}
+                        {realGalleryCount}/{MAX_GALLERY_IMAGES}
                       </span>
-                      <PreviewJumpButton onClick={() => scrollPreviewTo('preview-gallery')} />
                     </div>
                     {(wedding.galleryImages ?? []).length > MAX_GALLERY_IMAGES && (
                       <p className="mb-3 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
@@ -663,21 +678,6 @@ export default function Editor() {
                           </span>
                         </div>
                       ))}
-                      {showGalleryEmptySlots && Array.from({ length: galleryOpenSlots }).map((_, i) => (
-                        <button
-                          key={`empty-gallery-slot-${i}`}
-                          type="button"
-                          onClick={() => galleryInputRef.current?.click()}
-                          className="aspect-[4/5] rounded-xl border-2 border-dashed border-stone-200 bg-stone-50 text-stone-400 transition-colors hover:border-stone-300 hover:bg-stone-100"
-                          aria-label={`Adicionar foto ${visibleGalleryCount + i + 1}`}
-                        >
-                          <div className="flex h-full flex-col items-center justify-center gap-1.5 px-3 text-center">
-                            <Plus size={16} />
-                            <span className="text-[10px] font-medium">Adicionar foto</span>
-                            <span className="text-[9px] text-stone-400">{visibleGalleryCount + i + 1}/{MAX_GALLERY_IMAGES}</span>
-                          </div>
-                        </button>
-                      ))}
                     </div>
                     <input
                       ref={galleryInputRef}
@@ -713,36 +713,35 @@ export default function Editor() {
               )}
 
               {activeTab === 'gifts' && (
-                <GiftsTab wedding={wedding} updateWedding={wrappedUpdate} scrollPreviewTo={scrollPreviewTo} />
+                <GiftsTab wedding={wedding} updateWedding={wrappedUpdate} />
               )}
 
               {activeTab === 'share' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="font-medium text-stone-900 text-sm">Compartilhar site</h2>
-                    <PreviewJumpButton onClick={() => scrollPreviewTo('preview-rsvp')} />
                   </div>
                   <div className="bg-stone-50 rounded-xl p-4">
                     <p className="text-xs text-stone-500 mb-2">Seu link exclusivo</p>
-                    <p className="font-mono text-sm text-stone-900 break-all">nossodia.com/{wedding.slug}</p>
+                    <p className="font-mono text-sm text-stone-900 break-all">{siteUrl}</p>
                   </div>
                   <Button
                     variant="primary"
                     size="sm"
                     fullWidth
-                    onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/site/${wedding.slug}`)}
+                    onClick={() => navigator.clipboard?.writeText(siteUrl)}
                   >
                     Copiar link
                   </Button>
                   <div className="pt-2">
-                    <p className="text-xs text-stone-500 mb-3">Compartilhar via</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {['WhatsApp', 'Instagram', 'E-mail', 'QR Code'].map(method => (
-                        <button key={method} className="flex items-center justify-center gap-2 p-3 rounded-xl border border-stone-200 text-xs text-stone-700 hover:bg-stone-50 transition-colors">
-                          {method}
-                        </button>
-                      ))}
-                    </div>
+                    <a
+                      href={whatsappShareUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-center gap-2 rounded-xl border border-stone-200 p-3 text-xs font-medium text-stone-700 transition-colors hover:bg-stone-50"
+                    >
+                      <MessageCircle size={14} /> Compartilhar no WhatsApp
+                    </a>
                   </div>
                 </motion.div>
               )}
@@ -786,13 +785,17 @@ const EMPTY_SECTION = { title: '', content: '' }
 const EMPTY_GIFT = { name: '', price: '', category: '', image: '', imagePreset: '' }
 const DEFAULT_GIFT_PRESET_CATEGORY = giftImagePresetCategories[0]?.id ?? 'lar'
 
+function initialDefaultGifts() {
+  return mockWedding.gifts.slice(0, 4).map(({ source, ...gift }) => ({ ...gift }))
+}
+
 function giftPresetCategoryId(presetId, fallback = DEFAULT_GIFT_PRESET_CATEGORY) {
   return giftImagePresetCategories.find(category =>
     category.presets.some(preset => preset.id === presetId)
   )?.id ?? fallback
 }
 
-function SectionsEditor({ wedding, updateWedding, scrollPreviewTo }) {
+function SectionsEditor({ wedding, updateWedding }) {
   const sections = wedding.sections ?? []
   const [form, setForm] = useState(null)
   const [errors, setErrors] = useState({})
@@ -909,7 +912,6 @@ function SectionsEditor({ wedding, updateWedding, scrollPreviewTo }) {
             <p className="text-xs text-stone-400 line-clamp-2 mt-0.5">{s.content}</p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-            <PreviewJumpButton onClick={() => scrollPreviewTo(`preview-section-${s.id}`)} />
             <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-colors">
               <Pencil size={13} />
             </button>
@@ -938,7 +940,7 @@ function SectionsEditor({ wedding, updateWedding, scrollPreviewTo }) {
   )
 }
 
-function GiftsTab({ wedding, updateWedding, scrollPreviewTo }) {
+function GiftsTab({ wedding, updateWedding }) {
   const { ensureWedding } = useWedding()
   const gifts = wedding.gifts ?? []
   const [form, setForm] = useState(null)
@@ -963,7 +965,7 @@ function GiftsTab({ wedding, updateWedding, scrollPreviewTo }) {
   }, [wedding.id, ensureWedding])
 
   const deleteStoredMedia = useCallback(async (media) => {
-    if (!canUploadMedia(wedding.id) || !isStoredMedia(media)) return
+    if (!canUploadMedia(wedding.id) || !media?.storageKey) return
     await deleteWeddingImage(wedding.id, media.storageKey)
   }, [wedding.id])
 
@@ -1026,16 +1028,36 @@ function GiftsTab({ wedding, updateWedding, scrollPreviewTo }) {
     const { source, store, ...giftFields } = form
     const gift = { ...giftFields, image: '', price: Number(form.price) }
     if (gift.id) {
-      updateWedding({ gifts: gifts.map(g => g.id === gift.id ? gift : g) })
+      updateWedding({ gifts: gifts.map(g => g.id === gift.id ? gift : g), giftsCustomized: true })
     } else {
-      updateWedding({ gifts: [...gifts, { ...gift, id: String(Date.now()) }] })
+      updateWedding({ gifts: [...gifts, { ...gift, id: String(Date.now()) }], giftsCustomized: true })
     }
     closeForm()
   }
 
   const deleteGift = (id) => {
     if (!confirm('Remover este presente?')) return
-    updateWedding({ gifts: gifts.filter(g => g.id !== id) })
+    updateWedding({ gifts: gifts.filter(g => g.id !== id), giftsCustomized: true })
+  }
+
+  const resetGiftData = async () => {
+    if (!confirm('Resetar Pix, QR Code e presentes para a configuração inicial?')) return
+    setQrLoading(true)
+    setQrError('')
+    try {
+      await deleteStoredMedia(wedding.giftPixQrCode)
+      updateWedding({
+        giftPixKey: '',
+        giftPixQrCode: '',
+        gifts: initialDefaultGifts(),
+        giftsCustomized: false,
+      })
+      closeForm()
+    } catch (err) {
+      setQrError(err.message)
+    } finally {
+      setQrLoading(false)
+    }
   }
 
   const selectedPresetCategoryData = giftImagePresetCategories.find(category => category.id === selectedPresetCategory) ?? giftImagePresetCategories[0]
@@ -1046,7 +1068,6 @@ function GiftsTab({ wedding, updateWedding, scrollPreviewTo }) {
         <div>
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-medium text-stone-900 text-sm">Pix dos presentes</h2>
-            <PreviewJumpButton onClick={() => scrollPreviewTo('preview-gifts')} />
           </div>
           <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
             A chave fica pública no site dos noivos. O pagamento acontece fora da plataforma, no app do banco do convidado.
@@ -1061,8 +1082,13 @@ function GiftsTab({ wedding, updateWedding, scrollPreviewTo }) {
             onChange={e => updatePixKey(e.target.value)}
             maxLength={140}
             autoComplete="off"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-stone-200 focus:outline-none focus:border-stone-400"
+            className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none ${
+              wedding.giftPixQrCode && !wedding.giftPixKey?.trim() ? 'border-amber-200 focus:border-amber-400' : 'border-stone-200 focus:border-stone-400'
+            }`}
           />
+          {wedding.giftPixQrCode && !wedding.giftPixKey?.trim() && (
+            <p className="mt-1 text-[11px] text-amber-600">Obrigatória quando houver QR Code.</p>
+          )}
         </div>
 
         <div>
@@ -1150,7 +1176,7 @@ function GiftsTab({ wedding, updateWedding, scrollPreviewTo }) {
               <p className="text-[11px] text-stone-500 font-medium">Foto do presente</p>
               <p className="text-[10px] text-stone-400 mt-0.5">Use as categorias apenas para filtrar as imagens.</p>
             </div>
-            <div className="flex gap-1.5 overflow-x-auto pb-1">
+            <div className="flex flex-wrap gap-1.5 pb-1">
               {giftImagePresetCategories.map(category => (
                 <button
                   key={category.id}
@@ -1176,7 +1202,6 @@ function GiftsTab({ wedding, updateWedding, scrollPreviewTo }) {
                       ...f,
                       image: '',
                       imagePreset: preset.id,
-                      category: selectedPresetCategoryData.label,
                     }))
                   }}
                   className={`relative rounded-lg overflow-hidden aspect-square border-2 transition-all ${
@@ -1271,6 +1296,18 @@ function GiftsTab({ wedding, updateWedding, scrollPreviewTo }) {
           </div>
         )
       })}
+
+      <div className="pt-2 border-t border-stone-100">
+        <Button
+          variant="ghost"
+          size="sm"
+          fullWidth
+          onClick={resetGiftData}
+          className="!text-red-400 hover:!text-red-600 hover:!bg-red-50"
+        >
+          Resetar dados de presentes
+        </Button>
+      </div>
     </motion.div>
   )
 }

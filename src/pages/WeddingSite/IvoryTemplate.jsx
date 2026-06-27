@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, MapPin, Calendar, ChevronDown, Copy, Check, X, ChevronLeft, ChevronRight, QrCode } from 'lucide-react'
+import { Heart, MapPin, Calendar, ChevronDown, Copy, Check, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
 import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
@@ -343,54 +343,42 @@ export default function IvoryTemplate({ wedding }) {
       <Ornament className="max-w-64 mx-auto" />
 
       {/* LISTA DE PRESENTES */}
-      {((wedding.gifts ?? []).length > 0 || canGiftWithPix || giftPixQrCode) && (
+      {((wedding.gifts ?? []).length > 0 || canGiftWithPix) && (
         <section id="preview-gifts" className="py-28 px-4 sm:px-6 bg-[#FAFAF8]">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger} className="max-w-5xl mx-auto">
             <motion.div variants={fadeUp} className="text-center mb-14">
               <SectionLabel>Lista de presentes</SectionLabel>
               <h2 className="font-serif text-[2.2rem] sm:text-[2.6rem] font-normal text-stone-900 mb-4 leading-tight">Presenteie com amor</h2>
               <p className="text-stone-400 text-sm font-light max-w-md mx-auto leading-relaxed">
-                Os presentes abaixo são sugestões simbólicas. Para contribuir, copie a chave Pix e conclua no app do seu banco.
+                Os presentes abaixo são sugestões simbólicas.
               </p>
             </motion.div>
 
-            {(canGiftWithPix || giftPixQrCode) && (
+            {canGiftWithPix && (
               <motion.div variants={fadeUp} className="max-w-2xl mx-auto mb-12 bg-white rounded-3xl border border-stone-100 p-5 sm:p-6 shadow-sm">
-                <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-5 items-center">
-                  <div className="aspect-square rounded-2xl border border-dashed border-stone-200 bg-stone-50 flex items-center justify-center overflow-hidden">
-                    {giftPixQrCode ? (
+                <div className={giftPixQrCode ? 'grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-5 items-center' : ''}>
+                  {giftPixQrCode && (
+                    <div className="aspect-square rounded-2xl border border-dashed border-stone-200 bg-stone-50 flex items-center justify-center overflow-hidden">
                       <img src={mediaUrl(giftPixQrCode)} alt="QR Code Pix dos noivos" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="text-center px-4">
-                        <QrCode size={34} className="mx-auto text-[var(--accent)] opacity-35 mb-2" />
-                        <p className="text-[10px] uppercase tracking-[0.18em] text-stone-300">QR Code</p>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   <div>
                     <p className="text-xs uppercase tracking-[0.24em] text-sand-500 mb-3">Pix dos noivos</p>
-                    <p className="text-sm text-stone-500 leading-relaxed mb-4">
-                      A plataforma não processa pagamentos. Use a chave abaixo apenas no app do seu banco.
-                    </p>
-                    {canGiftWithPix ? (
-                      <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                        <code className="flex-1 rounded-xl bg-stone-50 border border-stone-100 px-4 py-3 text-sm text-stone-700 break-all">
-                          {giftPixKey}
-                        </code>
-                        <button
-                          type="button"
-                          onClick={copyGiftPixKey}
-                          className="flex items-center justify-center gap-2 text-xs font-medium text-white px-4 py-3 rounded-xl active:scale-[0.98] transition-all duration-150"
-                          style={{ backgroundColor: wedding.primaryColor }}
-                        >
-                          {pixCopied ? <Check size={14} /> : <Copy size={14} />}
-                          {pixCopied ? 'Copiado' : 'Copiar chave'}
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-stone-400">Os noivos ainda não informaram uma chave Pix.</p>
-                    )}
+                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                      <code className="flex-1 rounded-xl bg-stone-50 border border-stone-100 px-4 py-3 text-sm text-stone-700 break-all">
+                        {giftPixKey}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={copyGiftPixKey}
+                        className="flex items-center justify-center gap-2 text-xs font-medium text-white px-4 py-3 rounded-xl active:scale-[0.98] transition-all duration-150"
+                        style={{ backgroundColor: wedding.primaryColor }}
+                      >
+                        {pixCopied ? <Check size={14} /> : <Copy size={14} />}
+                        {pixCopied ? 'Copiado' : 'Copiar chave'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -407,7 +395,6 @@ export default function IvoryTemplate({ wedding }) {
                       {imageUrl && <img src={imageUrl} alt={gift.name} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]" />}
                     </div>
                     <div className="p-4">
-                      <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-stone-400 mb-1.5">{gift.category}</p>
                       <h3 className="font-medium text-stone-900 text-sm leading-snug mb-0.5">{gift.name}</h3>
                       <div className="mt-4 flex items-center justify-between">
                         <span className="text-sm font-semibold text-stone-800">R$ {gift.price.toLocaleString('pt-BR')}</span>

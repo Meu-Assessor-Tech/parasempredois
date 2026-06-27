@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, Copy, Edit3, Eye, HandHeart, Plus, QrCode, Share2, Trash2 } from 'lucide-react'
+import { Check, Copy, Edit3, Eye, HandHeart, Plus, Share2, Trash2 } from 'lucide-react'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
@@ -11,7 +11,7 @@ import { ApiError } from '../../api/client'
 import { mediaUrl } from '../../utils/media'
 import { formatWeddingDate, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 
-const PIX_KEY = 'X'
+const PIX_KEY = 'parasempredois@gmail.com'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -34,22 +34,22 @@ function CollaborationTab() {
   return (
     <DashboardShell>
       <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
-        <p className="text-xs text-stone-400 uppercase tracking-widest mb-1">Colaboracao opcional</p>
+        <p className="text-xs text-stone-400 uppercase tracking-widest mb-1">Colaboração opcional</p>
         <h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-3">Ajude o Para sempre dois a continuar</h1>
         <p className="text-stone-500 text-sm leading-relaxed max-w-2xl mb-6">
-          O projeto e gratuito. Se quiser colaborar para manter a plataforma no ar, a contribuicao por Pix e opcional.
+          O projeto é gratuito. Se quiser colaborar para manter a plataforma no ar, a contribuição por Pix é opcional.
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <Card className="p-6">
             <div className="flex items-start gap-4 mb-6">
               <div className="w-11 h-11 rounded-2xl bg-sand-100 text-sand-700 flex items-center justify-center">
                 <HandHeart size={20} />
               </div>
               <div>
-                <h2 className="font-serif text-2xl text-stone-900 mb-2">Contribuicao por Pix</h2>
+                <h2 className="font-serif text-2xl text-stone-900 mb-2">Contribuição por Pix</h2>
                 <p className="text-sm text-stone-500 leading-relaxed">
-                  A contribuicao nao muda o acesso. O site segue gratuito para criar e compartilhar.
+                  A contribuição não muda o acesso. O site segue gratuito para criar e compartilhar.
                 </p>
               </div>
             </div>
@@ -64,14 +64,6 @@ function CollaborationTab() {
                   {copied ? 'Copiado' : 'Copiar chave'}
                 </Button>
               </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="aspect-square rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50 flex flex-col items-center justify-center text-center p-6">
-              <QrCode size={42} className="text-stone-300 mb-4" />
-              <p className="font-medium text-stone-700 text-sm mb-1">QR Code Pix</p>
-              <p className="text-xs text-stone-400 leading-relaxed">Espaco reservado para inserir a imagem do QR Code.</p>
             </div>
           </Card>
         </div>
@@ -118,7 +110,7 @@ export default function Dashboard() {
               <p className="text-xs uppercase tracking-[0.26em] text-stone-400 mb-3">Primeiro passo</p>
               <h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-3">Crie o site do seu casamento</h1>
               <p className="text-sm text-stone-500 leading-relaxed max-w-xl mx-auto mb-7">
-                Para comecar, informe apenas o nome dos noivos e a data do casamento. Depois disso voce personaliza fotos, presentes e detalhes no editor.
+                Para começar, informe apenas o nome dos noivos e a data do casamento. Depois disso você personaliza fotos, presentes e detalhes no editor.
               </p>
               <Button variant="primary" size="lg" onClick={() => navigate('/criar-site')}>
                 <Plus size={16} /> Criar site
@@ -144,7 +136,7 @@ export default function Dashboard() {
       await deleteWeddingSite()
       navigate('/principal')
     } catch (err) {
-      setDeleteError(err instanceof ApiError ? err.message : 'Nao foi possivel excluir o site')
+      setDeleteError(err instanceof ApiError ? err.message : 'Não foi possível excluir o site')
     } finally {
       setDeleting(false)
     }

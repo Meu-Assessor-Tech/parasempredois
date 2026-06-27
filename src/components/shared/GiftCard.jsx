@@ -19,8 +19,7 @@ export default function GiftCard({ gift }) {
         {imageUrl && <img src={imageUrl} alt={gift.name} className="w-full h-full object-cover" />}
       </div>
       <div className="p-4">
-        <span className="text-xs text-stone-400 uppercase tracking-wide">{gift.category}</span>
-        <h3 className="font-medium text-stone-900 mt-1 mb-0.5 text-sm">{gift.name}</h3>
+        <h3 className="font-medium text-stone-900 mb-0.5 text-sm">{gift.name}</h3>
         <div className="mt-3 flex items-center justify-between">
           <span className="font-semibold text-stone-900">
             R$ {gift.price.toLocaleString('pt-BR')}

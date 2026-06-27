@@ -11,7 +11,7 @@ function storedMediaList(mediaList) {
 }
 
 function giftsForSave(gifts) {
-  return (gifts ?? []).filter(gift => gift?.source !== 'sample').map(gift => {
+  return (gifts ?? []).map(gift => {
     const { source, image, store, ...giftFields } = gift
     return { ...giftFields, image: '' }
   })

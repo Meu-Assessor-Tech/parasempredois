@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, MapPin, QrCode, X } from 'lucide-react'
+import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, MapPin, X } from 'lucide-react'
 import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
 import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
@@ -184,31 +184,30 @@ export default function BaliTemplate({ wedding }) {
         </section>
       )}
 
-      {((wedding.gifts ?? []).length > 0 || canGiftWithPix || giftPixQrCode) && (
+      {((wedding.gifts ?? []).length > 0 || canGiftWithPix) && (
         <section id="preview-gifts" className="py-24 px-4 sm:px-6 bg-[#FFF9F2]">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <SectionLabel>Presentes</SectionLabel>
               <h2 className="font-serif italic text-5xl text-[#6C3F2B] mb-4">Um gesto de carinho</h2>
-              <p className="text-sm text-[#7D5A49]">Copie a chave Pix e conclua a contribuição no app do seu banco.</p>
+              <p className="text-sm text-[#7D5A49]">Os presentes abaixo são sugestões simbólicas.</p>
             </div>
-            {(canGiftWithPix || giftPixQrCode) && (
-              <div className="max-w-2xl mx-auto mb-10 rounded-[2rem] bg-[#FBF6EF] border border-[#E8D8C8] p-5 grid grid-cols-1 sm:grid-cols-[130px_1fr] gap-5">
-                <div className="aspect-square rounded-3xl bg-white border border-[#E8D8C8] flex items-center justify-center overflow-hidden">
-                  {giftPixQrCode ? <img src={mediaUrl(giftPixQrCode)} alt="QR Code Pix" className="w-full h-full object-cover" /> : <QrCode size={34} className="text-[#D9BCA5]" />}
-                </div>
+            {canGiftWithPix && (
+              <div className={`max-w-2xl mx-auto mb-10 rounded-[2rem] bg-[#FBF6EF] border border-[#E8D8C8] p-5 ${giftPixQrCode ? 'grid grid-cols-1 sm:grid-cols-[130px_1fr] gap-5' : ''}`}>
+                {giftPixQrCode && (
+                  <div className="aspect-square rounded-3xl bg-white border border-[#E8D8C8] flex items-center justify-center overflow-hidden">
+                    <img src={mediaUrl(giftPixQrCode)} alt="QR Code Pix" className="w-full h-full object-cover" />
+                  </div>
+                )}
                 <div className="min-w-0">
                   <p className="text-xs uppercase tracking-[0.24em] text-[var(--accent)] mb-3">Pix dos noivos</p>
-                  <p className="text-xs text-[#8B6B5A] mb-4">A plataforma não processa pagamentos.</p>
-                  {canGiftWithPix && (
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <code className="flex-1 rounded-2xl bg-white border border-[#E8D8C8] px-4 py-3 text-sm break-all">{giftPixKey}</code>
-                      <button type="button" onClick={copyPix} className="rounded-2xl text-white px-4 py-3 text-sm font-medium flex items-center justify-center gap-2" style={{ backgroundColor: accent }}>
-                        {pixCopied ? <Check size={14} /> : <Copy size={14} />}
-                        {pixCopied ? 'Copiado' : 'Copiar'}
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <code className="flex-1 rounded-2xl bg-white border border-[#E8D8C8] px-4 py-3 text-sm break-all">{giftPixKey}</code>
+                    <button type="button" onClick={copyPix} className="rounded-2xl text-white px-4 py-3 text-sm font-medium flex items-center justify-center gap-2" style={{ backgroundColor: accent }}>
+                      {pixCopied ? <Check size={14} /> : <Copy size={14} />}
+                      {pixCopied ? 'Copiado' : 'Copiar'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -221,7 +220,6 @@ export default function BaliTemplate({ wedding }) {
                       {imageUrl && <img src={imageUrl} alt={gift.name} className="w-full h-full object-cover" />}
                     </div>
                     <div className="p-4">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-[#A6785B] mb-1">{gift.category}</p>
                       <h3 className="text-sm font-medium text-[#4B3328]">{gift.name}</h3>
                       <div className="mt-4 flex items-center justify-between gap-2">
                         <span className="text-sm font-semibold">R$ {gift.price.toLocaleString('pt-BR')}</span>

@@ -28,7 +28,7 @@ export default function CreateWedding() {
       await createWeddingSite(form)
       navigate('/editor')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Nao foi possivel criar o site')
+      setError(err instanceof ApiError ? err.message : 'Não foi possível criar o site')
     } finally {
       setLoading(false)
     }
@@ -44,9 +44,9 @@ export default function CreateWedding() {
         <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8">
           <div className="mb-8">
             <p className="text-xs text-stone-400 uppercase tracking-widest mb-1">Criar site</p>
-            <h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-2">Vamos comecar pelo essencial</h1>
+            <h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-2">Vamos começar pelo essencial</h1>
             <p className="text-sm text-stone-500 leading-relaxed max-w-xl">
-              Essas informacoes criam o registro do casamento. Depois voce escolhe fotos, presentes, cores e textos no editor.
+              Essas informações criam o registro do casamento. Depois você escolhe fotos, presentes, cores e textos no editor.
             </p>
           </div>
 

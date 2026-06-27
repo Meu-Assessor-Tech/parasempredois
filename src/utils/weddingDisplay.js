@@ -26,5 +26,5 @@ export function weddingDisplayMessage(wedding) {
 }
 
 export function weddingDisplayStory(wedding) {
-  return wedding?.story?.trim() || 'Conte aqui a historia de voces.'
+  return wedding?.story?.trim() || 'Conte aqui a história de vocês.'
 }

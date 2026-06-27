@@ -30,7 +30,7 @@ export async function uploadWeddingImage(weddingId, file, kind) {
   })
 
   if (!putResponse.ok) {
-    throw new Error('Nao foi possivel enviar a imagem para o storage.')
+    throw new Error('Não foi possível enviar a imagem para o storage.')
   }
 
   return api('/media/confirm', {

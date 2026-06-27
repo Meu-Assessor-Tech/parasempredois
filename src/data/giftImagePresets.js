@@ -1,4 +1,17 @@
+const unsplashPagePhotoIds = {
+  'https://unsplash.com/photos/tomatoes-and-kitchen-appliances-on-a-counter-GX__Pduezt4': 'photo-1745846664210-756817e1b19c',
+  'https://unsplash.com/photos/clear-glass-mug-with-black-liquid-inside-eZFvKguqwKw': 'photo-1585515320310-259814833e62',
+  'https://unsplash.com/photos/black-and-silver-coffee-maker-xPSBoaJNs2g': 'photo-1608354580875-30bd4168b351',
+}
+
 function unsplashPhoto(photoId) {
+  if (photoId.startsWith('https://unsplash.com/photos/')) {
+    if (unsplashPagePhotoIds[photoId]) return unsplashPhoto(unsplashPagePhotoIds[photoId])
+
+    const photoKey = photoId.split('/').filter(Boolean).pop()?.split('-').pop()
+    return photoKey ? `https://unsplash.com/photos/${photoKey}/download?force=true&w=600` : photoId
+  }
+
   return `https://images.unsplash.com/${photoId}?w=600&h=600&fit=crop&auto=format&q=80`
 }
 
@@ -9,33 +22,39 @@ export const giftImagePresetCategories = [
     presets: [
       { id: 'cozinha-panelas', label: 'Jogo de panelas', url: unsplashPhoto('photo-1556909114-f6e7ad7d3136') },
       { id: 'cozinha-frigideira', label: 'Frigideira', url: unsplashPhoto('photo-1556911220-e15b29be8c8f') },
-      { id: 'cozinha-air-fryer', label: 'Air Fryer', url: unsplashPhoto('photo-1585515320310-259814833e62') },
-      { id: 'cozinha-liquidificador', label: 'Liquidificador', url: unsplashPhoto('photo-1570222094114-d054a817e56b') },
-      { id: 'cozinha-cafeteira', label: 'Cafeteira', url: unsplashPhoto('photo-1495474472287-4d71bcdd2085') },
+      { id: 'cozinha-air-fryer', label: 'Air Fryer', url: unsplashPhoto('https://unsplash.com/photos/tomatoes-and-kitchen-appliances-on-a-counter-GX__Pduezt4') },
+      { id: 'cozinha-liquidificador', label: 'Liquidificador', url: unsplashPhoto('https://unsplash.com/photos/clear-glass-mug-with-black-liquid-inside-eZFvKguqwKw') },
+      { id: 'cozinha-cafeteira', label: 'Cafeteira', url: unsplashPhoto('https://unsplash.com/photos/black-and-silver-coffee-maker-xPSBoaJNs2g') },
       { id: 'cozinha-facas', label: 'Conjunto de facas', url: unsplashPhoto('photo-1593618998160-e34014e67546') },
-      { id: 'mesa-pratos', label: 'Jogo de pratos', url: unsplashPhoto('photo-1467003909585-2f8a72700288') },
-      { id: 'mesa-copos', label: 'Jogo de copos', url: unsplashPhoto('photo-1523362628745-0c100150b504') },
-      { id: 'mesa-talheres', label: 'Jogo de talheres', url: unsplashPhoto('photo-1603199506016-b9a594b593c0') },
-      { id: 'mesa-travessa', label: 'Travessa', url: unsplashPhoto('photo-1543353071-10c8ba85a904') },
+      { id: 'mesa-pratos', label: 'Jogo de pratos', url: unsplashPhoto('photo-1551807306-4bcd16b92a41') },
+      { id: 'mesa-copos', label: 'Jogo de copos', url: unsplashPhoto('photo-1690145485303-4222f6731275') },
+      { id: 'mesa-talheres', label: 'Jogo de talheres', url: unsplashPhoto('photo-1658206805853-badb9282212a') },
+      { id: 'mesa-travessa', label: 'Travessa', url: unsplashPhoto('photo-1524084848619-1161d3c8501a') },
+      { id: 'cozinha-tacas', label: 'Taças', url: unsplashPhoto('photo-1519671482749-fd09be7ccebf') },
       { id: 'casa-sofa', label: 'Sofá', url: unsplashPhoto('photo-1555041469-a586c61ea9bc') },
-      { id: 'casa-mesa-jantar', label: 'Mesa de jantar', url: unsplashPhoto('photo-1615874694520-474822394e73') },
+      { id: 'casa-mesa-jantar', label: 'Mesa de jantar', url: unsplashPhoto('photo-1657524398377-567034729507') },
       { id: 'casa-cama', label: 'Cama', url: unsplashPhoto('photo-1631049307264-da0ec9d70304') },
       { id: 'casa-colchao', label: 'Colchão', url: unsplashPhoto('photo-1505693416388-ac5ce068fe85') },
-      { id: 'casa-guarda-roupa', label: 'Guarda-roupa', url: unsplashPhoto('photo-1558769132-cb1aea458c5e') },
+      { id: 'casa-guarda-roupa', label: 'Guarda-roupa', url: unsplashPhoto('photo-1672137233327-37b0c1049e77') },
       { id: 'casa-tv', label: 'Smart TV', url: unsplashPhoto('photo-1461151304267-38535e780c79') },
       { id: 'casa-geladeira', label: 'Geladeira', url: unsplashPhoto('photo-1571175443880-49e1d25b2bc5') },
       { id: 'casa-maquina-lavar', label: 'Máquina de lavar', url: unsplashPhoto('photo-1626806819282-2c1dc01a5e0c') },
+      { id: 'decoracao-quadros', label: 'Quadros', url: unsplashPhoto('photo-1513519245088-0e12902e5a38') },
+      { id: 'decoracao-plantas', label: 'Plantas', url: unsplashPhoto('photo-1487530811176-3780de880c2d') },
+      { id: 'decoracao-vasos', label: 'Vasos', url: unsplashPhoto('photo-1631125915902-d8abe9225ff2') },
+      { id: 'decoracao-luminaria', label: 'Luminária', url: unsplashPhoto('photo-1507473885765-e6ed057f782c') },
+      { id: 'decoracao-espelho', label: 'Espelho', url: unsplashPhoto('photo-1595455967759-5f1356993e53') },
+      { id: 'decoracao-tapete', label: 'Tapete', url: unsplashPhoto('photo-1600210492493-0946911123ea') },
     ],
   },
   {
     id: 'celebrando',
     label: '🍷 Celebrando Juntos',
     presets: [
-      { id: 'cozinha-tacas', label: 'Taças', url: unsplashPhoto('photo-1558618666-fcd25c85cd64') },
       { id: 'lua-de-mel-jantar-romantico', label: 'Jantar romântico', url: unsplashPhoto('photo-1414235077428-338989a2e8c0') },
       { id: 'experiencias-vinhos', label: 'Degustação de vinhos', url: unsplashPhoto('photo-1510812431401-41d2bd2722f3') },
       { id: 'experiencias-culinaria', label: 'Aula de culinária', url: unsplashPhoto('photo-1556911220-e15b29be8c8f') },
-      { id: 'experiencias-piquenique', label: 'Piquenique', url: unsplashPhoto('photo-1500530855697-b586d89ba3ee') },
+      { id: 'experiencias-piquenique', label: 'Piquenique', url: unsplashPhoto('photo-1464895216333-d859b45bf394') },
       { id: 'experiencias-show', label: 'Show', url: unsplashPhoto('photo-1501386761578-eac5c94b800a') },
     ],
   },
@@ -48,20 +67,13 @@ export const giftImagePresetCategories = [
       { id: 'lua-de-mel-passeio', label: 'Passeio', url: unsplashPhoto('photo-1499856871958-5b9627545d1a') },
       { id: 'lua-de-mel-carro', label: 'Aluguel de carro', url: unsplashPhoto('photo-1503376780353-7e6692767b70') },
       { id: 'lua-de-mel-cafe', label: 'Café da manhã especial', url: unsplashPhoto('photo-1533089860892-a7c6f0a88666') },
-    ],
-  },
-  {
-    id: 'memorias',
-    label: '🌿 Construindo Memórias',
-    presets: [
-      { id: 'decoracao-quadros', label: 'Quadros', url: unsplashPhoto('photo-1513519245088-0e12902e5a38') },
-      { id: 'decoracao-plantas', label: 'Plantas', url: unsplashPhoto('photo-1487530811176-3780de880c2d') },
-      { id: 'decoracao-vasos', label: 'Vasos', url: unsplashPhoto('photo-1494438639946-1ebd1d20bf85') },
-      { id: 'decoracao-luminaria', label: 'Luminária', url: unsplashPhoto('photo-1507473885765-e6ed057f782c') },
-      { id: 'decoracao-espelho', label: 'Espelho', url: unsplashPhoto('photo-1618220179428-22790b461013') },
-      { id: 'decoracao-tapete', label: 'Tapete', url: unsplashPhoto('photo-1600210492493-0946911123ea') },
       { id: 'experiencias-massagem', label: 'Massagem para casal', url: unsplashPhoto('photo-1544161515-4ab6ce6db874') },
-      { id: 'experiencias-day-spa', label: 'Day Spa', url: unsplashPhoto('photo-1544161515-4ab6ce6db874') },
+      { id: 'lua-de-mel-resort', label: 'Diária em resort', url: unsplashPhoto('photo-1571896349842-33c89424de2d') },
+      { id: 'lua-de-mel-praia', label: 'Dia na praia', url: unsplashPhoto('photo-1507525428034-b723cf961d3e') },
+      { id: 'lua-de-mel-barco', label: 'Passeio de barco', url: unsplashPhoto('photo-1500375592092-40eb2168fd21') },
+      { id: 'lua-de-mel-jantar-beira-mar', label: 'Jantar à beira-mar', url: unsplashPhoto('photo-1520250497591-112f2f40a3f4') },
+      { id: 'lua-de-mel-tour-gastronomico', label: 'Tour gastronômico', url: unsplashPhoto('photo-1551218808-94e220e084d2') },
+      { id: 'lua-de-mel-balao', label: 'Passeio de balão', url: unsplashPhoto('photo-1507608616759-54f48f0af0ee') },
     ],
   },
   {
@@ -86,12 +98,12 @@ const legacyGiftPresetIds = {
   'quarto-cama': 'casa-cama',
   'quarto-decoracao': 'decoracao-quadros',
   'quarto-flores': 'decoracao-plantas',
-  'quarto-spa': 'experiencias-day-spa',
+  'quarto-spa': 'experiencias-massagem',
   'casa-liquidificador': 'cozinha-liquidificador',
   'casa-tv': 'casa-tv',
   'experiencias-viagem': 'lua-de-mel-passagens',
   'experiencias-churrasco': 'lua-de-mel-jantar-romantico',
-  'experiencias-perfume': 'experiencias-day-spa',
+  'experiencias-perfume': 'experiencias-massagem',
 }
 
 export function giftImagePresetById(id) {
