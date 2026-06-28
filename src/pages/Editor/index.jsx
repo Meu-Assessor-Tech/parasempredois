@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical, MessageCircle } from 'lucide-react'
+import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../../components/layout/Sidebar'
 import MobileNav from '../../components/layout/MobileNav'
@@ -13,13 +13,11 @@ import { mockTemplates } from '../../data/mockTemplates'
 import { mockWedding } from '../../data/mockWedding'
 import { giftImageUrl, IMAGE_MIME_TYPES, isSampleMedia, mediaKey, mediaUrl, processImageFile, sampleMedia } from '../../utils/media'
 import { giftImagePresetById, giftImagePresetCategories } from '../../data/giftImagePresets'
-import { copyTextToClipboard } from '../../utils/clipboard'
 
 const TABS = [
   { id: 'content', label: 'Conteúdo' },
   { id: 'design', label: 'Design' },
   { id: 'gifts', label: 'Presentes' },
-  { id: 'share', label: 'Compartilhar' },
 ]
 
 const SAVEABLE_TABS = new Set(['content', 'design', 'gifts'])
@@ -27,7 +25,6 @@ const SAVE_TAB_LABELS = {
   content: 'Conteúdo',
   design: 'Design',
   gifts: 'Presentes',
-  share: 'Compartilhar',
 }
 
 const SAVE_BUTTON_LABELS = {
@@ -104,8 +101,6 @@ export default function Editor() {
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [galleryUploadFeedback, setGalleryUploadFeedback] = useState(null)
   const [highlightedGalleryKeys, setHighlightedGalleryKeys] = useState([])
-  const [shareLinkCopied, setShareLinkCopied] = useState(false)
-  const [shareLinkCopyError, setShareLinkCopyError] = useState(false)
   const coverInputRef = useRef(null)
   const galleryInputRef = useRef(null)
   const previewIframeRef = useRef(null)
@@ -367,20 +362,6 @@ export default function Editor() {
   const saveButtonLabel = saved && savedSection === activeTab
     ? saveButtonCopy?.saved ?? `${activeTabLabel} salvo`
     : saveButtonCopy?.idle ?? `Salvar ${activeTabLabel}`
-  const siteUrl = `${window.location.origin}/site/${wedding.slug}`
-  const whatsappShareText = `Oi! Criamos nosso site de casamento: ${siteUrl}`
-  const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(whatsappShareText)}`
-
-  const handleCopySiteUrl = async () => {
-    const copied = await copyTextToClipboard(siteUrl)
-    setShareLinkCopied(copied)
-    setShareLinkCopyError(!copied)
-    window.setTimeout(() => {
-      setShareLinkCopied(false)
-      setShareLinkCopyError(false)
-    }, 1800)
-  }
-
   if (loadingWedding) {
     return (
       <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
@@ -775,37 +756,6 @@ export default function Editor() {
 
               {activeTab === 'gifts' && (
                 <GiftsTab wedding={wedding} updateWedding={wrappedUpdate} />
-              )}
-
-              {activeTab === 'share' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <h2 className="font-medium text-stone-900 text-sm">Compartilhar site</h2>
-                  </div>
-                  <div className="bg-stone-50 rounded-xl p-4">
-                    <p className="text-xs text-stone-500 mb-2">Seu link exclusivo</p>
-                    <p className="font-mono text-sm text-stone-900 break-all">{siteUrl}</p>
-                  </div>
-                  <Button
-                    variant={shareLinkCopied ? 'secondary' : 'primary'}
-                    size="sm"
-                    fullWidth
-                    onClick={handleCopySiteUrl}
-                  >
-                    {shareLinkCopied && <Check size={14} />}
-                    {shareLinkCopied ? 'Link copiado' : shareLinkCopyError ? 'Tentar novamente' : 'Copiar link'}
-                  </Button>
-                  <div className="pt-2">
-                    <a
-                      href={whatsappShareUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center justify-center gap-2 rounded-xl border border-stone-200 p-3 text-xs font-medium text-stone-700 transition-colors hover:bg-stone-50"
-                    >
-                      <MessageCircle size={14} /> Compartilhar no WhatsApp
-                    </a>
-                  </div>
-                </motion.div>
               )}
             </div>
           </div>

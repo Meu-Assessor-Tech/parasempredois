@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, Copy, Edit3, Eye, HandHeart, Plus, Share2, Trash2 } from 'lucide-react'
+import { Check, Copy, Edit3, Eye, HandHeart, MessageCircle, Plus, Share2, Trash2 } from 'lucide-react'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
@@ -34,9 +34,9 @@ function CollaborationTab() {
     <DashboardShell>
       <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
         <p className="text-xs text-stone-400 uppercase tracking-widest mb-1">Colaboração opcional</p>
-        <h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-3">Ajude o Para sempre dois a continuar</h1>
+        <h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-3">O Para sempre dois é gratuito</h1>
         <p className="text-stone-500 text-sm leading-relaxed max-w-2xl mb-6">
-          O projeto é gratuito. Se quiser colaborar para manter a plataforma no ar, a contribuição por Pix é opcional.
+          Você pode criar, editar e compartilhar o site do casamento sem cobrança. Se o projeto ajudou vocês, uma colaboração opcional ajuda a manter a plataforma no ar.
         </p>
 
         <div className="grid grid-cols-1 gap-6">
@@ -46,9 +46,9 @@ function CollaborationTab() {
                 <HandHeart size={20} />
               </div>
               <div>
-                <h2 className="font-serif text-2xl text-stone-900 mb-2">Contribuição por Pix</h2>
+                <h2 className="font-serif text-2xl text-stone-900 mb-2">Apoiar por Pix</h2>
                 <p className="text-sm text-stone-500 leading-relaxed">
-                  A contribuição não muda o acesso. O site segue gratuito para criar e compartilhar.
+                  A contribuição é voluntária e não libera nenhum recurso extra. Ela apenas ajuda nos custos para manter o site funcionando.
                 </p>
               </div>
             </div>
@@ -80,6 +80,7 @@ export default function Dashboard() {
   const [confirmationsError, setConfirmationsError] = useState('')
   const [copiedSiteLink, setCopiedSiteLink] = useState(false)
   const [copySiteLinkError, setCopySiteLinkError] = useState(false)
+  const [shareOptionsOpen, setShareOptionsOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const currentTab = new URLSearchParams(location.search).get('tab')
@@ -148,6 +149,9 @@ export default function Dashboard() {
   const weddingTitle = weddingDisplayTitle(wedding)
   const weddingVenue = weddingDisplayVenue(wedding)
   const totalConfirmedGuests = confirmations.reduce((sum, confirmation) => sum + (confirmation.totalGuests ?? 1), 0)
+  const siteUrl = `${window.location.origin}/site/${wedding.slug}`
+  const whatsappShareText = `Oi! Criamos nosso site de casamento: ${siteUrl}`
+  const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(whatsappShareText)}`
 
   const handleDeleteSite = async () => {
     const confirmed = confirm('Tem certeza que deseja excluir este site? Isso apaga textos, presentes e imagens enviadas.')
@@ -166,9 +170,10 @@ export default function Dashboard() {
   }
 
   const handleCopySiteLink = async () => {
-    const copied = await copyTextToClipboard(`${window.location.origin}/site/${wedding.slug}`)
+    const copied = await copyTextToClipboard(siteUrl)
     setCopiedSiteLink(copied)
     setCopySiteLinkError(!copied)
+    if (copied) setShareOptionsOpen(false)
     window.setTimeout(() => {
       setCopiedSiteLink(false)
       setCopySiteLinkError(false)
@@ -207,9 +212,15 @@ export default function Dashboard() {
               <Button variant="outline" size="sm" onClick={() => window.open(`/site/${wedding.slug}`, '_blank', 'noopener,noreferrer')} fullWidth className="sm:w-auto">
                 <Eye size={14} /> Visualizar
               </Button>
-              <Button variant={copiedSiteLink ? 'secondary' : 'outline'} size="sm" onClick={handleCopySiteLink} fullWidth className="sm:w-auto">
+              <Button
+                variant={copiedSiteLink ? 'secondary' : 'outline'}
+                size="sm"
+                onClick={() => setShareOptionsOpen(open => !open)}
+                fullWidth
+                className="sm:w-auto"
+              >
                 {copiedSiteLink ? <Check size={14} /> : <Share2 size={14} />}
-                {copiedSiteLink ? 'Link copiado' : copySiteLinkError ? 'Tentar novamente' : 'Copiar link'}
+                {copiedSiteLink ? 'Link copiado' : 'Encaminhar'}
               </Button>
               <Button
                 variant="ghost"
@@ -223,6 +234,30 @@ export default function Dashboard() {
                 {deleting ? 'Excluindo...' : 'Excluir site'}
               </Button>
             </div>
+            {shareOptionsOpen && (
+              <div className="mt-4 rounded-2xl border border-stone-100 bg-stone-50 p-3">
+                <p className="mb-3 text-xs text-stone-500">Escolha como compartilhar o site:</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={handleCopySiteLink}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:border-stone-400 hover:bg-stone-50"
+                  >
+                    <Copy size={14} />
+                    {copySiteLinkError ? 'Tentar novamente' : 'Copiar link'}
+                  </button>
+                  <a
+                    href={whatsappShareUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => setShareOptionsOpen(false)}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:border-stone-400 hover:bg-stone-50"
+                  >
+                    <MessageCircle size={14} /> WhatsApp
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
 
