@@ -73,21 +73,7 @@ function realMediaItems(items = []) {
 }
 
 function mergeUploadedGalleryImages(currentImages = [], uploadedImages = []) {
-  const nextImages = [...currentImages]
-  for (const image of uploadedImages) {
-    const sampleIndex = nextImages.findIndex(item => isSampleMedia(item) || typeof item === 'string')
-    if (sampleIndex >= 0) {
-      nextImages[sampleIndex] = image
-    } else if (nextImages.length < MAX_GALLERY_IMAGES) {
-      nextImages.push(image)
-    }
-  }
-  return nextImages.slice(0, MAX_GALLERY_IMAGES)
-}
-
-function fillGalleryWithCurrentSamples(realImages = [], currentImages = []) {
-  const sampleImages = currentImages.filter(item => isSampleMedia(item) || typeof item === 'string')
-  return [...realImages, ...sampleImages].slice(0, MAX_GALLERY_IMAGES)
+  return [...realMediaItems(currentImages), ...uploadedImages].slice(0, MAX_GALLERY_IMAGES)
 }
 
 export default function Editor() {
@@ -214,7 +200,7 @@ export default function Editor() {
           sections: savedWedding.sections ?? [],
           giftPixKey: savedWedding.giftPixKey ?? '',
           coverImage: savedWedding.coverImage ?? wedding.coverImage,
-          galleryImages: savedWedding.galleryImages ? fillGalleryWithCurrentSamples(savedWedding.galleryImages, wedding.galleryImages) : wedding.galleryImages,
+          galleryImages: savedWedding.galleryImages ? realMediaItems(savedWedding.galleryImages) : realMediaItems(wedding.galleryImages ?? []),
           giftPixQrCode: savedWedding.giftPixQrCode ?? wedding.giftPixQrCode,
           gifts: activeTab === 'gifts'
             ? (Array.isArray(savedWedding.gifts) ? savedWedding.gifts : wedding.gifts)
@@ -272,7 +258,6 @@ export default function Editor() {
     }
     const selectedFiles = files.slice(0, remainingSlots)
     const images = []
-    const sampleSlotsBeforeUpload = currentImages.filter(item => isSampleMedia(item) || typeof item === 'string').length
     setUploadingGallery(true)
     for (const file of selectedFiles) {
       try {
@@ -293,7 +278,6 @@ export default function Editor() {
     setHighlightedGalleryKeys(uploadedKeys)
     setGalleryUploadFeedback({
       count: images.length,
-      replacedSamples: Math.min(images.length, sampleSlotsBeforeUpload),
     })
     clearTimeout(galleryFeedbackTimeoutRef.current)
     galleryFeedbackTimeoutRef.current = setTimeout(() => {
@@ -308,10 +292,10 @@ export default function Editor() {
   }
 
   const removeGalleryImage = async (index) => {
-    const image = wedding.galleryImages?.[index]
+    const image = galleryImages[index]
     try {
       await deleteStoredMedia(image)
-      wrappedUpdate({ galleryImages: wedding.galleryImages.filter((_, i) => i !== index), galleryCustomized: true })
+      wrappedUpdate({ galleryImages: galleryImages.filter((_, i) => i !== index), galleryCustomized: true })
     } catch (err) {
       alert(err.message)
     }
@@ -319,7 +303,7 @@ export default function Editor() {
 
   const reorderGalleryImage = (fromIndex, toIndex) => {
     if (fromIndex === null || fromIndex === toIndex) return
-    const nextImages = [...(wedding.galleryImages ?? [])]
+    const nextImages = [...galleryImages]
     const [movedImage] = nextImages.splice(fromIndex, 1)
     nextImages.splice(toIndex, 0, movedImage)
     wrappedUpdate({ galleryImages: nextImages, galleryCustomized: true })
@@ -344,7 +328,7 @@ export default function Editor() {
       template: mockWedding.template,
       primaryColor: mockWedding.primaryColor,
       coverImage: sampleMedia(mockWedding.coverImage, 'cover'),
-      galleryImages: mockWedding.galleryImages.map((url, index) => sampleMedia(url, 'gallery', index)),
+      galleryImages: [],
       galleryCustomized: false,
     })
   }
@@ -352,7 +336,8 @@ export default function Editor() {
   const activeTemplate = mockTemplates.find(template => template.id === wedding.template) ?? mockTemplates[0]
   const defaultTemplateAccent = activeTemplate?.colors?.[1] ?? '#8B6F5E'
   const usesTemplateAccent = wedding.primaryColor?.toLowerCase() === defaultTemplateAccent.toLowerCase()
-  const realGalleryCount = realMediaItems(wedding.galleryImages ?? []).length
+  const galleryImages = realMediaItems(wedding.galleryImages ?? [])
+  const realGalleryCount = galleryImages.length
   const uploadGalleryCount = realGalleryCount
   const activeTabConfig = TABS.find(tab => tab.id === activeTab) ?? TABS[0]
   const activeTabLabel = SAVE_TAB_LABELS[activeTab] ?? activeTabConfig.label
@@ -424,7 +409,7 @@ export default function Editor() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => window.open(`/site/${wedding.slug}`, '_blank', 'noopener,noreferrer')}
+              onClick={() => navigate(`/site/${wedding.slug}?from=editor`)}
               title="Ver site publicado"
             >
               <Eye size={14} /> Ver site
@@ -646,14 +631,14 @@ export default function Editor() {
                       <div>
                         <h2 className="font-medium text-stone-900 text-sm">Galeria de fotos</h2>
                         <p className="text-[11px] text-stone-400 mt-0.5">
-                          Envie até {MAX_GALLERY_IMAGES} fotos. Você pode escolher várias de uma vez e arrastar para definir a ordem.
+                          Adicione até {MAX_GALLERY_IMAGES} fotos. Se não houver fotos, a galeria não aparece no site.
                         </p>
                       </div>
                       <span className="text-[11px] text-stone-400 flex-shrink-0">
                         {realGalleryCount}/{MAX_GALLERY_IMAGES}
                       </span>
                     </div>
-                    {(wedding.galleryImages ?? []).length > MAX_GALLERY_IMAGES && (
+                    {realGalleryCount > MAX_GALLERY_IMAGES && (
                       <p className="mb-3 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
                         O site exibe apenas as primeiras {MAX_GALLERY_IMAGES} fotos. Arraste as imagens para escolher quais aparecem.
                       </p>
@@ -682,14 +667,21 @@ export default function Editor() {
                           <Check size={13} /> {galleryUploadFeedback.count === 1 ? 'Foto adicionada' : `${galleryUploadFeedback.count} fotos adicionadas`}
                         </div>
                         <p className="mt-0.5">
-                          {galleryUploadFeedback.replacedSamples > 0
-                            ? 'Substituiu imagem exemplo e já aparece no preview. Clique em Salvar Design para publicar no site.'
-                            : 'Já aparece no preview. Clique em Salvar Design para publicar no site.'}
+                          Já aparece no preview. Clique em Salvar Design para publicar no site.
                         </p>
                       </div>
                     )}
+                    {galleryImages.length === 0 && (
+                      <div className="mb-3 rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-6 text-center">
+                        <p className="text-sm font-medium text-stone-800">Nenhuma foto adicionada ainda</p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-stone-400">
+                          Você pode adicionar até {MAX_GALLERY_IMAGES} fotos para montar a galeria do site.
+                        </p>
+                      </div>
+                    )}
+                    {galleryImages.length > 0 && (
                     <div className="grid grid-cols-2 gap-2.5 mb-3">
-                      {(wedding.galleryImages ?? []).map((img, i) => {
+                      {galleryImages.map((img, i) => {
                         const imageWasJustAdded = highlightedGalleryKeys.includes(mediaKey(img, i))
                         return (
                         <div
@@ -716,11 +708,6 @@ export default function Editor() {
                               Nova
                             </span>
                           )}
-                          {isSampleMedia(img) && (
-                            <span className="absolute left-1 bottom-1 rounded-full bg-white/90 px-1.5 py-0.5 text-[9px] font-medium text-stone-600">
-                              Exemplo
-                            </span>
-                          )}
                           <div className="absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/45 text-white opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 cursor-grab">
                             <GripVertical size={13} />
                           </div>
@@ -731,13 +718,14 @@ export default function Editor() {
                           >
                             <Trash2 size={14} className="text-white" />
                           </button>
-                          <span className={`absolute bottom-1 rounded-full bg-black/45 px-1.5 py-0.5 text-[10px] text-white ${isSampleMedia(img) ? 'right-1' : 'left-1'}`}>
+                          <span className="absolute bottom-1 left-1 rounded-full bg-black/45 px-1.5 py-0.5 text-[10px] text-white">
                             {i + 1}
                           </span>
                         </div>
                         )
                       })}
                     </div>
+                    )}
                   </div>
 
                   <div className="pt-2 border-t border-stone-100">

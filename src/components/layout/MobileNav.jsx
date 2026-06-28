@@ -11,6 +11,7 @@ export default function MobileNav() {
   const { wedding } = useWedding()
   const hasWedding = canSaveWedding(wedding?.id)
   const currentPath = `${location.pathname}${location.search}`
+  const siteReturnSource = location.pathname === '/editor' ? 'editor' : 'dashboard'
 
   const items = [
     { icon: Home, label: 'Principal', path: '/principal' },
@@ -44,7 +45,7 @@ export default function MobileNav() {
         {hasWedding && (
           <button
             type="button"
-            onClick={() => window.open(`/site/${wedding.slug}`, '_blank', 'noopener,noreferrer')}
+            onClick={() => navigate(`/site/${wedding.slug}?from=${siteReturnSource}`)}
             className="flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-medium text-stone-500 transition-colors active:bg-stone-100"
           >
             <Eye size={18} />

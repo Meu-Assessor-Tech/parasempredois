@@ -222,9 +222,7 @@ function normalizeWedding(wedding) {
     template: normalizeTemplateId(normalized.template),
     galleryCustomized: normalized.galleryCustomized ?? false,
     coverImage: normalized.coverImage || sampleFields.coverImage,
-    galleryImages: normalized.galleryCustomized
-      ? (normalized.galleryImages ?? [])
-      : (normalized.galleryImages?.length ? normalized.galleryImages : sampleFields.galleryImages),
+    galleryImages: realMediaItems(normalized.galleryImages ?? []),
     gifts: normalized.gifts ?? [],
     giftsCustomized: normalized.giftsCustomized ?? false,
     sections: normalized.sections ?? [],
@@ -259,14 +257,16 @@ function draftWedding() {
     gifts: sampleFields.gifts,
     giftsCustomized: false,
     coverImage: sampleFields.coverImage,
-    galleryImages: sampleFields.galleryImages,
+    galleryImages: [],
     galleryCustomized: false,
   })
 }
 
 function mergeRemoteWedding(localWedding, remoteWedding) {
   const sampleFields = sampleWeddingFields()
-  const hasRemoteGallery = Boolean(remoteWedding.galleryImages?.length)
+  const remoteGalleryImages = realMediaItems(remoteWedding.galleryImages ?? [])
+  const localGalleryImages = realMediaItems(localWedding.galleryImages ?? [])
+  const hasRemoteGallery = Boolean(remoteGalleryImages.length)
   const galleryCustomized = Boolean(localWedding.galleryCustomized || hasRemoteGallery)
   const hasRemoteGifts = Boolean(remoteWedding.gifts?.length)
   const giftsCustomized = Boolean(localWedding.giftsCustomized || hasRemoteGifts)
@@ -287,13 +287,7 @@ function mergeRemoteWedding(localWedding, remoteWedding) {
     giftPixKey: remoteWedding.giftPixKey ?? '',
     coverImage: remoteWedding.coverImage ?? sampleFields.coverImage,
     galleryCustomized,
-    galleryImages: hasRemoteGallery
-      ? localWedding.galleryCustomized
-        ? fillGalleryWithCurrentSamples(remoteWedding.galleryImages, localWedding.galleryImages, sampleFields.galleryImages)
-        : fillGalleryWithSamples(remoteWedding.galleryImages, sampleFields.galleryImages)
-      : galleryCustomized
-      ? (localWedding.galleryImages ?? [])
-      : sampleFields.galleryImages,
+    galleryImages: hasRemoteGallery ? remoteGalleryImages : localGalleryImages,
     giftPixQrCode: remoteWedding.giftPixQrCode ?? '',
     gifts: hasRemoteGifts
       ? remoteWedding.gifts
@@ -314,7 +308,7 @@ function newDraftWedding(localWedding) {
     template: normalizeTemplateId(localWedding.template),
     coverImage: sampleFields.coverImage,
     galleryCustomized,
-    galleryImages: galleryCustomized ? (localWedding.galleryImages ?? []) : sampleFields.galleryImages,
+    galleryImages: realMediaItems(localWedding.galleryImages ?? []),
     giftPixQrCode: '',
     gifts: localWedding.giftsCustomized ? (localWedding.gifts ?? []) : sampleFields.gifts,
     giftsCustomized: Boolean(localWedding.giftsCustomized),
@@ -325,23 +319,9 @@ function newDraftWedding(localWedding) {
 function sampleWeddingFields() {
   return {
     coverImage: sampleMedia(mockWedding.coverImage, 'cover'),
-    galleryImages: mockWedding.galleryImages.map((url, index) => sampleMedia(url, 'gallery', index)),
+    galleryImages: [],
     gifts: mockWedding.gifts.slice(0, 4).map(({ source, ...gift }) => ({ ...gift })),
   }
-}
-
-function fillGalleryWithSamples(galleryImages = [], sampleImages = []) {
-  const realImages = realMediaItems(galleryImages)
-  return [...realImages, ...sampleImages.slice(realImages.length)].slice(0, sampleImages.length)
-}
-
-function fillGalleryWithCurrentSamples(galleryImages = [], currentImages = [], fallbackSampleImages = []) {
-  const realImages = realMediaItems(galleryImages)
-  const currentSamples = (currentImages ?? []).filter(item => item?.source === 'sample' || typeof item === 'string')
-  const samples = currentSamples.length || (currentImages ?? []).length < fallbackSampleImages.length
-    ? currentSamples
-    : fallbackSampleImages.slice(realImages.length)
-  return [...realImages, ...samples].slice(0, fallbackSampleImages.length)
 }
 
 function realMediaItems(items = []) {

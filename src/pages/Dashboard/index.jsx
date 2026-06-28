@@ -209,7 +209,7 @@ export default function Dashboard() {
               <Button variant="primary" size="sm" onClick={() => navigate('/editor')} fullWidth className="sm:w-auto">
                 <Edit3 size={14} /> Editar site
               </Button>
-              <Button variant="outline" size="sm" onClick={() => window.open(`/site/${wedding.slug}`, '_blank', 'noopener,noreferrer')} fullWidth className="sm:w-auto">
+              <Button variant="outline" size="sm" onClick={() => navigate(`/site/${wedding.slug}?from=dashboard`)} fullWidth className="sm:w-auto">
                 <Eye size={14} /> Visualizar
               </Button>
               <Button
