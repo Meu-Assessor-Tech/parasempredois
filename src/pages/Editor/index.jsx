@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical, MessageCircle } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../../components/layout/Sidebar'
+import MobileNav from '../../components/layout/MobileNav'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { canUploadMedia, deleteWeddingDesignImages, deleteWeddingImage, uploadWeddingImage } from '../../api/media'
@@ -413,14 +414,14 @@ export default function Editor() {
         <Sidebar />
       </div>
 
-      <main className="flex-1 flex flex-col overflow-hidden min-h-screen">
-        <div className="bg-white border-b border-stone-100 px-4 sm:px-6 h-14 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-1">
+      <main className="flex-1 flex flex-col min-h-screen overflow-x-hidden pb-24 md:overflow-hidden md:pb-0">
+        <div className="bg-white border-b border-stone-100 px-3 sm:px-6 py-2 md:h-14 flex flex-col gap-2 md:flex-row md:items-center md:justify-between flex-shrink-0">
+          <div className="-mx-1 flex items-center gap-1 overflow-x-auto px-1 pb-1 md:mx-0 md:overflow-visible md:pb-0">
             {TABS.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                className={`relative flex-shrink-0 px-3 sm:px-4 py-2 md:py-1.5 rounded-full text-sm font-medium transition-colors ${
                   activeTab === tab.id
                     ? 'bg-stone-900 text-white'
                     : 'text-stone-500 hover:text-stone-800 hover:bg-stone-50'
@@ -438,7 +439,7 @@ export default function Editor() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2">
             <Button
               variant="ghost"
               size="sm"
@@ -447,7 +448,7 @@ export default function Editor() {
             >
               <Eye size={14} /> Ver site
             </Button>
-            <div className="hidden sm:flex items-center gap-1 bg-stone-100 rounded-full p-1">
+            <div className="hidden md:flex items-center gap-1 bg-stone-100 rounded-full p-1">
               <button
                 onClick={() => setPreviewMode('desktop')}
                 className={`p-1.5 rounded-full transition-colors ${previewMode === 'desktop' ? 'bg-white shadow-sm' : ''}`}
@@ -464,11 +465,11 @@ export default function Editor() {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 flex overflow-hidden">
-          <div className="w-[440px] bg-white border-r border-stone-100 overflow-y-auto overscroll-contain flex-shrink-0 h-[calc(100vh-3.5rem)]">
-            <div className="p-5">
+        <div className="flex-1 min-h-0 flex md:overflow-hidden">
+          <div className="w-full bg-white border-r border-stone-100 flex-shrink-0 md:h-[calc(100vh-3.5rem)] md:w-[440px] md:overflow-y-auto md:overscroll-contain">
+            <div className="p-4 sm:p-5">
               <div className="sticky top-0 z-10 -mx-5 -mt-5 mb-5 border-b border-stone-100 bg-white/95 px-5 py-4 backdrop-blur">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-stone-900">Editando {activeTabLabel}</p>
                     <p className={`mt-0.5 text-[11px] ${activeTabHasChanges ? 'text-amber-600' : 'text-stone-400'}`}>
@@ -480,7 +481,7 @@ export default function Editor() {
                     </p>
                   </div>
                   {canSaveActiveTab && (
-                    <Button variant="primary" size="sm" onClick={handleSave}>
+                    <Button variant="primary" size="sm" onClick={handleSave} fullWidth className="sm:w-auto">
                       {saved && savedSection === activeTab ? <><Check size={14} /> {saveButtonLabel}</> : <><Save size={14} /> {saveButtonLabel}</>}
                     </Button>
                   )}
@@ -739,12 +740,12 @@ export default function Editor() {
                               Exemplo
                             </span>
                           )}
-                          <div className="absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/45 text-white opacity-0 transition-opacity group-hover:opacity-100 cursor-grab">
+                          <div className="absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/45 text-white opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 cursor-grab">
                             <GripVertical size={13} />
                           </div>
                           <button
                             onClick={() => removeGalleryImage(i)}
-                            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 opacity-100 transition-opacity md:h-6 md:w-6 md:opacity-0 md:group-hover:opacity-100"
                             aria-label={`Remover foto ${i + 1}`}
                           >
                             <Trash2 size={14} className="text-white" />
@@ -810,7 +811,7 @@ export default function Editor() {
           </div>
 
           {/* Preview — iframe rendering the real site */}
-          <div className="flex-1 bg-stone-100 overflow-hidden flex items-start justify-center p-6 h-[calc(100vh-3.5rem)]">
+          <div className="hidden flex-1 bg-stone-100 overflow-hidden md:flex items-start justify-center p-6 h-[calc(100vh-3.5rem)]">
             <div className={`bg-white shadow-xl rounded-xl overflow-hidden transition-all duration-300 ${
               previewMode === 'mobile' ? 'w-[390px]' : 'w-full max-w-4xl'
             }`} style={{ height: previewMode === 'mobile' ? '780px' : '700px' }}>
@@ -827,6 +828,7 @@ export default function Editor() {
           </div>
         </div>
       </main>
+      <MobileNav />
     </div>
   )
 }
@@ -894,12 +896,12 @@ function SectionsEditor({ wedding, updateWedding }) {
 
   return (
     <div className="space-y-4 pt-2">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-medium text-stone-900 text-sm">Seções extras</h2>
           <p className="text-[11px] text-stone-400 mt-0.5">Dress code, hospedagem, transporte…</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => openNew()}>
+        <Button variant="outline" size="sm" onClick={() => openNew()} fullWidth className="sm:w-auto">
           <Plus size={14} /> Adicionar
         </Button>
       </div>
@@ -973,10 +975,10 @@ function SectionsEditor({ wedding, updateWedding }) {
             <p className="text-xs text-stone-400 line-clamp-2 mt-0.5">{s.content}</p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-            <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-colors">
+            <button onClick={() => openEdit(s)} className="p-2 rounded-lg text-stone-500 hover:text-stone-600 hover:bg-stone-100 transition-colors md:p-1.5 md:text-stone-300">
               <Pencil size={13} />
             </button>
-            <button onClick={() => deleteSection(s.id)} className="p-1.5 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors">
+            <button onClick={() => deleteSection(s.id)} className="p-2 rounded-lg text-stone-500 hover:text-red-500 hover:bg-red-50 transition-colors md:p-1.5 md:text-stone-300">
               <Trash2 size={13} />
             </button>
           </div>
@@ -1160,7 +1162,7 @@ function GiftsTab({ wedding, updateWedding }) {
             className="hidden"
             onChange={handleQrUpload}
           />
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="w-16 h-16 rounded-xl border border-dashed border-stone-300 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
               {wedding.giftPixQrCode ? (
                 <img src={mediaUrl(wedding.giftPixQrCode)} alt="QR Code Pix" className="w-full h-full object-cover" />
@@ -1171,12 +1173,12 @@ function GiftsTab({ wedding, updateWedding }) {
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-stone-700">QR Code opcional</p>
               <p className="text-[11px] text-stone-400 mb-2">Use apenas uma imagem confiável do QR Code Pix do casal.</p>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:flex">
                 <button
                   type="button"
                   disabled={qrLoading}
                   onClick={() => qrInputRef.current?.click()}
-                  className="px-3 py-1.5 text-xs text-stone-600 border border-stone-200 rounded-lg hover:bg-white transition-colors disabled:opacity-50"
+                  className="px-3 py-2 text-xs text-stone-600 border border-stone-200 rounded-lg hover:bg-white transition-colors disabled:opacity-50"
                 >
                   {qrLoading ? 'Processando...' : 'Enviar QR Code'}
                 </button>
@@ -1184,7 +1186,7 @@ function GiftsTab({ wedding, updateWedding }) {
                   <button
                     type="button"
                     onClick={removeQrCode}
-                    className="px-3 py-1.5 text-xs text-red-500 border border-red-100 rounded-lg hover:bg-red-50 transition-colors"
+                    className="px-3 py-2 text-xs text-red-500 border border-red-100 rounded-lg hover:bg-red-50 transition-colors"
                   >
                     Remover
                   </button>
@@ -1196,12 +1198,12 @@ function GiftsTab({ wedding, updateWedding }) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-medium text-stone-900 text-sm">Presentes simbólicos</h2>
           <p className="text-[11px] text-stone-400 mt-0.5">Os botões do site copiam a chave Pix configurada acima.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={openNew}>
+        <Button variant="outline" size="sm" onClick={openNew} fullWidth className="sm:w-auto">
           <Plus size={14} /> Adicionar
         </Button>
       </div>
@@ -1253,7 +1255,7 @@ function GiftsTab({ wedding, updateWedding }) {
                 </button>
               ))}
             </div>
-            <div className="grid grid-cols-4 gap-1.5 lg:grid-cols-8">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-8">
               {(selectedPresetCategoryData?.presets ?? []).map(preset => (
                 <button
                   key={preset.id}
@@ -1270,8 +1272,8 @@ function GiftsTab({ wedding, updateWedding }) {
                   }`}
                 >
                   <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
-                  <div className="absolute inset-x-0 bottom-0 bg-black/50 py-0.5">
-                    <span className="text-[8px] text-white font-medium leading-none block text-center px-0.5 truncate">{preset.label}</span>
+                  <div className="absolute inset-x-0 bottom-0 bg-black/55 py-1">
+                    <span className="text-[9px] text-white font-medium leading-none block text-center px-1 truncate">{preset.label}</span>
                   </div>
                   {form.imagePreset === preset.id && (
                     <div className="absolute inset-0 bg-stone-900/20 flex items-center justify-center">
@@ -1342,14 +1344,14 @@ function GiftsTab({ wedding, updateWedding }) {
               <button
                 title="Editar"
                 onClick={() => openEdit(gift)}
-                className="p-1.5 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-colors"
+                className="p-2 rounded-lg text-stone-500 hover:text-stone-600 hover:bg-stone-100 transition-colors md:p-1.5 md:text-stone-300"
               >
                 <Pencil size={13} />
               </button>
               <button
                 title="Remover"
                 onClick={() => deleteGift(gift.id)}
-                className="p-1.5 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                className="p-2 rounded-lg text-stone-500 hover:text-red-500 hover:bg-red-50 transition-colors md:p-1.5 md:text-stone-300"
               >
                 <Trash2 size={13} />
               </button>

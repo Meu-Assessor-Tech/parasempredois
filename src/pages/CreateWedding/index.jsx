@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Calendar, Heart } from 'lucide-react'
 import Sidebar from '../../components/layout/Sidebar'
+import MobileNav from '../../components/layout/MobileNav'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import Input from '../../components/ui/Input'
@@ -40,7 +41,7 @@ export default function CreateWedding() {
         <Sidebar />
       </div>
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pb-24 md:pb-0">
         <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8">
           <div className="mb-8">
             <p className="text-xs text-stone-400 uppercase tracking-widest mb-1">Criar site</p>
@@ -90,11 +91,11 @@ export default function CreateWedding() {
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
-                <Button type="button" variant="ghost" onClick={() => navigate('/principal')}>
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                <Button type="button" variant="ghost" onClick={() => navigate('/principal')} fullWidth className="sm:w-auto">
                   Voltar
                 </Button>
-                <Button type="submit" variant="primary" size="lg" disabled={loading}>
+                <Button type="submit" variant="primary" size="lg" disabled={loading} fullWidth className="sm:w-auto">
                   {loading ? (
                     <span className="flex items-center gap-2">
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -113,6 +114,7 @@ export default function CreateWedding() {
           </Card>
         </div>
       </main>
+      <MobileNav />
     </div>
   )
 }

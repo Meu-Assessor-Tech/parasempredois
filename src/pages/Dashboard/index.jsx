@@ -12,6 +12,7 @@ import { ApiError } from '../../api/client'
 import { mediaUrl } from '../../utils/media'
 import { formatWeddingDate, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 import { copyTextToClipboard } from '../../utils/clipboard'
+import MobileNav from '../../components/layout/MobileNav'
 
 const PIX_KEY = 'parasempredois@gmail.com'
 
@@ -199,14 +200,14 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="p-5">
-            <div className="flex flex-wrap gap-3">
-              <Button variant="primary" size="sm" onClick={() => navigate('/editor')}>
+            <div className="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap">
+              <Button variant="primary" size="sm" onClick={() => navigate('/editor')} fullWidth className="sm:w-auto">
                 <Edit3 size={14} /> Editar site
               </Button>
-              <Button variant="outline" size="sm" onClick={() => window.open(`/site/${wedding.slug}`, '_blank', 'noopener,noreferrer')}>
+              <Button variant="outline" size="sm" onClick={() => window.open(`/site/${wedding.slug}`, '_blank', 'noopener,noreferrer')} fullWidth className="sm:w-auto">
                 <Eye size={14} /> Visualizar
               </Button>
-              <Button variant={copiedSiteLink ? 'secondary' : 'outline'} size="sm" onClick={handleCopySiteLink}>
+              <Button variant={copiedSiteLink ? 'secondary' : 'outline'} size="sm" onClick={handleCopySiteLink} fullWidth className="sm:w-auto">
                 {copiedSiteLink ? <Check size={14} /> : <Share2 size={14} />}
                 {copiedSiteLink ? 'Link copiado' : copySiteLinkError ? 'Tentar novamente' : 'Copiar link'}
               </Button>
@@ -215,7 +216,8 @@ export default function Dashboard() {
                 size="sm"
                 onClick={handleDeleteSite}
                 disabled={deleting}
-                className="!text-red-600 hover:!bg-red-50"
+                fullWidth
+                className="!text-red-600 hover:!bg-red-50 sm:w-auto"
               >
                 <Trash2 size={14} />
                 {deleting ? 'Excluindo...' : 'Excluir site'}
@@ -280,7 +282,8 @@ function DashboardShell({ children }) {
       <div className="hidden md:flex">
         <Sidebar />
       </div>
-      <main className="flex-1 overflow-auto">{children}</main>
+      <main className="flex-1 overflow-auto pb-24 md:pb-0">{children}</main>
+      <MobileNav />
     </div>
   )
 }
