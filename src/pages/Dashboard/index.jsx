@@ -11,6 +11,7 @@ import { getGuestConfirmations } from '../../api/rsvps'
 import { ApiError } from '../../api/client'
 import { mediaUrl } from '../../utils/media'
 import { formatWeddingDate, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
+import { copyTextToClipboard } from '../../utils/clipboard'
 
 const PIX_KEY = 'parasempredois@gmail.com'
 
@@ -23,13 +24,9 @@ function CollaborationTab() {
   const [copied, setCopied] = useState(false)
 
   const handleCopyPix = async () => {
-    try {
-      await navigator.clipboard.writeText(PIX_KEY)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1800)
-    } catch {
-      setCopied(false)
-    }
+    const copiedPix = await copyTextToClipboard(PIX_KEY)
+    setCopied(copiedPix)
+    window.setTimeout(() => setCopied(false), 1800)
   }
 
   return (
@@ -80,6 +77,8 @@ export default function Dashboard() {
   const [confirmations, setConfirmations] = useState([])
   const [confirmationsLoading, setConfirmationsLoading] = useState(false)
   const [confirmationsError, setConfirmationsError] = useState('')
+  const [copiedSiteLink, setCopiedSiteLink] = useState(false)
+  const [copySiteLinkError, setCopySiteLinkError] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const currentTab = new URLSearchParams(location.search).get('tab')
@@ -165,6 +164,16 @@ export default function Dashboard() {
     }
   }
 
+  const handleCopySiteLink = async () => {
+    const copied = await copyTextToClipboard(`${window.location.origin}/site/${wedding.slug}`)
+    setCopiedSiteLink(copied)
+    setCopySiteLinkError(!copied)
+    window.setTimeout(() => {
+      setCopiedSiteLink(false)
+      setCopySiteLinkError(false)
+    }, 1800)
+  }
+
   return (
     <DashboardShell>
       <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8">
@@ -197,8 +206,9 @@ export default function Dashboard() {
               <Button variant="outline" size="sm" onClick={() => window.open(`/site/${wedding.slug}`, '_blank', 'noopener,noreferrer')}>
                 <Eye size={14} /> Visualizar
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/site/${wedding.slug}`)}>
-                <Share2 size={14} /> Copiar link
+              <Button variant={copiedSiteLink ? 'secondary' : 'outline'} size="sm" onClick={handleCopySiteLink}>
+                {copiedSiteLink ? <Check size={14} /> : <Share2 size={14} />}
+                {copiedSiteLink ? 'Link copiado' : copySiteLinkError ? 'Tentar novamente' : 'Copiar link'}
               </Button>
               <Button
                 variant="ghost"

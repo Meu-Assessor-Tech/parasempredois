@@ -12,6 +12,7 @@ import { mockTemplates } from '../../data/mockTemplates'
 import { mockWedding } from '../../data/mockWedding'
 import { giftImageUrl, IMAGE_MIME_TYPES, isSampleMedia, mediaKey, mediaUrl, processImageFile, sampleMedia } from '../../utils/media'
 import { giftImagePresetById, giftImagePresetCategories } from '../../data/giftImagePresets'
+import { copyTextToClipboard } from '../../utils/clipboard'
 
 const TABS = [
   { id: 'content', label: 'Conteúdo' },
@@ -99,12 +100,18 @@ export default function Editor() {
   const [dirtyTabs, setDirtyTabs] = useState({})
   const [previewKey, setPreviewKey] = useState(0)
   const [draggedGalleryIndex, setDraggedGalleryIndex] = useState(null)
+  const [uploadingGallery, setUploadingGallery] = useState(false)
+  const [galleryUploadFeedback, setGalleryUploadFeedback] = useState(null)
+  const [highlightedGalleryKeys, setHighlightedGalleryKeys] = useState([])
+  const [shareLinkCopied, setShareLinkCopied] = useState(false)
+  const [shareLinkCopyError, setShareLinkCopyError] = useState(false)
   const coverInputRef = useRef(null)
   const galleryInputRef = useRef(null)
   const previewIframeRef = useRef(null)
   const previewScrollRef = useRef({ top: 0, left: 0 })
   const previewSessionKeyRef = useRef(`${Date.now()}-${Math.random().toString(36).slice(2)}`)
   const debounceRef = useRef(null)
+  const galleryFeedbackTimeoutRef = useRef(null)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -169,6 +176,8 @@ export default function Editor() {
       // Preview falls back to local storage if the current draft is too large.
     }
   }, [wedding])
+
+  useEffect(() => () => clearTimeout(galleryFeedbackTimeoutRef.current), [])
 
   const uploadOrPreview = useCallback((file, kind) => {
     if (canUploadMedia(wedding.id)) {
@@ -267,6 +276,8 @@ export default function Editor() {
     }
     const selectedFiles = files.slice(0, remainingSlots)
     const images = []
+    const sampleSlotsBeforeUpload = currentImages.filter(item => isSampleMedia(item) || typeof item === 'string').length
+    setUploadingGallery(true)
     for (const file of selectedFiles) {
       try {
         images.push(await uploadOrPreview(file, 'gallery'))
@@ -276,14 +287,28 @@ export default function Editor() {
         }
         alert(err.message)
         e.target.value = ''
+        setUploadingGallery(false)
         return
       }
     }
-    wrappedUpdate({ galleryImages: mergeUploadedGalleryImages(currentImages, images), galleryCustomized: true })
+    const nextGalleryImages = mergeUploadedGalleryImages(currentImages, images)
+    const uploadedKeys = images.map((image, index) => mediaKey(image, `uploaded-${index}`))
+    wrappedUpdate({ galleryImages: nextGalleryImages, galleryCustomized: true })
+    setHighlightedGalleryKeys(uploadedKeys)
+    setGalleryUploadFeedback({
+      count: images.length,
+      replacedSamples: Math.min(images.length, sampleSlotsBeforeUpload),
+    })
+    clearTimeout(galleryFeedbackTimeoutRef.current)
+    galleryFeedbackTimeoutRef.current = setTimeout(() => {
+      setGalleryUploadFeedback(null)
+      setHighlightedGalleryKeys([])
+    }, 5000)
     if (files.length > remainingSlots) {
       alert(`Foram adicionadas ${remainingSlots} foto(s). O limite da galeria é ${MAX_GALLERY_IMAGES}.`)
     }
     e.target.value = ''
+    setUploadingGallery(false)
   }
 
   const removeGalleryImage = async (index) => {
@@ -344,6 +369,16 @@ export default function Editor() {
   const siteUrl = `${window.location.origin}/site/${wedding.slug}`
   const whatsappShareText = `Oi! Criamos nosso site de casamento: ${siteUrl}`
   const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(whatsappShareText)}`
+
+  const handleCopySiteUrl = async () => {
+    const copied = await copyTextToClipboard(siteUrl)
+    setShareLinkCopied(copied)
+    setShareLinkCopyError(!copied)
+    window.setTimeout(() => {
+      setShareLinkCopied(false)
+      setShareLinkCopyError(false)
+    }, 1800)
+  }
 
   if (loadingWedding) {
     return (
@@ -641,8 +676,40 @@ export default function Editor() {
                         O site exibe apenas as primeiras {MAX_GALLERY_IMAGES} fotos. Arraste as imagens para escolher quais aparecem.
                       </p>
                     )}
+                    <input
+                      ref={galleryInputRef}
+                      type="file"
+                      accept={IMAGE_MIME_TYPES.join(',')}
+                      multiple
+                      className="hidden"
+                      onChange={handleGalleryUpload}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      fullWidth
+                      disabled={uploadGalleryCount >= MAX_GALLERY_IMAGES || uploadingGallery}
+                      onClick={() => galleryInputRef.current?.click()}
+                      className="mb-3"
+                    >
+                      <Plus size={14} /> {uploadingGallery ? 'Enviando fotos...' : 'Adicionar fotos à galeria'}
+                    </Button>
+                    {galleryUploadFeedback && (
+                      <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] leading-relaxed text-emerald-800">
+                        <div className="flex items-center gap-1.5 font-medium text-emerald-900">
+                          <Check size={13} /> {galleryUploadFeedback.count === 1 ? 'Foto adicionada' : `${galleryUploadFeedback.count} fotos adicionadas`}
+                        </div>
+                        <p className="mt-0.5">
+                          {galleryUploadFeedback.replacedSamples > 0
+                            ? 'Substituiu imagem exemplo e já aparece no preview. Clique em Salvar Design para publicar no site.'
+                            : 'Já aparece no preview. Clique em Salvar Design para publicar no site.'}
+                        </p>
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-2.5 mb-3">
-                      {(wedding.galleryImages ?? []).map((img, i) => (
+                      {(wedding.galleryImages ?? []).map((img, i) => {
+                        const imageWasJustAdded = highlightedGalleryKeys.includes(mediaKey(img, i))
+                        return (
                         <div
                           key={`${mediaKey(img, i)}-${i}`}
                           draggable
@@ -654,10 +721,19 @@ export default function Editor() {
                           }}
                           onDragEnd={() => setDraggedGalleryIndex(null)}
                           className={`relative group aspect-[4/5] rounded-xl overflow-hidden bg-stone-100 border-2 transition-all ${
-                            draggedGalleryIndex === i ? 'border-stone-900 opacity-60 scale-95' : 'border-stone-100'
+                            draggedGalleryIndex === i
+                              ? 'border-stone-900 opacity-60 scale-95'
+                              : imageWasJustAdded
+                              ? 'border-emerald-400 ring-4 ring-emerald-100'
+                              : 'border-stone-100'
                           }`}
                         >
                           <img src={mediaUrl(img)} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                          {imageWasJustAdded && (
+                            <span className="absolute left-1 top-1 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-medium text-white">
+                              Nova
+                            </span>
+                          )}
                           {isSampleMedia(img) && (
                             <span className="absolute left-1 bottom-1 rounded-full bg-white/90 px-1.5 py-0.5 text-[9px] font-medium text-stone-600">
                               Exemplo
@@ -677,25 +753,9 @@ export default function Editor() {
                             {i + 1}
                           </span>
                         </div>
-                      ))}
+                        )
+                      })}
                     </div>
-                    <input
-                      ref={galleryInputRef}
-                      type="file"
-                      accept={IMAGE_MIME_TYPES.join(',')}
-                      multiple
-                      className="hidden"
-                      onChange={handleGalleryUpload}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      fullWidth
-                      disabled={uploadGalleryCount >= MAX_GALLERY_IMAGES}
-                      onClick={() => galleryInputRef.current?.click()}
-                    >
-                      <Plus size={14} /> Adicionar fotos à galeria
-                    </Button>
                   </div>
 
                   <div className="pt-2 border-t border-stone-100">
@@ -726,12 +786,13 @@ export default function Editor() {
                     <p className="font-mono text-sm text-stone-900 break-all">{siteUrl}</p>
                   </div>
                   <Button
-                    variant="primary"
+                    variant={shareLinkCopied ? 'secondary' : 'primary'}
                     size="sm"
                     fullWidth
-                    onClick={() => navigator.clipboard?.writeText(siteUrl)}
+                    onClick={handleCopySiteUrl}
                   >
-                    Copiar link
+                    {shareLinkCopied && <Check size={14} />}
+                    {shareLinkCopied ? 'Link copiado' : shareLinkCopyError ? 'Tentar novamente' : 'Copiar link'}
                   </Button>
                   <div className="pt-2">
                     <a
