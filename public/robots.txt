@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /principal
+Disallow: /dashboard
+Disallow: /criar-site
+Disallow: /editor
+
+Sitemap: https://parasempredois-10be9.web.app/sitemap.xml

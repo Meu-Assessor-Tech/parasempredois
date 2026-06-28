@@ -9,11 +9,13 @@ import CreateWedding from './pages/CreateWedding'
 import Templates from './pages/Templates'
 import Editor from './pages/Editor'
 import WeddingSite from './pages/WeddingSite'
+import SeoManager from './components/seo/SeoManager'
 
 export default function App() {
   return (
     <AuthProvider>
       <WeddingProvider>
+        <SeoManager />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Auth />} />

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Para sempre dois</title>
+  <desc id="desc">Site de casamento gratuito</desc>
+  <rect width="1200" height="630" fill="#f7f1e8"/>
+  <rect x="64" y="64" width="1072" height="502" rx="36" fill="#ffffff" stroke="#e7d8c8" stroke-width="2"/>
+  <circle cx="188" cy="170" r="48" fill="#8b6f5e"/>
+  <path d="M188 192c-34-24-56-44-56-70 0-18 13-31 31-31 11 0 21 6 25 15 4-9 14-15 25-15 18 0 31 13 31 31 0 26-22 46-56 70Z" fill="#fff7ed"/>
+  <text x="120" y="300" fill="#1c1917" font-family="Georgia, 'Times New Roman', serif" font-size="74">
+    Para sempre dois
+  </text>
+  <text x="124" y="372" fill="#6b5a4c" font-family="Arial, sans-serif" font-size="30">
+    Crie um site de casamento gratuito, elegante e simples.
+  </text>
+  <text x="124" y="424" fill="#8b6f5e" font-family="Arial, sans-serif" font-size="24">
+    Fotos • Presentes • RSVP • Link para convidados
+  </text>
+  <rect x="124" y="472" width="258" height="58" rx="29" fill="#1c1917"/>
+  <text x="164" y="510" fill="#ffffff" font-family="Arial, sans-serif" font-size="22" font-weight="700">
+    Site gratuito
+  </text>
+</svg>
