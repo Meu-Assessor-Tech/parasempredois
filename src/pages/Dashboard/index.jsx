@@ -5,6 +5,7 @@ import { Check, Copy, Edit3, Eye, HandHeart, MessageCircle, Plus, Share2, Trash2
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
+import Modal from '../../components/ui/Modal'
 import { useWedding } from '../../context/WeddingContext'
 import { canSaveWedding } from '../../api/weddings'
 import { getGuestConfirmations } from '../../api/rsvps'
@@ -15,6 +16,7 @@ import { copyTextToClipboard } from '../../utils/clipboard'
 import MobileNav from '../../components/layout/MobileNav'
 
 const PIX_KEY = 'parasempredois@gmail.com'
+const CONTRIBUTION_PROMPT_KEY_PREFIX = 'baitacasamento_contribution_prompt_seen'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -34,10 +36,7 @@ function CollaborationTab() {
     <DashboardShell>
       <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
         <p className="text-xs text-stone-400 uppercase tracking-widest mb-1">Colaboração opcional</p>
-        <h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-3">O Para sempre dois é gratuito</h1>
-        <p className="text-stone-500 text-sm leading-relaxed max-w-2xl mb-6">
-          Você pode criar, editar e compartilhar o site do casamento sem cobrança. Se o projeto ajudou vocês, uma colaboração opcional ajuda a manter a plataforma no ar.
-        </p>
+        <h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-6">Ajude a manter o Para sempre dois</h1>
 
         <div className="grid grid-cols-1 gap-6">
           <Card className="p-6">
@@ -46,13 +45,14 @@ function CollaborationTab() {
                 <HandHeart size={20} />
               </div>
               <div>
-                <h2 className="font-serif text-2xl text-stone-900 mb-2">Apoiar por Pix</h2>
+                <h2 className="font-serif text-2xl text-stone-900 mb-2">Colaborar por Pix</h2>
                 <p className="text-sm text-stone-500 leading-relaxed">
-                  A contribuição é voluntária e não libera nenhum recurso extra. Ela apenas ajuda nos custos para manter o site funcionando.
+                  Se o projeto ajudou vocês, qualquer valor contribui com os custos para manter a plataforma funcionando.
                 </p>
               </div>
             </div>
             <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+              <p className="mb-3 text-sm text-stone-500">Copie a chave e escolha o valor no aplicativo do seu banco.</p>
               <p className="text-xs uppercase tracking-[0.24em] text-stone-400 mb-2">Chave Pix</p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <code className="flex-1 rounded-xl bg-white border border-stone-200 px-4 py-3 text-sm text-stone-800 break-all">
@@ -81,6 +81,7 @@ export default function Dashboard() {
   const [copiedSiteLink, setCopiedSiteLink] = useState(false)
   const [copySiteLinkError, setCopySiteLinkError] = useState(false)
   const [shareOptionsOpen, setShareOptionsOpen] = useState(false)
+  const [showContributionPrompt, setShowContributionPrompt] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const currentTab = new URLSearchParams(location.search).get('tab')
@@ -150,8 +151,42 @@ export default function Dashboard() {
   const weddingVenue = weddingDisplayVenue(wedding)
   const totalConfirmedGuests = confirmations.reduce((sum, confirmation) => sum + (confirmation.totalGuests ?? 1), 0)
   const siteUrl = `${window.location.origin}/site/${wedding.slug}`
-  const whatsappShareText = `Oi! Criamos nosso site de casamento: ${siteUrl}`
+  const contributionPromptStorageKey = `${CONTRIBUTION_PROMPT_KEY_PREFIX}:${wedding.id ?? wedding.slug}`
+  const whatsappShareText = `Oi!\n\nNosso grande dia está chegando, e preparamos um site com todos os detalhes do nosso casamento.\n\nAcesse: ${siteUrl}\n\nEsperamos você para celebrar com a gente!`
   const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(whatsappShareText)}`
+
+  const markContributionPromptAsSeen = () => {
+    try {
+      localStorage.setItem(contributionPromptStorageKey, '1')
+    } catch {
+      // Navigation remains available if local storage is unavailable.
+    }
+    setShowContributionPrompt(false)
+  }
+
+  const handleVisualizeSite = () => {
+    let promptWasSeen = false
+    try {
+      promptWasSeen = localStorage.getItem(contributionPromptStorageKey) === '1'
+    } catch {
+      // Show the optional prompt when local storage is unavailable.
+    }
+    if (promptWasSeen) {
+      navigate(`/site/${wedding.slug}?from=dashboard`)
+    } else {
+      setShowContributionPrompt(true)
+    }
+  }
+
+  const continueToSite = () => {
+    markContributionPromptAsSeen()
+    navigate(`/site/${wedding.slug}?from=dashboard`)
+  }
+
+  const goToContribution = () => {
+    markContributionPromptAsSeen()
+    navigate('/principal?tab=colaborar')
+  }
 
   const handleDeleteSite = async () => {
     const confirmed = confirm('Tem certeza que deseja excluir este site? Isso apaga textos, presentes e imagens enviadas.')
@@ -209,7 +244,7 @@ export default function Dashboard() {
               <Button variant="primary" size="sm" onClick={() => navigate('/editor')} fullWidth className="sm:w-auto">
                 <Edit3 size={14} /> Editar site
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/site/${wedding.slug}?from=dashboard`)} fullWidth className="sm:w-auto">
+              <Button variant="outline" size="sm" onClick={handleVisualizeSite} fullWidth className="sm:w-auto">
                 <Eye size={14} /> Visualizar
               </Button>
               <Button
@@ -307,6 +342,33 @@ export default function Dashboard() {
           )}
         </Card>
       </div>
+      <Modal
+        isOpen={showContributionPrompt}
+        onClose={continueToSite}
+        title="Seu site está pronto!"
+      >
+        <div className="space-y-5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sand-100 text-sand-700">
+            <HandHeart size={20} />
+          </div>
+          <div className="space-y-3 text-sm leading-relaxed text-stone-500">
+            <p>
+              O Para sempre dois é gratuito. Vocês podem editar e compartilhar o site sem nenhuma cobrança.
+            </p>
+            <p>
+              Se quiserem, uma colaboração voluntária ajuda a manter a plataforma funcionando para outros casais. Ela é totalmente opcional e não libera recursos extras.
+            </p>
+          </div>
+          <div className="space-y-2 pt-1">
+            <Button variant="primary" fullWidth onClick={goToContribution}>
+              <HandHeart size={16} /> Quero colaborar
+            </Button>
+            <Button variant="ghost" fullWidth onClick={continueToSite}>
+              Continuar sem colaborar
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </DashboardShell>
   )
 }

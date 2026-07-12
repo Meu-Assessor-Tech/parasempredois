@@ -27,7 +27,7 @@ export default function CreateWedding() {
 
     try {
       await createWeddingSite(form)
-      navigate('/editor')
+      navigate('/editor?tab=design')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível criar o site')
     } finally {

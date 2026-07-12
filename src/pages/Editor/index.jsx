@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical } from 'lucide-react'
+import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical, ArrowRight, HandHeart } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../../components/layout/Sidebar'
 import MobileNav from '../../components/layout/MobileNav'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import Modal from '../../components/ui/Modal'
 import { canUploadMedia, deleteWeddingDesignImages, deleteWeddingImage, uploadWeddingImage } from '../../api/media'
 import { canSaveWedding, saveWeddingContent, saveWeddingDesign, saveWeddingGifts } from '../../api/weddings'
 import { useWedding } from '../../context/WeddingContext'
@@ -15,8 +16,8 @@ import { giftImageUrl, IMAGE_MIME_TYPES, isSampleMedia, mediaKey, mediaUrl, proc
 import { giftImagePresetById, giftImagePresetCategories } from '../../data/giftImagePresets'
 
 const TABS = [
-  { id: 'content', label: 'Conteúdo' },
   { id: 'design', label: 'Design' },
+  { id: 'content', label: 'Conteúdo' },
   { id: 'gifts', label: 'Presentes' },
 ]
 
@@ -67,6 +68,7 @@ const COLORS = [
 
 const MAX_GALLERY_IMAGES = 6
 const PREVIEW_STORAGE_KEY = 'baitacasamento_preview_wedding'
+const CONTRIBUTION_PROMPT_KEY_PREFIX = 'baitacasamento_contribution_prompt_seen'
 
 function realMediaItems(items = []) {
   return items.filter(item => !isSampleMedia(item) && typeof item !== 'string')
@@ -80,6 +82,9 @@ export default function Editor() {
   const { wedding, loadingWedding, updateWedding, publishWedding, ensureWedding } = useWedding()
   const [previewMode, setPreviewMode] = useState('desktop')
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [showContributionPrompt, setShowContributionPrompt] = useState(false)
+  const [completedSiteSlug, setCompletedSiteSlug] = useState('')
   const [savedSection, setSavedSection] = useState(null)
   const [dirtyTabs, setDirtyTabs] = useState({})
   const [previewKey, setPreviewKey] = useState(0)
@@ -89,6 +94,7 @@ export default function Editor() {
   const [highlightedGalleryKeys, setHighlightedGalleryKeys] = useState([])
   const coverInputRef = useRef(null)
   const galleryInputRef = useRef(null)
+  const editorPaneRef = useRef(null)
   const previewIframeRef = useRef(null)
   const previewScrollRef = useRef({ top: 0, left: 0 })
   const previewSessionKeyRef = useRef(`${Date.now()}-${Math.random().toString(36).slice(2)}`)
@@ -99,12 +105,38 @@ export default function Editor() {
 
   const VALID_TABS = TABS.map(t => t.id)
   const tabFromUrl = new URLSearchParams(location.search).get('tab')
-  const activeTab = VALID_TABS.includes(tabFromUrl) ? tabFromUrl : 'content'
+  const activeTab = VALID_TABS.includes(tabFromUrl) ? tabFromUrl : 'design'
 
   const setActiveTab = (id) => {
-    const params = id === 'content' ? '' : `?tab=${id}`
+    const params = id === 'design' ? '' : `?tab=${id}`
     navigate(`/editor${params}`, { replace: true })
   }
+
+  const contributionPromptStorageKey = `${CONTRIBUTION_PROMPT_KEY_PREFIX}:${wedding.id ?? wedding.slug}`
+
+  const markContributionPromptAsSeen = () => {
+    try {
+      localStorage.setItem(contributionPromptStorageKey, '1')
+    } catch {
+      // The prompt can still be dismissed if local storage is unavailable.
+    }
+    setShowContributionPrompt(false)
+  }
+
+  const continueToPublishedSite = () => {
+    markContributionPromptAsSeen()
+    navigate(`/site/${completedSiteSlug || wedding.slug}?from=editor`)
+  }
+
+  const goToContribution = () => {
+    markContributionPromptAsSeen()
+    navigate('/principal?tab=colaborar')
+  }
+
+  useEffect(() => {
+    editorPaneRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [activeTab])
 
   // Debounced preview reload — fires 800ms after last change
   const capturePreviewScroll = useCallback(() => {
@@ -178,11 +210,13 @@ export default function Editor() {
     await deleteWeddingImage(wedding.id, media.storageKey)
   }, [wedding.id])
 
-  const handleSave = async () => {
+  const handleSave = async (nextDestination = null) => {
+    if (saving) return false
     if (!wedding.brideName?.trim() || !wedding.groomName?.trim() || !wedding.date) {
       alert('Informe o nome dos noivos e a data do casamento antes de salvar.')
-      return
+      return false
     }
+    setSaving(true)
     try {
       const savedWedding = await saveCurrentTab(wedding, activeTab)
       if (savedWedding?.id) {
@@ -216,8 +250,29 @@ export default function Editor() {
       }
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
+      if (nextDestination === 'site') {
+        const siteSlug = savedWedding?.slug ?? wedding.slug
+        let promptWasSeen = false
+        try {
+          promptWasSeen = localStorage.getItem(contributionPromptStorageKey) === '1'
+        } catch {
+          // Show the optional prompt when local storage is unavailable.
+        }
+        if (promptWasSeen) {
+          navigate(`/site/${siteSlug}?from=editor`)
+        } else {
+          setCompletedSiteSlug(siteSlug)
+          setShowContributionPrompt(true)
+        }
+      } else if (nextDestination) {
+        setActiveTab(nextDestination)
+      }
+      return true
     } catch (err) {
       alert(err.message)
+      return false
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -347,6 +402,12 @@ export default function Editor() {
   const saveButtonLabel = saved && savedSection === activeTab
     ? saveButtonCopy?.saved ?? `${activeTabLabel} salvo`
     : saveButtonCopy?.idle ?? `Salvar ${activeTabLabel}`
+  const nextDestination = activeTab === 'design' ? 'content' : activeTab === 'content' ? 'gifts' : 'site'
+  const continueButtonLabel = activeTab === 'design'
+    ? 'Salvar e continuar para Conteúdo'
+    : activeTab === 'content'
+    ? 'Salvar e continuar para Presentes'
+    : 'Salvar e visualizar site'
   if (loadingWedding) {
     return (
       <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
@@ -432,7 +493,7 @@ export default function Editor() {
         </div>
 
         <div className="flex-1 min-h-0 flex md:overflow-hidden">
-          <div className="w-full bg-white border-r border-stone-100 flex-shrink-0 md:h-[calc(100vh-3.5rem)] md:w-[440px] md:overflow-y-auto md:overscroll-contain">
+          <div ref={editorPaneRef} className="w-full bg-white border-r border-stone-100 flex-shrink-0 md:h-[calc(100vh-3.5rem)] md:w-[440px] md:overflow-y-auto md:overscroll-contain">
             <div className="p-4 sm:p-5">
               <div className="sticky top-0 z-10 -mx-5 -mt-5 mb-5 border-b border-stone-100 bg-white/95 px-5 py-4 backdrop-blur">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -447,8 +508,8 @@ export default function Editor() {
                     </p>
                   </div>
                   {canSaveActiveTab && (
-                    <Button variant="primary" size="sm" onClick={handleSave} fullWidth className="sm:w-auto">
-                      {saved && savedSection === activeTab ? <><Check size={14} /> {saveButtonLabel}</> : <><Save size={14} /> {saveButtonLabel}</>}
+                    <Button variant="primary" size="sm" onClick={() => handleSave()} disabled={saving} fullWidth className="sm:w-auto">
+                      {saving ? 'Salvando...' : saved && savedSection === activeTab ? <><Check size={14} /> {saveButtonLabel}</> : <><Save size={14} /> {saveButtonLabel}</>}
                     </Button>
                   )}
                 </div>
@@ -513,7 +574,7 @@ export default function Editor() {
 
               {activeTab === 'design' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                  <div>
+                  <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
                     <h2 className="font-medium text-stone-900 text-sm mb-1">Template</h2>
                     <p className="text-xs text-stone-400 mb-3">Escolha um estilo visual. As fotos e textos continuam os mesmos.</p>
                     <div className="space-y-2">
@@ -529,7 +590,7 @@ export default function Editor() {
                             className={`w-full overflow-hidden rounded-xl border text-left transition-all ${
                               isActive
                                 ? 'border-stone-900 bg-stone-50 shadow-sm'
-                                : 'border-stone-200 hover:border-stone-400 hover:bg-stone-50'
+                                : 'border-stone-200 bg-white hover:border-stone-400 hover:bg-stone-50'
                             } ${template.comingSoon ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <div className="flex gap-3 p-3">
@@ -563,46 +624,7 @@ export default function Editor() {
                     </div>
                   </div>
 
-                  <div>
-                    <h2 className="font-medium text-stone-900 text-sm mb-1">Cor de destaque</h2>
-                    <p className="text-[11px] text-stone-400 mb-3 leading-relaxed">
-                      Personaliza detalhes do template, como botões, ícones, labels e destaques.
-                    </p>
-                    <div className="grid grid-cols-6 gap-2 mb-3">
-                      {COLORS.map(color => (
-                        <button
-                          key={color.value}
-                          title={color.label}
-                          onClick={() => wrappedUpdate({ primaryColor: color.value })}
-                          className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                            wedding.primaryColor === color.value ? 'border-stone-900 scale-110' : 'border-transparent'
-                          }`}
-                          style={{ backgroundColor: color.value }}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <label className="text-[11px] text-stone-500 flex-1">Cor personalizada</label>
-                      <input
-                        type="color"
-                        value={wedding.primaryColor}
-                        onChange={e => wrappedUpdate({ primaryColor: e.target.value })}
-                        className="w-8 h-8 rounded-full border border-stone-200 cursor-pointer p-0.5 bg-white"
-                        title="Escolher cor"
-                      />
-                      <span className="text-[11px] font-mono text-stone-400">{wedding.primaryColor}</span>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={usesTemplateAccent}
-                      onClick={() => wrappedUpdate({ primaryColor: defaultTemplateAccent })}
-                      className="mt-3 w-full rounded-xl border border-stone-200 px-3 py-2 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-45"
-                    >
-                      Restaurar cor padrão do {activeTemplate.name}
-                    </button>
-                  </div>
-
-                  <div>
+                  <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <h2 className="font-medium text-stone-900 text-sm">Foto de capa</h2>
                     </div>
@@ -626,7 +648,7 @@ export default function Editor() {
                     </Button>
                   </div>
 
-                  <div>
+                  <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div>
                         <h2 className="font-medium text-stone-900 text-sm">Galeria de fotos</h2>
@@ -672,7 +694,7 @@ export default function Editor() {
                       </div>
                     )}
                     {galleryImages.length === 0 && (
-                      <div className="mb-3 rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-6 text-center">
+                      <div className="mb-3 rounded-xl border border-dashed border-stone-200 bg-white px-4 py-6 text-center">
                         <p className="text-sm font-medium text-stone-800">Nenhuma foto adicionada ainda</p>
                         <p className="mt-1 text-[11px] leading-relaxed text-stone-400">
                           Você pode adicionar até {MAX_GALLERY_IMAGES} fotos para montar a galeria do site.
@@ -728,6 +750,45 @@ export default function Editor() {
                     )}
                   </div>
 
+                  <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
+                    <h2 className="font-medium text-stone-900 text-sm mb-1">Cor de destaque</h2>
+                    <p className="text-[11px] text-stone-400 mb-3 leading-relaxed">
+                      Personaliza detalhes do template, como botões, ícones, labels e destaques.
+                    </p>
+                    <div className="grid grid-cols-6 gap-2 mb-3">
+                      {COLORS.map(color => (
+                        <button
+                          key={color.value}
+                          title={color.label}
+                          onClick={() => wrappedUpdate({ primaryColor: color.value })}
+                          className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                            wedding.primaryColor === color.value ? 'border-stone-900 scale-110' : 'border-transparent'
+                          }`}
+                          style={{ backgroundColor: color.value }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <label className="text-[11px] text-stone-500 flex-1">Cor personalizada</label>
+                      <input
+                        type="color"
+                        value={wedding.primaryColor}
+                        onChange={e => wrappedUpdate({ primaryColor: e.target.value })}
+                        className="w-8 h-8 rounded-full border border-stone-200 cursor-pointer p-0.5 bg-white"
+                        title="Escolher cor"
+                      />
+                      <span className="text-[11px] font-mono text-stone-400">{wedding.primaryColor}</span>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={usesTemplateAccent}
+                      onClick={() => wrappedUpdate({ primaryColor: defaultTemplateAccent })}
+                      className="mt-3 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-600 transition-colors hover:border-stone-300 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      Usar cor padrão do template ({activeTemplate.name})
+                    </button>
+                  </div>
+
                   <div className="pt-2 border-t border-stone-100">
                     <Button
                       variant="ghost"
@@ -744,6 +805,22 @@ export default function Editor() {
 
               {activeTab === 'gifts' && (
                 <GiftsTab wedding={wedding} updateWedding={wrappedUpdate} />
+              )}
+              {canSaveActiveTab && (
+                <div className="mt-6 border-t border-stone-100 pt-5">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    disabled={saving}
+                    onClick={() => handleSave(nextDestination)}
+                  >
+                    {saving ? 'Salvando...' : <>{continueButtonLabel} <ArrowRight size={16} /></>}
+                  </Button>
+                  <p className="mt-2 text-center text-[11px] leading-relaxed text-stone-400">
+                    Suas alterações serão salvas antes de avançar.
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -766,6 +843,33 @@ export default function Editor() {
           </div>
         </div>
       </main>
+      <Modal
+        isOpen={showContributionPrompt}
+        onClose={continueToPublishedSite}
+        title="Seu site está pronto!"
+      >
+        <div className="space-y-5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sand-100 text-sand-700">
+            <HandHeart size={20} />
+          </div>
+          <div className="space-y-3 text-sm leading-relaxed text-stone-500">
+            <p>
+              O Para sempre dois é gratuito. Vocês podem editar e compartilhar o site sem nenhuma cobrança.
+            </p>
+            <p>
+              Se quiserem, uma colaboração voluntária ajuda a manter a plataforma funcionando para outros casais. Ela é totalmente opcional e não libera recursos extras.
+            </p>
+          </div>
+          <div className="space-y-2 pt-1">
+            <Button variant="primary" fullWidth onClick={goToContribution}>
+              <HandHeart size={16} /> Quero colaborar
+            </Button>
+            <Button variant="ghost" fullWidth onClick={continueToPublishedSite}>
+              Continuar sem colaborar
+            </Button>
+          </div>
+        </div>
+      </Modal>
       <MobileNav />
     </div>
   )
