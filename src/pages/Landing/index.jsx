@@ -1,11 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, Star, Check, Heart, Sparkles, Globe, Gift } from 'lucide-react'
+import { ArrowRight, Check, Heart, Sparkles, Globe, Gift } from 'lucide-react'
 import Navbar from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 import Button from '../../components/ui/Button'
 import { mockTemplates } from '../../data/mockTemplates'
-import { mockTestimonials } from '../../data/mockTestimonials'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -26,7 +25,7 @@ export default function Landing() {
       <Navbar transparent />
 
       {/* Hero */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative flex min-h-[88svh] items-center justify-center overflow-hidden md:min-h-screen">
         <div className="absolute inset-0">
           <img
             src="https://images.unsplash.com/photo-1519741497674-611481863552?w=1600&q=80"
@@ -36,45 +35,36 @@ export default function Landing() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/60" />
         </div>
 
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pt-16">
+        <div className="relative z-10 mx-auto max-w-4xl px-5 pt-16 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center gap-2 bg-white/12 backdrop-blur-md border border-white/25 rounded-full px-4 py-2 text-white text-xs mb-8 shadow-lg">
-              <Sparkles size={12} />
-              <span>Crie o site do seu casamento em minutos</span>
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/12 px-4 py-2 text-xs text-white shadow-lg backdrop-blur-md sm:mb-8">
+              <Check size={12} />
+              <span>Gratuito. Colaboração opcional.</span>
             </div>
-            <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl text-white leading-tight mb-6">
+            <h1 className="mb-5 font-serif text-4xl leading-tight text-white sm:mb-6 sm:text-6xl md:text-7xl">
               O site que seu <br />
               <em>amor merece</em>
             </h1>
-            <p className="text-white/90 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed mb-10">
-              Crie um site bonito para compartilhar com seus convidados, reunir fotos, contar a história do casal, indicar presentes e receber confirmações de presença.
+            <p className="mx-auto mb-7 max-w-xl text-base leading-relaxed text-white/90 sm:mb-10 sm:text-xl">
+              Reúna os detalhes do casamento, presentes e confirmações de presença em um só lugar.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex items-center justify-center">
               <Button
                 variant="primary"
                 size="lg"
-                onClick={() => navigate(startFreePath)}
-                className="!bg-white !text-stone-900 hover:!bg-stone-100 shadow-xl"
-              >
-                Comece grátis
-                <ArrowRight size={16} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="lg"
                 onClick={() => navigate('/site/ana-e-pedro?example=1')}
-                className="!text-white hover:!bg-white/10"
+                className="!bg-white !text-stone-900 shadow-xl hover:!bg-stone-100"
               >
                 Ver exemplo
               </Button>
             </div>
-            <p className="mt-4 text-sm text-white/80">
-              100% gratuito. Não há cobrança para criar o site; qualquer colaboração com o projeto é opcional.
+            <p className="mx-auto mt-4 max-w-sm text-xs leading-relaxed text-white/75 sm:text-sm">
+              Não há cobrança para criar, editar ou compartilhar o site.
             </p>
           </motion.div>
         </div>
@@ -82,7 +72,7 @@ export default function Landing() {
         <motion.div
           animate={{ y: [0, 8, 0] }}
           transition={{ repeat: Infinity, duration: 2 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 w-6 h-10 border-2 border-white/40 rounded-full flex items-start justify-center pt-2"
+          className="absolute bottom-8 left-1/2 hidden h-10 w-6 -translate-x-1/2 items-start justify-center rounded-full border-2 border-white/40 pt-2 sm:flex"
         >
           <div className="w-1 h-2 bg-white/60 rounded-full" />
         </motion.div>
@@ -252,56 +242,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-24 px-4 bg-sand-50">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="text-center mb-16"
-          >
-            <motion.p variants={fadeUp} className="text-xs font-semibold text-sand-600 uppercase tracking-widest mb-3">
-              Depoimentos
-            </motion.p>
-            <motion.h2 variants={fadeUp} className="font-serif text-4xl sm:text-5xl text-stone-900">
-              Casais que <em>amaram</em>
-            </motion.h2>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-          >
-            {mockTestimonials.map((t) => (
-              <motion.div
-                key={t.id}
-                variants={fadeUp}
-                className="bg-white p-8 rounded-2xl border border-stone-100 shadow-sm"
-              >
-                <div className="flex gap-0.5 mb-4">
-                  {[...Array(t.stars)].map((_, i) => (
-                    <Star key={i} size={14} className="text-amber-400 fill-amber-400" />
-                  ))}
-                </div>
-                <p className="text-stone-600 text-sm leading-relaxed mb-6 italic">"{t.text}"</p>
-                <div className="flex items-center gap-3">
-                  <img src={t.image} alt={t.name} className="w-10 h-10 rounded-full object-cover" />
-                  <div>
-                    <p className="font-medium text-stone-900 text-sm">{t.name}</p>
-                    <p className="text-xs text-stone-400">{t.date}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
       {/* CTA Final */}
       <section className="py-24 px-4">
         <div className="max-w-3xl mx-auto text-center">
@@ -322,7 +262,7 @@ export default function Landing() {
             </motion.p>
             <motion.div variants={fadeUp}>
               <Button variant="primary" size="xl" onClick={() => navigate(startFreePath)}>
-                Comece grátis
+                Criar meu site
                 <ArrowRight size={18} />
               </Button>
             </motion.div>
