@@ -475,6 +475,7 @@ export default function Editor() {
               size="sm"
               onClick={() => navigate(`/site/${wedding.slug}?from=editor`)}
               title="Ver site publicado"
+              className="hidden md:inline-flex"
             >
               <Eye size={14} /> Ver site
             </Button>
