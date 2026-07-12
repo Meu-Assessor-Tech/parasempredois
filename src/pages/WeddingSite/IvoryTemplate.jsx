@@ -15,6 +15,7 @@ import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
 import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 import { submitRsvp } from '../../api/rsvps'
+import RsvpFlow from '../../components/shared/RsvpFlow'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.9, ease } } }
@@ -444,7 +445,8 @@ export default function IvoryTemplate({ wedding }) {
               <span className="text-stone-500">Confirme até 30 de agosto.</span>
             </p>
           </motion.div>
-          <AnimatePresence mode="wait">
+          <RsvpFlow wedding={wedding} accent={wedding.primaryColor} />
+          {false && <AnimatePresence mode="wait">
             {rsvpSent ? (
               <motion.div key="success" initial={{ opacity: 0, scale: 0.92, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.55, ease }} className="text-center py-14">
                 <motion.div initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1, type: 'spring', stiffness: 220, damping: 20 }} className="w-16 h-16 rounded-full bg-sand-50 border border-sand-100 flex items-center justify-center mx-auto mb-7">
@@ -477,7 +479,7 @@ export default function IvoryTemplate({ wedding }) {
                 </motion.div>
               </motion.form>
             )}
-          </AnimatePresence>
+          </AnimatePresence>}
         </motion.div>
       </section>
 

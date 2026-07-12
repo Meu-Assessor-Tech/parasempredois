@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, Copy, Edit3, Eye, HandHeart, MessageCircle, Plus, Share2, Trash2 } from 'lucide-react'
+import { Check, Copy, Edit3, Eye, HandHeart, MessageCircle, Plus, Share2, Trash2, Users } from 'lucide-react'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import Modal from '../../components/ui/Modal'
 import { useWedding } from '../../context/WeddingContext'
 import { canSaveWedding } from '../../api/weddings'
-import { getGuestConfirmations } from '../../api/rsvps'
+import { createInvitation, deleteInvitation, getInvitations } from '../../api/rsvps'
 import { ApiError } from '../../api/client'
 import { mediaUrl } from '../../utils/media'
 import { formatWeddingDate, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
@@ -71,13 +71,84 @@ function CollaborationTab() {
   )
 }
 
+function parseInvitationLine(line) {
+  const parts = line.split(';').map(value => value.trim()).filter(Boolean)
+  const plusMatch = parts[0]?.match(/^(.*?)\s*\+(\d+)$/)
+  if (plusMatch) {
+    const mainName = plusMatch[1].trim()
+    const companionCount = Math.min(10, Number(plusMatch[2]))
+    return {
+      displayName: `${mainName} e acompanhantes`,
+      guests: [mainName, ...Array.from({ length: companionCount }, (_, index) => `Acompanhante ${index + 1}`)],
+    }
+  }
+  return {
+    displayName: parts.length > 1 ? parts.join(' e ') : parts[0],
+    guests: parts,
+  }
+}
+
+function GuestsTab({ wedding }) {
+  const [invitations, setInvitations] = useState([])
+  const [draft, setDraft] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const load = () => {
+    setLoading(true); setError('')
+    getInvitations(wedding.id).then(data => setInvitations(data ?? [])).catch(err => setError(err.message)).finally(() => setLoading(false))
+  }
+
+  useEffect(load, [wedding.id])
+
+  const addInvitations = async () => {
+    const parsed = draft.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(parseInvitationLine)
+    if (!parsed.length) return
+    setSaving(true); setError('')
+    try {
+      for (const invitation of parsed) await createInvitation(wedding.id, invitation)
+      setDraft(''); load()
+    } catch (err) { setError(err.message) } finally { setSaving(false) }
+  }
+
+  const remove = async (id) => {
+    if (!confirm('Remover este convite e suas respostas?')) return
+    try { await deleteInvitation(wedding.id, id); setInvitations(current => current.filter(item => item.id !== id)) } catch (err) { setError(err.message) }
+  }
+
+  const copyInvite = async (invitation) => {
+    const url = `${window.location.origin}/site/${wedding.slug}#preview-rsvp`
+    await copyTextToClipboard(`Olá! Para confirmar sua presença em nosso casamento, acesse:\n${url}\n\nSeu código de confirmação é: ${invitation.accessCode}`)
+  }
+
+  const guests = invitations.flatMap(invitation => invitation.guests ?? [])
+  const count = status => guests.filter(guest => guest.status === status).length
+
+  return <DashboardShell><div className="mx-auto max-w-5xl px-4 py-8 sm:px-8">
+    <p className="mb-1 text-xs uppercase tracking-widest text-stone-400">Organização</p>
+    <h1 className="mb-2 font-serif text-3xl text-stone-900 sm:text-4xl">Convidados</h1>
+    <p className="mb-7 max-w-2xl text-sm leading-relaxed text-stone-500">Crie um convite por família ou grupo. Cada linha gera um código exclusivo para confirmação.</p>
+    <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {[['Total', guests.length], ['Confirmados', count('CONFIRMED')], ['Não irão', count('DECLINED')], ['Aguardando', count('PENDING')]].map(([label, value]) => <Card key={label} className="p-4"><p className="text-xs text-stone-400">{label}</p><p className="mt-1 font-serif text-3xl text-stone-900">{value}</p></Card>)}
+    </div>
+    <Card className="mb-6 p-5">
+      <div className="mb-4"><h2 className="font-serif text-2xl text-stone-900">Adicionar convites</h2><p className="mt-1 text-xs leading-relaxed text-stone-500">Uma linha por grupo. Use “José Santos +3” para acompanhantes ou “Carlos Andrade; Maria de Souza” para nomes definidos.</p></div>
+      <textarea value={draft} onChange={e => setDraft(e.target.value)} rows={5} placeholder={'José Santos +3\nCarlos Andrade; Maria de Souza\nAna Paula'} className="w-full resize-none rounded-xl border border-stone-200 px-4 py-3 text-sm outline-none focus:border-stone-400" />
+      <Button className="mt-3" onClick={addInvitations} disabled={saving || !draft.trim()}><Plus size={15} /> {saving ? 'Adicionando...' : 'Adicionar à lista'}</Button>
+    </Card>
+    {error && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
+    {loading ? <p className="py-8 text-center text-sm text-stone-400">Carregando convidados...</p> : invitations.length === 0 ? <Card className="p-8 text-center"><Users className="mx-auto mb-3 text-stone-300" /><p className="text-sm text-stone-500">Nenhum convite criado ainda.</p></Card> : <div className="space-y-3">{invitations.map(invitation => <Card key={invitation.id} className="p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><h3 className="font-medium text-stone-900">{invitation.displayName}</h3><p className="mt-1 text-xs text-stone-400">{invitation.guests.length} pessoa(s) · Código <span className="font-mono font-medium text-stone-700">{invitation.accessCode}</span></p></div><div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => copyInvite(invitation)}><Copy size={14} /> Copiar convite</Button><Button variant="ghost" size="sm" onClick={() => remove(invitation.id)} className="!text-red-500"><Trash2 size={14} /></Button></div></div>
+      <div className="mt-4 divide-y divide-stone-100 rounded-xl border border-stone-100">{invitation.guests.map(guest => <div key={guest.id} className="flex items-center justify-between px-3 py-2.5"><span className="text-sm text-stone-700">{guest.name}</span><span className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${guest.status === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700' : guest.status === 'DECLINED' ? 'bg-red-50 text-red-600' : 'bg-stone-100 text-stone-500'}`}>{guest.status === 'CONFIRMED' ? 'Confirmado' : guest.status === 'DECLINED' ? 'Não irá' : 'Aguardando'}</span></div>)}</div>
+    </Card>)}</div>}
+  </div></DashboardShell>
+}
+
 export default function Dashboard() {
   const { wedding, loadingWedding, deleteWeddingSite } = useWedding()
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
-  const [confirmations, setConfirmations] = useState([])
-  const [confirmationsLoading, setConfirmationsLoading] = useState(false)
-  const [confirmationsError, setConfirmationsError] = useState('')
   const [copiedSiteLink, setCopiedSiteLink] = useState(false)
   const [copySiteLinkError, setCopySiteLinkError] = useState(false)
   const [shareOptionsOpen, setShareOptionsOpen] = useState(false)
@@ -87,26 +158,12 @@ export default function Dashboard() {
   const currentTab = new URLSearchParams(location.search).get('tab')
   const hasWedding = canSaveWedding(wedding?.id)
 
-  useEffect(() => {
-    if (!hasWedding) return
-    let cancelled = false
-    setConfirmationsLoading(true)
-    setConfirmationsError('')
-    getGuestConfirmations(wedding.id)
-      .then(data => {
-        if (!cancelled) setConfirmations(data ?? [])
-      })
-      .catch(err => {
-        if (!cancelled) setConfirmationsError(err.message)
-      })
-      .finally(() => {
-        if (!cancelled) setConfirmationsLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [hasWedding, wedding.id])
-
   if (currentTab === 'colaborar') {
     return <CollaborationTab />
+  }
+
+  if (currentTab === 'convidados' && hasWedding) {
+    return <GuestsTab wedding={wedding} />
   }
 
   if (loadingWedding) {
@@ -149,7 +206,6 @@ export default function Dashboard() {
   const formattedDate = formatWeddingDate(wedding.date, { day: '2-digit', month: 'long', year: 'numeric' })
   const weddingTitle = weddingDisplayTitle(wedding)
   const weddingVenue = weddingDisplayVenue(wedding)
-  const totalConfirmedGuests = confirmations.reduce((sum, confirmation) => sum + (confirmation.totalGuests ?? 1), 0)
   const siteUrl = `${window.location.origin}/site/${wedding.slug}`
   const contributionPromptStorageKey = `${CONTRIBUTION_PROMPT_KEY_PREFIX}:${wedding.id ?? wedding.slug}`
   const whatsappShareText = `Oi!\n\nNosso grande dia está chegando, e preparamos um site com todos os detalhes do nosso casamento.\n\nAcesse: ${siteUrl}\n\nEsperamos você para celebrar com a gente!`
@@ -296,51 +352,6 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="mt-6 p-5">
-          <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-stone-400 mb-1">Confirmações</p>
-              <h2 className="font-serif text-2xl text-stone-900">Convidados confirmados</h2>
-            </div>
-            <p className="text-sm text-stone-500">
-              {confirmations.length} confirmação(ões) · {totalConfirmedGuests} pessoa(s)
-            </p>
-          </div>
-
-          {confirmationsLoading && (
-            <p className="rounded-xl bg-stone-50 px-4 py-5 text-center text-sm text-stone-400">Carregando confirmações...</p>
-          )}
-
-          {confirmationsError && (
-            <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{confirmationsError}</p>
-          )}
-
-          {!confirmationsLoading && !confirmationsError && confirmations.length === 0 && (
-            <p className="rounded-xl bg-stone-50 px-4 py-5 text-center text-sm text-stone-400">
-              Nenhuma presença confirmada ainda.
-            </p>
-          )}
-
-          {!confirmationsLoading && !confirmationsError && confirmations.length > 0 && (
-            <div className="divide-y divide-stone-100 rounded-xl border border-stone-100">
-              {confirmations.map(confirmation => (
-                <div key={confirmation.id} className="flex items-center justify-between gap-4 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-stone-900">{confirmation.name}</p>
-                    <p className="text-xs text-stone-400">
-                      {confirmation.companions > 0
-                        ? `${confirmation.companions} acompanhante(s)`
-                        : 'Sem acompanhantes'}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
-                    {confirmation.totalGuests} pessoa(s)
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
       </div>
       <Modal
         isOpen={showContributionPrompt}

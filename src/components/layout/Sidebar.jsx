@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, LayoutDashboard, Edit3, HandHeart, LogOut } from 'lucide-react'
+import { Heart, LayoutDashboard, Edit3, HandHeart, LogOut, Users } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useWedding } from '../../context/WeddingContext'
 import { canSaveWedding } from '../../api/weddings'
@@ -16,6 +16,7 @@ export default function Sidebar() {
     hasWedding
       ? { icon: Edit3, label: 'Editar', path: '/editor' }
       : { icon: Edit3, label: 'Criar site', path: '/criar-site' },
+    ...(hasWedding ? [{ icon: Users, label: 'Convidados', path: '/principal?tab=convidados' }] : []),
     { icon: HandHeart, label: 'Colaborar', path: '/principal?tab=colaborar' },
   ]
 

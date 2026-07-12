@@ -5,6 +5,7 @@ import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
 import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 import { submitRsvp } from '../../api/rsvps'
+import RsvpFlow from '../../components/shared/RsvpFlow'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 26 }, visible: { opacity: 1, y: 0, transition: { duration: 0.75, ease } } }
@@ -255,7 +256,8 @@ export default function BaliTemplate({ wedding }) {
         <div className="max-w-md mx-auto text-center">
           <SectionLabel>Confirmação de presença</SectionLabel>
           <h2 className="font-serif italic text-5xl text-[#6C3F2B] mb-8">Você virá?</h2>
-          <AnimatePresence mode="wait">
+          <RsvpFlow wedding={wedding} accent={accent} />
+          {false && <AnimatePresence mode="wait">
             {rsvpSent ? (
               <motion.div key="sent" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="py-10">
                 <Heart size={28} className="mx-auto text-[var(--accent)] fill-[var(--accent)] mb-4" />
@@ -279,7 +281,7 @@ export default function BaliTemplate({ wedding }) {
                 </button>
               </motion.form>
             )}
-          </AnimatePresence>
+          </AnimatePresence>}
         </div>
       </section>
 
