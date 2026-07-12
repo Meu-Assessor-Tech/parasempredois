@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical, ArrowRight, HandHeart } from 'lucide-react'
+import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical, ArrowRight, HandHeart, Copy } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../../components/layout/Sidebar'
 import MobileNav from '../../components/layout/MobileNav'
@@ -14,6 +14,8 @@ import { mockTemplates } from '../../data/mockTemplates'
 import { mockWedding } from '../../data/mockWedding'
 import { giftImageUrl, IMAGE_MIME_TYPES, isSampleMedia, mediaKey, mediaUrl, processImageFile, sampleMedia } from '../../utils/media'
 import { giftImagePresetById, giftImagePresetCategories } from '../../data/giftImagePresets'
+import { CONTRIBUTION_PIX_KEY } from '../../data/contribution'
+import { copyTextToClipboard } from '../../utils/clipboard'
 
 const TABS = [
   { id: 'design', label: 'Design' },
@@ -128,9 +130,10 @@ export default function Editor() {
     navigate(`/site/${completedSiteSlug || wedding.slug}?from=editor`)
   }
 
-  const goToContribution = () => {
+  const copyPixAndContinue = async () => {
+    await copyTextToClipboard(CONTRIBUTION_PIX_KEY)
     markContributionPromptAsSeen()
-    navigate('/principal?tab=colaborar')
+    navigate(`/site/${completedSiteSlug || wedding.slug}?from=editor`)
   }
 
   useEffect(() => {
@@ -860,9 +863,13 @@ export default function Editor() {
               Se quiserem, uma colaboração voluntária ajuda a manter a plataforma funcionando para outros casais. Ela é totalmente opcional e não libera recursos extras.
             </p>
           </div>
+          <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wider text-stone-400">Chave Pix</p>
+            <code className="mt-1 block break-all text-sm text-stone-800">{CONTRIBUTION_PIX_KEY}</code>
+          </div>
           <div className="space-y-2 pt-1">
-            <Button variant="primary" fullWidth onClick={goToContribution}>
-              <HandHeart size={16} /> Quero colaborar
+            <Button variant="primary" fullWidth onClick={copyPixAndContinue}>
+              <Copy size={16} /> Copiar Pix e visualizar site
             </Button>
             <Button variant="ghost" fullWidth onClick={continueToPublishedSite}>
               Continuar sem colaborar

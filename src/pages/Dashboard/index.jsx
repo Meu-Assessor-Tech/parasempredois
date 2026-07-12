@@ -14,8 +14,8 @@ import { mediaUrl } from '../../utils/media'
 import { formatWeddingDate, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 import { copyTextToClipboard } from '../../utils/clipboard'
 import MobileNav from '../../components/layout/MobileNav'
+import { CONTRIBUTION_PIX_KEY } from '../../data/contribution'
 
-const PIX_KEY = 'parasempredois@gmail.com'
 const CONTRIBUTION_PROMPT_KEY_PREFIX = 'baitacasamento_contribution_prompt_seen'
 
 const fadeUp = {
@@ -27,7 +27,7 @@ function CollaborationTab() {
   const [copied, setCopied] = useState(false)
 
   const handleCopyPix = async () => {
-    const copiedPix = await copyTextToClipboard(PIX_KEY)
+    const copiedPix = await copyTextToClipboard(CONTRIBUTION_PIX_KEY)
     setCopied(copiedPix)
     window.setTimeout(() => setCopied(false), 1800)
   }
@@ -56,7 +56,7 @@ function CollaborationTab() {
               <p className="text-xs uppercase tracking-[0.24em] text-stone-400 mb-2">Chave Pix</p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <code className="flex-1 rounded-xl bg-white border border-stone-200 px-4 py-3 text-sm text-stone-800 break-all">
-                  {PIX_KEY}
+                  {CONTRIBUTION_PIX_KEY}
                 </code>
                 <Button variant="primary" size="sm" onClick={handleCopyPix}>
                   {copied ? <Check size={14} /> : <Copy size={14} />}
@@ -94,6 +94,8 @@ function GuestsTab({ wedding }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [copiedInvitationId, setCopiedInvitationId] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('ALL')
 
   const load = () => {
     setLoading(true); setError('')
@@ -119,27 +121,50 @@ function GuestsTab({ wedding }) {
 
   const copyInvite = async (invitation) => {
     const url = `${window.location.origin}/site/${wedding.slug}#preview-rsvp`
-    await copyTextToClipboard(`Olá! Para confirmar sua presença em nosso casamento, acesse:\n${url}\n\nSeu código de confirmação é: ${invitation.accessCode}`)
+    const copied = await copyTextToClipboard(`Olá! Estamos preparando nosso grande dia com muito carinho e queremos saber se poderemos contar com a sua presença.\n\nPara confirmar, acesse:\n${url}\n\nSeu código de confirmação é: ${invitation.accessCode}\n\nEsperamos celebrar esse momento com você!`)
+    if (copied) {
+      setCopiedInvitationId(invitation.id)
+      window.setTimeout(() => setCopiedInvitationId(current => current === invitation.id ? null : current), 2000)
+    }
   }
 
   const guests = invitations.flatMap(invitation => invitation.guests ?? [])
   const count = status => guests.filter(guest => guest.status === status).length
+  const visibleInvitations = statusFilter === 'ALL'
+    ? invitations
+    : invitations
+        .map(invitation => ({ ...invitation, guests: invitation.guests.filter(guest => guest.status === statusFilter) }))
+        .filter(invitation => invitation.guests.length > 0)
+  const summaryFilters = [
+    { label: 'Total', value: guests.length, status: 'ALL' },
+    { label: 'Confirmados', value: count('CONFIRMED'), status: 'CONFIRMED' },
+    { label: 'Não irão', value: count('DECLINED'), status: 'DECLINED' },
+    { label: 'Aguardando', value: count('PENDING'), status: 'PENDING' },
+  ]
 
   return <DashboardShell><div className="mx-auto max-w-5xl px-4 py-8 sm:px-8">
     <p className="mb-1 text-xs uppercase tracking-widest text-stone-400">Organização</p>
     <h1 className="mb-2 font-serif text-3xl text-stone-900 sm:text-4xl">Convidados</h1>
     <p className="mb-7 max-w-2xl text-sm leading-relaxed text-stone-500">Crie um convite por família ou grupo. Cada linha gera um código exclusivo para confirmação.</p>
     <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {[['Total', guests.length], ['Confirmados', count('CONFIRMED')], ['Não irão', count('DECLINED')], ['Aguardando', count('PENDING')]].map(([label, value]) => <Card key={label} className="p-4"><p className="text-xs text-stone-400">{label}</p><p className="mt-1 font-serif text-3xl text-stone-900">{value}</p></Card>)}
+      {summaryFilters.map(filter => <button key={filter.status} type="button" onClick={() => setStatusFilter(filter.status)} className={`rounded-2xl border p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-stone-300 ${statusFilter === filter.status ? 'border-stone-900 bg-stone-900' : 'border-stone-100 bg-white'}`}><p className={`text-xs ${statusFilter === filter.status ? 'text-white/65' : 'text-stone-400'}`}>{filter.label}</p><p className={`mt-1 font-serif text-3xl ${statusFilter === filter.status ? 'text-white' : 'text-stone-900'}`}>{filter.value}</p><p className={`mt-1 text-[10px] ${statusFilter === filter.status ? 'text-white/55' : 'text-stone-300'}`}>{statusFilter === filter.status ? 'Filtro ativo' : 'Clique para filtrar'}</p></button>)}
     </div>
     <Card className="mb-6 p-5">
-      <div className="mb-4"><h2 className="font-serif text-2xl text-stone-900">Adicionar convites</h2><p className="mt-1 text-xs leading-relaxed text-stone-500">Uma linha por grupo. Use “José Santos +3” para acompanhantes ou “Carlos Andrade; Maria de Souza” para nomes definidos.</p></div>
+      <div className="mb-4">
+        <h2 className="font-serif text-2xl text-stone-900">Adicionar convites</h2>
+        <p className="mt-1 text-xs leading-relaxed text-stone-500">Digite um convite por linha. Você pode cadastrar de três maneiras:</p>
+      </div>
+      <div className="mb-4 grid gap-2 sm:grid-cols-3">
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-3"><p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">Uma pessoa</p><p className="mt-1 text-sm font-medium text-stone-800">Maria Miranda</p><p className="mt-1 text-[11px] leading-relaxed text-stone-500">Cria um convite individual.</p></div>
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-3"><p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">Casal ou grupo</p><p className="mt-1 text-sm font-medium text-stone-800">Claudia Pires; José Carlos</p><p className="mt-1 text-[11px] leading-relaxed text-stone-500">Separe os nomes com ponto e vírgula.</p></div>
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-3"><p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">Com acompanhantes</p><p className="mt-1 text-sm font-medium text-stone-800">Clara +2</p><p className="mt-1 text-[11px] leading-relaxed text-stone-500">Cria Clara e duas vagas de acompanhante.</p></div>
+      </div>
       <textarea value={draft} onChange={e => setDraft(e.target.value)} rows={5} placeholder={'José Santos +3\nCarlos Andrade; Maria de Souza\nAna Paula'} className="w-full resize-none rounded-xl border border-stone-200 px-4 py-3 text-sm outline-none focus:border-stone-400" />
       <Button className="mt-3" onClick={addInvitations} disabled={saving || !draft.trim()}><Plus size={15} /> {saving ? 'Adicionando...' : 'Adicionar à lista'}</Button>
     </Card>
     {error && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
-    {loading ? <p className="py-8 text-center text-sm text-stone-400">Carregando convidados...</p> : invitations.length === 0 ? <Card className="p-8 text-center"><Users className="mx-auto mb-3 text-stone-300" /><p className="text-sm text-stone-500">Nenhum convite criado ainda.</p></Card> : <div className="space-y-3">{invitations.map(invitation => <Card key={invitation.id} className="p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><h3 className="font-medium text-stone-900">{invitation.displayName}</h3><p className="mt-1 text-xs text-stone-400">{invitation.guests.length} pessoa(s) · Código <span className="font-mono font-medium text-stone-700">{invitation.accessCode}</span></p></div><div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => copyInvite(invitation)}><Copy size={14} /> Copiar convite</Button><Button variant="ghost" size="sm" onClick={() => remove(invitation.id)} className="!text-red-500"><Trash2 size={14} /></Button></div></div>
+    {loading ? <p className="py-8 text-center text-sm text-stone-400">Carregando convidados...</p> : invitations.length === 0 ? <Card className="p-8 text-center"><Users className="mx-auto mb-3 text-stone-300" /><p className="text-sm text-stone-500">Nenhum convite criado ainda.</p></Card> : visibleInvitations.length === 0 ? <Card className="p-8 text-center"><p className="text-sm text-stone-500">Nenhum convidado neste filtro.</p></Card> : <div className="space-y-3">{visibleInvitations.map(invitation => <Card key={invitation.id} className="p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><h3 className="font-medium text-stone-900">{invitation.displayName}</h3><p className="mt-1 text-xs text-stone-400">{invitation.guests.length} pessoa(s) {statusFilter !== 'ALL' ? 'neste filtro' : ''} · Código <span className="font-mono font-medium text-stone-700">{invitation.accessCode}</span></p></div><div className="flex gap-2"><Button variant={copiedInvitationId === invitation.id ? 'secondary' : 'outline'} size="sm" onClick={() => copyInvite(invitation)}>{copiedInvitationId === invitation.id ? <Check size={14} /> : <Copy size={14} />} {copiedInvitationId === invitation.id ? 'Convite copiado' : 'Copiar convite'}</Button><Button variant="ghost" size="sm" onClick={() => remove(invitation.id)} className="!text-red-500"><Trash2 size={14} /></Button></div></div>
       <div className="mt-4 divide-y divide-stone-100 rounded-xl border border-stone-100">{invitation.guests.map(guest => <div key={guest.id} className="flex items-center justify-between px-3 py-2.5"><span className="text-sm text-stone-700">{guest.name}</span><span className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${guest.status === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700' : guest.status === 'DECLINED' ? 'bg-red-50 text-red-600' : 'bg-stone-100 text-stone-500'}`}>{guest.status === 'CONFIRMED' ? 'Confirmado' : guest.status === 'DECLINED' ? 'Não irá' : 'Aguardando'}</span></div>)}</div>
     </Card>)}</div>}
   </div></DashboardShell>
@@ -239,9 +264,10 @@ export default function Dashboard() {
     navigate(`/site/${wedding.slug}?from=dashboard`)
   }
 
-  const goToContribution = () => {
+  const copyPixAndContinue = async () => {
+    await copyTextToClipboard(CONTRIBUTION_PIX_KEY)
     markContributionPromptAsSeen()
-    navigate('/principal?tab=colaborar')
+    navigate(`/site/${wedding.slug}?from=dashboard`)
   }
 
   const handleDeleteSite = async () => {
@@ -370,9 +396,13 @@ export default function Dashboard() {
               Se quiserem, uma colaboração voluntária ajuda a manter a plataforma funcionando para outros casais. Ela é totalmente opcional e não libera recursos extras.
             </p>
           </div>
+          <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wider text-stone-400">Chave Pix</p>
+            <code className="mt-1 block break-all text-sm text-stone-800">{CONTRIBUTION_PIX_KEY}</code>
+          </div>
           <div className="space-y-2 pt-1">
-            <Button variant="primary" fullWidth onClick={goToContribution}>
-              <HandHeart size={16} /> Quero colaborar
+            <Button variant="primary" fullWidth onClick={copyPixAndContinue}>
+              <Copy size={16} /> Copiar Pix e visualizar site
             </Button>
             <Button variant="ghost" fullWidth onClick={continueToSite}>
               Continuar sem colaborar
