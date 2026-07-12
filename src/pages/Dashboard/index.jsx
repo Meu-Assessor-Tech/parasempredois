@@ -95,6 +95,7 @@ function GuestsTab({ wedding }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [copiedInvitationId, setCopiedInvitationId] = useState(null)
+  const [copiedCodeId, setCopiedCodeId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('ALL')
 
   const load = () => {
@@ -121,10 +122,18 @@ function GuestsTab({ wedding }) {
 
   const copyInvite = async (invitation) => {
     const url = `${window.location.origin}/site/${wedding.slug}#preview-rsvp`
-    const copied = await copyTextToClipboard(`Olá! Estamos preparando nosso grande dia com muito carinho e queremos saber se poderemos contar com a sua presença.\n\nPara confirmar, acesse:\n${url}\n\nSeu código de confirmação é: ${invitation.accessCode}\n\nEsperamos celebrar esse momento com você!`)
+    const copied = await copyTextToClipboard(`Oi!\n\nNosso grande dia está chegando, e preparamos um site com todos os detalhes do nosso casamento.\n\nAcesse: ${url}\n\nPara confirmar sua presença, procure seu nome no site e use o código: ${invitation.accessCode}\n\nEsperamos você para celebrar com a gente!`)
     if (copied) {
       setCopiedInvitationId(invitation.id)
       window.setTimeout(() => setCopiedInvitationId(current => current === invitation.id ? null : current), 2000)
+    }
+  }
+
+  const copyConfirmationCode = async (invitation) => {
+    const copied = await copyTextToClipboard(invitation.accessCode)
+    if (copied) {
+      setCopiedCodeId(invitation.id)
+      window.setTimeout(() => setCopiedCodeId(current => current === invitation.id ? null : current), 2000)
     }
   }
 
@@ -163,9 +172,17 @@ function GuestsTab({ wedding }) {
       <Button className="mt-3" onClick={addInvitations} disabled={saving || !draft.trim()}><Plus size={15} /> {saving ? 'Adicionando...' : 'Adicionar à lista'}</Button>
     </Card>
     {error && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
-    {loading ? <p className="py-8 text-center text-sm text-stone-400">Carregando convidados...</p> : invitations.length === 0 ? <Card className="p-8 text-center"><Users className="mx-auto mb-3 text-stone-300" /><p className="text-sm text-stone-500">Nenhum convite criado ainda.</p></Card> : visibleInvitations.length === 0 ? <Card className="p-8 text-center"><p className="text-sm text-stone-500">Nenhum convidado neste filtro.</p></Card> : <div className="space-y-3">{visibleInvitations.map(invitation => <Card key={invitation.id} className="p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><h3 className="font-medium text-stone-900">{invitation.displayName}</h3><p className="mt-1 text-xs text-stone-400">{invitation.guests.length} pessoa(s) {statusFilter !== 'ALL' ? 'neste filtro' : ''} · Código <span className="font-mono font-medium text-stone-700">{invitation.accessCode}</span></p></div><div className="flex gap-2"><Button variant={copiedInvitationId === invitation.id ? 'secondary' : 'outline'} size="sm" onClick={() => copyInvite(invitation)}>{copiedInvitationId === invitation.id ? <Check size={14} /> : <Copy size={14} />} {copiedInvitationId === invitation.id ? 'Convite copiado' : 'Copiar convite'}</Button><Button variant="ghost" size="sm" onClick={() => remove(invitation.id)} className="!text-red-500"><Trash2 size={14} /></Button></div></div>
-      <div className="mt-4 divide-y divide-stone-100 rounded-xl border border-stone-100">{invitation.guests.map(guest => <div key={guest.id} className="flex items-center justify-between px-3 py-2.5"><span className="text-sm text-stone-700">{guest.name}</span><span className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${guest.status === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700' : guest.status === 'DECLINED' ? 'bg-red-50 text-red-600' : 'bg-stone-100 text-stone-500'}`}>{guest.status === 'CONFIRMED' ? 'Confirmado' : guest.status === 'DECLINED' ? 'Não irá' : 'Aguardando'}</span></div>)}</div>
+    {loading ? <p className="py-8 text-center text-sm text-stone-400">Carregando convidados...</p> : invitations.length === 0 ? <Card className="p-8 text-center"><Users className="mx-auto mb-3 text-stone-300" /><p className="text-sm text-stone-500">Nenhum convite criado ainda.</p></Card> : visibleInvitations.length === 0 ? <Card className="p-8 text-center"><p className="text-sm text-stone-500">Nenhum convidado neste filtro.</p></Card> : <div className="space-y-3">{visibleInvitations.map(invitation => <Card key={invitation.id} className="p-4 sm:p-5">
+      <div className="min-w-0"><h3 className="break-words font-medium text-stone-900">{invitation.displayName}</h3><p className="mt-1 text-xs text-stone-400">{invitation.guests.length} pessoa(s) {statusFilter !== 'ALL' ? 'neste filtro' : ''}</p></div>
+      <div className="mt-4 divide-y divide-stone-100 rounded-xl border border-stone-100">{invitation.guests.map(guest => <div key={guest.id} className="flex items-center justify-between gap-3 px-3 py-2.5"><span className="min-w-0 break-words text-sm text-stone-700">{guest.name}</span><span className={`flex-shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium ${guest.status === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700' : guest.status === 'DECLINED' ? 'bg-red-50 text-red-600' : 'bg-stone-100 text-stone-500'}`}>{guest.status === 'CONFIRMED' ? 'Confirmado' : guest.status === 'DECLINED' ? 'Não irá' : 'Aguardando'}</span></div>)}</div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button type="button" onClick={() => copyConfirmationCode(invitation)} className="flex flex-shrink-0 items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-left transition-colors hover:border-stone-300 hover:bg-stone-100" title="Copiar código de confirmação">
+          <div><p className="text-[9px] font-medium uppercase tracking-wider text-stone-400">Código</p><p className="font-mono text-sm font-semibold tracking-[0.14em] text-stone-800">{invitation.accessCode}</p></div>
+          {copiedCodeId === invitation.id ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} className="text-stone-400" />}
+        </button>
+        <Button variant={copiedInvitationId === invitation.id ? 'secondary' : 'outline'} size="sm" onClick={() => copyInvite(invitation)} className="min-w-[190px] flex-1 sm:flex-none">{copiedInvitationId === invitation.id ? <Check size={14} /> : <Copy size={14} />} {copiedInvitationId === invitation.id ? 'Mensagem copiada' : 'Copiar mensagem do convite'}</Button>
+        <Button variant="ghost" size="sm" onClick={() => remove(invitation.id)} className="flex-1 !text-red-500 sm:flex-none"><Trash2 size={14} /> Remover convite</Button>
+      </div>
     </Card>)}</div>}
   </div></DashboardShell>
 }
