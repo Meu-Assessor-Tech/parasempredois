@@ -334,7 +334,6 @@ export default function Dashboard() {
     return (
       <DashboardShell>
         <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
-          <div className="mb-3 flex justify-end md:hidden"><button type="button" onClick={() => { logout(); navigate('/') }} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700"><LogOut size={14} /> Sair</button></div>
           <motion.div initial="hidden" animate="visible" variants={fadeUp}>
             <Card className="p-8 sm:p-10 text-center">
               <div className="w-14 h-14 rounded-2xl bg-stone-900 text-white flex items-center justify-center mx-auto mb-6">
@@ -350,6 +349,7 @@ export default function Dashboard() {
               </Button>
             </Card>
           </motion.div>
+          <button type="button" onClick={() => { logout(); navigate('/') }} className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 md:hidden"><LogOut size={15} /> Sair da conta</button>
         </div>
       </DashboardShell>
     )
@@ -504,6 +504,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
+        <button type="button" onClick={() => { logout(); navigate('/') }} className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 md:hidden"><LogOut size={15} /> Sair da conta</button>
       </div>
       <Modal
         isOpen={showContributionPrompt}
