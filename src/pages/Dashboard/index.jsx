@@ -25,8 +25,17 @@ function invitationText(wedding, invitation, customMessage = wedding.invitationM
   const url = `${window.location.origin}/${wedding.slug}`
   const couple = weddingDisplayTitle(wedding)
   const intro = customMessage?.trim() || DEFAULT_INVITATION_MESSAGE
-  const requiredText = `${intro}\n\nCasamento de ${couple}\n\nNo site, procure pelo convite:\n${invitation.displayName}\n\nDepois, informe o código de confirmação:\n${invitation.accessCode}`
-  return includeLink ? `${requiredText}\n\nAcesse:\n${url}` : requiredText
+  const accessStep = includeLink ? `Acessar o site: ${url}` : 'Acessar o site do casamento'
+  const nameStep = invitation.guests?.length === 1
+    ? `Buscar pelo nome deste convite: ${invitation.displayName}`
+    : `Buscar por qualquer um dos nomes deste convite: ${invitation.displayName}`
+  const responseStep = invitation.guests?.length === 1
+    ? 'Confirmar se você irá ou não ao casamento'
+    : 'Confirmar quem irá ou não, respondendo para cada pessoa do convite'
+  const confirmationSteps = `Para confirmar a sua presença, você deve:\n- ${accessStep}\n- ${nameStep}\n- Informar o código de confirmação: ${invitation.accessCode}\n- ${responseStep}`
+  const whatsappOption = 'Se preferir, responda esta mensagem pelo WhatsApp informando quem estará presente. Nós fazemos a confirmação para você.'
+  const requiredText = `${intro}\n\nCasamento de ${couple}\n\n${confirmationSteps}`
+  return `${requiredText}\n\n${whatsappOption}`
 }
 
 const fadeUp = {
