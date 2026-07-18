@@ -37,7 +37,7 @@ export default function Auth() {
     setError('')
     try {
       await loginWithGoogle(response.credential)
-      navigate(nextPath)
+      navigate('/principal', { replace: true })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao entrar com Google')
     } finally {
@@ -53,10 +53,11 @@ export default function Auth() {
     try {
       if (mode === 'login') {
         await login(form.email, form.password)
+        navigate('/principal', { replace: true })
       } else {
         await register(form.name, form.email, form.password)
+        navigate(nextPath, { replace: true })
       }
-      navigate(nextPath)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao autenticar')
     } finally {

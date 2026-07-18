@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical, ArrowRight, HandHeart, Copy, Users } from 'lucide-react'
+import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical, ArrowRight, HandHeart, Copy } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../../components/layout/Sidebar'
 import MobileNav from '../../components/layout/MobileNav'
@@ -898,7 +898,7 @@ export default function Editor() {
                     </button>
                   </div>
 
-                  {wedding.rsvpEnabled !== false ? <>
+                  {wedding.rsvpEnabled !== false ? (
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-stone-700">Texto de confirmação</label>
                       <textarea
@@ -909,14 +909,7 @@ export default function Editor() {
                         className="w-full resize-none rounded-xl border border-stone-200 px-4 py-3 text-sm text-stone-900 outline-none transition-all placeholder-stone-400 focus:border-stone-400 focus:ring-2 focus:ring-stone-100"
                       />
                     </div>
-                    <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
-                      <p className="text-sm font-medium text-stone-800">Lista de convidados</p>
-                      <p className="mt-1 text-xs leading-relaxed text-stone-500">Cadastre os convidados e acompanhe quem confirmou presença.</p>
-                      <Button type="button" variant="outline" fullWidth className="mt-3 justify-center bg-white" onClick={() => navigate('/principal?tab=convidados')}>
-                        <Users size={15} /> Gerenciar convidados
-                      </Button>
-                    </div>
-                  </> : (
+                  ) : (
                     <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
                       <p className="text-sm font-medium text-amber-900">A confirmação de presença está inativa</p>
                       <p className="mt-1 text-xs leading-relaxed text-amber-700">Ative a funcionalidade acima para editar o texto e gerenciar os convidados.</p>
