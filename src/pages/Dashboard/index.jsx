@@ -104,6 +104,7 @@ function GuestsTab({ wedding, updateWedding, publishWedding }) {
   const [draft, setDraft] = useState('')
   const [showAddInvitations, setShowAddInvitations] = useState(false)
   const [showInvitationHelp, setShowInvitationHelp] = useState(false)
+  const [showConfirmationHelp, setShowConfirmationHelp] = useState(false)
   const [showMessageEditor, setShowMessageEditor] = useState(false)
   const [messageDraft, setMessageDraft] = useState(wedding.invitationMessage || DEFAULT_INVITATION_MESSAGE)
   const [savingMessage, setSavingMessage] = useState(false)
@@ -213,8 +214,10 @@ function GuestsTab({ wedding, updateWedding, publishWedding }) {
 
   return <DashboardShell><div className="mx-auto max-w-5xl px-4 py-8 sm:px-8">
     <p className="mb-1 text-xs uppercase tracking-widest text-stone-400">Organização</p>
-    <h1 className="mb-2 font-serif text-3xl text-stone-900 sm:text-4xl">Convidados</h1>
-    <p className="mb-7 max-w-2xl text-sm leading-relaxed text-stone-500">Crie um convite por família ou grupo. Cada linha gera um código exclusivo para confirmação.</p>
+    <div className="mb-7 flex items-center justify-between gap-3">
+      <h1 className="font-serif text-3xl text-stone-900 sm:text-4xl">Convidados</h1>
+      <button type="button" onClick={() => setShowConfirmationHelp(true)} className="inline-flex min-h-10 flex-shrink-0 items-center gap-2 rounded-xl border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:border-stone-300 hover:bg-stone-50"><CircleHelp size={16} /><span className="hidden sm:inline">Como funciona?</span></button>
+    </div>
     {wedding.rsvpEnabled === false && (
       <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div><p className="text-sm font-medium text-amber-900">A confirmação de presença não está visível no site</p><p className="mt-1 text-xs leading-relaxed text-amber-700">Você pode continuar organizando os convites, mas seus convidados não conseguirão confirmar a presença enquanto essa seção estiver desativada.</p></div>
@@ -233,6 +236,15 @@ function GuestsTab({ wedding, updateWedding, publishWedding }) {
       <label htmlFor="guest-invitations" className="mb-2 block text-sm font-medium text-stone-800">Adicione seus convidados aqui</label>
       <textarea id="guest-invitations" value={draft} onChange={e => setDraft(e.target.value)} rows={6} placeholder={'Ana Paula\nClaudia Pires; José Carlos\nFamília Souza +3'} className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 outline-none placeholder:text-stone-300 focus:border-stone-500 focus:ring-2 focus:ring-stone-100" />
       <Button className="mt-4" fullWidth onClick={addInvitations} disabled={saving || !draft.trim()}><Plus size={15} /> {saving ? 'Adicionando...' : 'Adicionar à lista'}</Button>
+    </Modal>
+    <Modal isOpen={showConfirmationHelp} onClose={() => setShowConfirmationHelp(false)} title="Como funciona a confirmação?">
+      <p className="mb-5 text-sm leading-relaxed text-stone-600">Aqui você organiza todos os convidados da festa. Depois de cadastrados, eles poderão confirmar a presença diretamente no site do casamento.</p>
+      <div className="space-y-3">
+        <div className="flex gap-3 rounded-xl bg-stone-50 p-4"><span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-stone-900 text-xs font-medium text-white">1</span><div><p className="text-sm font-medium text-stone-800">Adicione os convidados</p><p className="mt-1 text-xs leading-relaxed text-stone-500">Cadastre uma pessoa, um casal ou um grupo no mesmo convite.</p></div></div>
+        <div className="flex gap-3 rounded-xl bg-stone-50 p-4"><span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-stone-900 text-xs font-medium text-white">2</span><div><p className="text-sm font-medium text-stone-800">Envie a mensagem do convite</p><p className="mt-1 text-xs leading-relaxed text-stone-500">Cada convite recebe um código exclusivo, incluído automaticamente na mensagem copiada.</p></div></div>
+        <div className="flex gap-3 rounded-xl bg-stone-50 p-4"><span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-stone-900 text-xs font-medium text-white">3</span><div><p className="text-sm font-medium text-stone-800">O convidado confirma pelo site</p><p className="mt-1 text-xs leading-relaxed text-stone-500">No site, ele procura o nome do convite, informa o código e confirma quem estará presente.</p></div></div>
+      </div>
+      <Button variant="primary" fullWidth className="mt-5" onClick={() => setShowConfirmationHelp(false)}>Entendi</Button>
     </Modal>
     <Modal isOpen={showInvitationHelp} onClose={() => { setShowInvitationHelp(false); setShowAddInvitations(true) }} title="Como adicionar convidados">
       <p className="mb-4 text-sm leading-relaxed text-stone-600">Você pode criar um convite individual, para um casal ou para uma família inteira. Digite um convite por linha.</p>
