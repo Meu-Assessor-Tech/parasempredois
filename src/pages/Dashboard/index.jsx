@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, CircleHelp, Copy, Edit3, Eye, HandHeart, MessageCircle, MoreVertical, Plus, Share2, Trash2, Users } from 'lucide-react'
+import { Check, CircleHelp, Copy, Edit3, Eye, HandHeart, LogOut, MessageCircle, MoreVertical, Plus, Share2, Trash2, Users } from 'lucide-react'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
@@ -16,6 +16,7 @@ import { formatWeddingDate, weddingDisplayTitle, weddingDisplayVenue } from '../
 import { copyTextToClipboard } from '../../utils/clipboard'
 import MobileNav from '../../components/layout/MobileNav'
 import { CONTRIBUTION_PIX_KEY } from '../../data/contribution'
+import { useAuth } from '../../context/AuthContext'
 
 const CONTRIBUTION_PROMPT_KEY_PREFIX = 'baitacasamento_contribution_prompt_seen'
 const DEFAULT_INVITATION_MESSAGE = 'Olá! Nosso grande dia está chegando, e preparamos um site com todos os detalhes do nosso casamento.'
@@ -270,10 +271,10 @@ function GuestsTab({ wedding, updateWedding, publishWedding }) {
       </div>
     </Modal>
     {error && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
-    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h2 className="font-serif text-2xl text-stone-900">Convites cadastrados</h2>
       <div className="flex min-w-0 items-center gap-2">
-        <div className="-mx-1 flex min-w-0 gap-1 overflow-x-auto px-1 pb-1">
+        <div className="-mx-1 flex min-w-0 gap-1 overflow-x-auto px-1 pb-2">
           {summaryFilters.map(filter => <button key={filter.status} type="button" onClick={() => setStatusFilter(filter.status)} className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${statusFilter === filter.status ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300'}`}>{filter.label} <span className={statusFilter === filter.status ? 'text-white/70' : 'text-stone-400'}>{filter.value}</span></button>)}
         </div>
       </div>
@@ -295,6 +296,7 @@ function GuestsTab({ wedding, updateWedding, publishWedding }) {
 }
 
 export default function Dashboard() {
+  const { logout } = useAuth()
   const { wedding, loadingWedding, updateWedding, publishWedding, deleteWeddingSite } = useWedding()
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
@@ -332,6 +334,7 @@ export default function Dashboard() {
     return (
       <DashboardShell>
         <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
+          <div className="mb-3 flex justify-end md:hidden"><button type="button" onClick={() => { logout(); navigate('/') }} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700"><LogOut size={14} /> Sair</button></div>
           <motion.div initial="hidden" animate="visible" variants={fadeUp}>
             <Card className="p-8 sm:p-10 text-center">
               <div className="w-14 h-14 rounded-2xl bg-stone-900 text-white flex items-center justify-center mx-auto mb-6">
@@ -424,10 +427,9 @@ export default function Dashboard() {
   return (
     <DashboardShell>
       <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8">
-        <div className="mb-8">
-          <p className="text-xs text-stone-400 uppercase tracking-widest mb-1">Seu site</p>
-          <h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-2">{weddingTitle}</h1>
-          <p className="text-stone-500 text-sm">{formattedDate} · {weddingVenue}</p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div><p className="text-xs text-stone-400 uppercase tracking-widest mb-1">Seu site</p><h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-2">{weddingTitle}</h1><p className="text-stone-500 text-sm">{formattedDate} · {weddingVenue}</p></div>
+          <button type="button" onClick={() => { logout(); navigate('/') }} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 md:hidden"><LogOut size={14} /> Sair</button>
         </div>
 
         {deleteError && (

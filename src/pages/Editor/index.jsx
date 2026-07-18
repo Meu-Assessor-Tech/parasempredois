@@ -507,11 +507,11 @@ export default function Editor() {
           </div>
           <div className="flex items-center justify-end gap-2">
             <Button
-              variant="ghost"
+              variant="primary"
               size="sm"
               onClick={() => navigate(`/site/${wedding.slug}?from=editor`)}
               title="Ver site publicado"
-              className="hidden md:inline-flex"
+              className="hidden shadow-sm ring-2 ring-stone-900/10 md:inline-flex"
             >
               <Eye size={14} /> Ver site
             </Button>
@@ -535,11 +535,11 @@ export default function Editor() {
         <div className="flex-1 min-h-0 flex md:overflow-hidden">
           <div ref={editorPaneRef} className="w-full bg-white border-r border-stone-100 flex-shrink-0 md:h-[calc(100vh-3.5rem)] md:w-[440px] md:overflow-y-auto md:overscroll-contain">
             <div className="p-4 sm:p-5">
-              <div className="sticky top-0 z-10 -mx-5 -mt-5 mb-5 border-b border-stone-100 bg-white/95 px-5 py-4 backdrop-blur">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 border-b border-stone-100 bg-white/95 px-4 py-2.5 backdrop-blur sm:-mx-5 sm:-mt-5 sm:mb-5 sm:px-5 sm:py-4">
+                <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-stone-900">Editando {activeTabLabel}</p>
-                    <p className={`mt-0.5 text-[11px] ${activeTabHasChanges ? 'text-amber-600' : 'text-stone-400'}`}>
+                    <p className="hidden text-xs font-medium text-stone-900 sm:block">Editando {activeTabLabel}</p>
+                    <p className={`text-[11px] sm:mt-0.5 ${activeTabHasChanges ? 'text-amber-600' : 'text-stone-400'}`}>
                       {canSaveActiveTab
                         ? activeTabHasChanges
                           ? 'Alterações não salvas nesta seção'
@@ -548,7 +548,7 @@ export default function Editor() {
                     </p>
                   </div>
                   {canSaveActiveTab && (
-                    <Button variant="primary" size="sm" onClick={() => handleSave()} disabled={saving} fullWidth className="sm:w-auto">
+                    <Button variant="primary" size="sm" onClick={() => handleSave()} disabled={saving} className="flex-shrink-0 px-3">
                       {saving ? 'Salvando...' : saved && savedSection === activeTab ? <><Check size={14} /> {saveButtonLabel}</> : <><Save size={14} /> {saveButtonLabel}</>}
                     </Button>
                   )}
@@ -1006,7 +1006,7 @@ function giftPresetCategoryId(presetId, fallback = DEFAULT_GIFT_PRESET_CATEGORY)
 
 function PreviewJumpButton({ onClick }) {
   return (
-    <button type="button" onClick={onClick} className="flex-shrink-0 rounded-lg px-2 py-1 text-[11px] font-medium text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900">
+    <button type="button" onClick={onClick} className="hidden flex-shrink-0 rounded-lg px-2 py-1 text-[11px] font-medium text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900 md:inline-flex md:items-center">
       Ir para <ArrowRight size={11} className="ml-0.5 inline" />
     </button>
   )

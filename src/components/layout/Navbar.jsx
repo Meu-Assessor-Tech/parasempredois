@@ -56,12 +56,16 @@ export default function Navbar({ transparent = false }) {
           )}
         </div>
 
-        <button className={mobileButtonClass} onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu">
-          {menuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        {user ? (
+          <button className={mobileButtonClass} onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu">
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        ) : (
+          <Link to={loginPath} className={`md:hidden rounded-lg px-3 py-2 text-sm font-medium transition-colors ${transparent ? 'bg-white text-stone-900 shadow-sm' : 'bg-stone-900 text-white'}`}>Login</Link>
+        )}
       </div>
 
-      {menuOpen && (
+      {user && menuOpen && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
