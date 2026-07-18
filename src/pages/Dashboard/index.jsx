@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, CircleHelp, Copy, Edit3, Eye, HandHeart, LogOut, MessageCircle, MoreVertical, Plus, Share2, Trash2, Users } from 'lucide-react'
+import { Check, CircleHelp, Copy, Edit3, Eye, HandHeart, LogOut, MoreVertical, Plus, Trash2, Users } from 'lucide-react'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
@@ -22,7 +22,7 @@ const CONTRIBUTION_PROMPT_KEY_PREFIX = 'baitacasamento_contribution_prompt_seen'
 const DEFAULT_INVITATION_MESSAGE = 'Olá! Nosso grande dia está chegando, e preparamos um site com todos os detalhes do nosso casamento.'
 
 function invitationText(wedding, invitation, customMessage = wedding.invitationMessage, includeLink = true) {
-  const url = `${window.location.origin}/site/${wedding.slug}#preview-rsvp`
+  const url = `${window.location.origin}/${wedding.slug}#preview-rsvp`
   const couple = weddingDisplayTitle(wedding)
   const intro = customMessage?.trim() || DEFAULT_INVITATION_MESSAGE
   const requiredText = `${intro}\n\nCasamento de ${couple}\n\nNo site, procure pelo convite:\n${invitation.displayName}\n\nDepois, informe o código de confirmação:\n${invitation.accessCode}`
@@ -302,7 +302,6 @@ export default function Dashboard() {
   const [deleteError, setDeleteError] = useState('')
   const [copiedSiteLink, setCopiedSiteLink] = useState(false)
   const [copySiteLinkError, setCopySiteLinkError] = useState(false)
-  const [shareOptionsOpen, setShareOptionsOpen] = useState(false)
   const [showContributionPrompt, setShowContributionPrompt] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
@@ -358,10 +357,8 @@ export default function Dashboard() {
   const formattedDate = formatWeddingDate(wedding.date, { day: '2-digit', month: 'long', year: 'numeric' })
   const weddingTitle = weddingDisplayTitle(wedding)
   const weddingVenue = weddingDisplayVenue(wedding)
-  const siteUrl = `${window.location.origin}/site/${wedding.slug}`
+  const siteUrl = `${window.location.origin}/${wedding.slug}`
   const contributionPromptStorageKey = `${CONTRIBUTION_PROMPT_KEY_PREFIX}:${wedding.id ?? wedding.slug}`
-  const whatsappShareText = `Oi!\n\nNosso grande dia está chegando, e preparamos um site com todos os detalhes do nosso casamento.\n\nAcesse: ${siteUrl}\n\nEsperamos você para celebrar com a gente!`
-  const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(whatsappShareText)}`
 
   const markContributionPromptAsSeen = () => {
     try {
@@ -380,7 +377,7 @@ export default function Dashboard() {
       // Show the optional prompt when local storage is unavailable.
     }
     if (promptWasSeen) {
-      navigate(`/site/${wedding.slug}?from=dashboard`)
+      navigate(`/${wedding.slug}?from=dashboard`)
     } else {
       setShowContributionPrompt(true)
     }
@@ -388,13 +385,13 @@ export default function Dashboard() {
 
   const continueToSite = () => {
     markContributionPromptAsSeen()
-    navigate(`/site/${wedding.slug}?from=dashboard`)
+    navigate(`/${wedding.slug}?from=dashboard`)
   }
 
   const copyPixAndContinue = async () => {
     await copyTextToClipboard(CONTRIBUTION_PIX_KEY)
     markContributionPromptAsSeen()
-    navigate(`/site/${wedding.slug}?from=dashboard`)
+    navigate(`/${wedding.slug}?from=dashboard`)
   }
 
   const handleDeleteSite = async () => {
@@ -417,7 +414,6 @@ export default function Dashboard() {
     const copied = await copyTextToClipboard(siteUrl)
     setCopiedSiteLink(copied)
     setCopySiteLinkError(!copied)
-    if (copied) setShareOptionsOpen(false)
     window.setTimeout(() => {
       setCopiedSiteLink(false)
       setCopySiteLinkError(false)
@@ -458,12 +454,12 @@ export default function Dashboard() {
               <Button
                 variant={copiedSiteLink ? 'secondary' : 'outline'}
                 size="sm"
-                onClick={() => setShareOptionsOpen(open => !open)}
+                onClick={handleCopySiteLink}
                 fullWidth
                 className="sm:w-auto"
               >
-                {copiedSiteLink ? <Check size={14} /> : <Share2 size={14} />}
-                {copiedSiteLink ? 'Link copiado' : 'Encaminhar'}
+                {copiedSiteLink ? <Check size={14} /> : <Copy size={14} />}
+                {copiedSiteLink ? 'Link copiado' : copySiteLinkError ? 'Tentar novamente' : 'Copiar link do site'}
               </Button>
               <Button
                 variant="ghost"
@@ -477,30 +473,6 @@ export default function Dashboard() {
                 {deleting ? 'Excluindo...' : 'Excluir site'}
               </Button>
             </div>
-            {shareOptionsOpen && (
-              <div className="mt-4 rounded-2xl border border-stone-100 bg-stone-50 p-3">
-                <p className="mb-3 text-xs text-stone-500">Escolha como compartilhar o site:</p>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={handleCopySiteLink}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:border-stone-400 hover:bg-stone-50"
-                  >
-                    <Copy size={14} />
-                    {copySiteLinkError ? 'Tentar novamente' : 'Copiar link'}
-                  </button>
-                  <a
-                    href={whatsappShareUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => setShareOptionsOpen(false)}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:border-stone-400 hover:bg-stone-50"
-                  >
-                    <MessageCircle size={14} /> WhatsApp
-                  </a>
-                </div>
-              </div>
-            )}
           </div>
         </Card>
 

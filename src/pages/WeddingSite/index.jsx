@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { useWedding } from '../../context/WeddingContext'
@@ -27,13 +27,13 @@ function editorTabForSection(sectionId) {
 
 export default function WeddingSite() {
   const location = useLocation()
+  const { slug } = useParams()
   const navigate = useNavigate()
   const { wedding, publishedWedding, loadingWedding } = useWedding()
   const params = new URLSearchParams(location.search)
   const requestedEditorTab = params.get('editorTab') || 'design'
   const [activeReturnTab, setActiveReturnTab] = useState(requestedEditorTab)
-  const isExample = location.pathname === '/site/ana-e-pedro'
-    && params.get('example') === '1'
+  const isExample = slug === 'ana-e-pedro' && params.get('example') === '1'
   const isPreview = params.get('preview') === '1'
   useEffect(() => {
     if (!location.hash || loadingWedding) return

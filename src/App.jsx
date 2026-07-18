@@ -31,6 +31,7 @@ export default function App() {
             <ProtectedRoute><Editor /></ProtectedRoute>
           } />
           <Route path="/site/:slug" element={<WeddingSite />} />
+          <Route path="/:slug" element={<WeddingSite />} />
         </Routes>
       </WeddingProvider>
     </AuthProvider>

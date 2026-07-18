@@ -57,7 +57,7 @@ export default function Landing() {
               <Button
                 variant="primary"
                 size="lg"
-                onClick={() => navigate('/site/ana-e-pedro?example=1')}
+                onClick={() => navigate('/ana-e-pedro?example=1')}
                 className="!bg-white !text-stone-900 shadow-xl hover:!bg-stone-100"
               >
                 Ver exemplo

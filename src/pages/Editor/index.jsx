@@ -130,13 +130,13 @@ export default function Editor() {
 
   const continueToPublishedSite = () => {
     markContributionPromptAsSeen()
-    navigate(`/site/${completedSiteSlug || wedding.slug}?from=editor&editorTab=${activeTab}`)
+    navigate(`/${completedSiteSlug || wedding.slug}?from=editor&editorTab=${activeTab}`)
   }
 
   const copyPixAndContinue = async () => {
     await copyTextToClipboard(CONTRIBUTION_PIX_KEY)
     markContributionPromptAsSeen()
-    navigate(`/site/${completedSiteSlug || wedding.slug}?from=editor&editorTab=${activeTab}`)
+    navigate(`/${completedSiteSlug || wedding.slug}?from=editor&editorTab=${activeTab}`)
   }
 
   useEffect(() => {
@@ -283,7 +283,7 @@ export default function Editor() {
           // Show the optional prompt when local storage is unavailable.
         }
         if (promptWasSeen) {
-          navigate(`/site/${siteSlug}?from=editor&editorTab=${activeTab}`)
+          navigate(`/${siteSlug}?from=editor&editorTab=${activeTab}`)
         } else {
           setCompletedSiteSlug(siteSlug)
           setShowContributionPrompt(true)
@@ -457,7 +457,7 @@ export default function Editor() {
     }
 
     if (window.innerWidth < 768) {
-      navigate(`/site/${wedding.slug}?from=editor&editorTab=${activeTab}#${sectionId}`)
+      navigate(`/${wedding.slug}?from=editor&editorTab=${activeTab}#${sectionId}`)
       return
     }
     goToPreviewSection(sectionId)
@@ -524,7 +524,7 @@ export default function Editor() {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => navigate(`/site/${wedding.slug}?from=editor&editorTab=${activeTab}`)}
+              onClick={() => navigate(`/${wedding.slug}?from=editor&editorTab=${activeTab}`)}
               title="Ver site publicado"
               className="hidden shadow-sm ring-2 ring-stone-900/10 md:inline-flex"
             >
@@ -948,7 +948,7 @@ export default function Editor() {
               <iframe
                 ref={previewIframeRef}
                 key={previewKey}
-                src={`/site/${wedding.slug}?preview=1&previewKey=${encodeURIComponent(previewSessionKeyRef.current)}&rev=${previewKey}`}
+                src={`/${wedding.slug}?preview=1&previewKey=${encodeURIComponent(previewSessionKeyRef.current)}&rev=${previewKey}`}
                 title="Preview do site"
                 className="w-full h-full border-0"
                 onLoad={restorePreviewScroll}

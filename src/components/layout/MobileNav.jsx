@@ -16,7 +16,7 @@ export default function MobileNav() {
     hasWedding
       ? { icon: Edit3, label: 'Editar', path: '/editor' }
       : { icon: Edit3, label: 'Criar', path: '/criar-site' },
-    ...(hasWedding ? [{ icon: Eye, label: 'Ver site', path: `/site/${wedding.slug}?from=${siteReturnSource}${siteReturnSource === 'editor' ? `&editorTab=${editorTab}` : ''}` }] : []),
+    ...(hasWedding ? [{ icon: Eye, label: 'Ver site', path: `/${wedding.slug}?from=${siteReturnSource}${siteReturnSource === 'editor' ? `&editorTab=${editorTab}` : ''}` }] : []),
     ...(hasWedding ? [{ icon: Users, label: 'Convidados', path: '/principal?tab=convidados' }] : []),
     { icon: HandHeart, label: 'Colaborar', path: '/principal?tab=colaborar' },
   ]

@@ -9,7 +9,7 @@ const DEFAULT_TITLE = 'Para sempre dois - Site de casamento gratuito'
 const DEFAULT_DESCRIPTION = 'Crie um site de casamento gratuito, elegante e simples para compartilhar fotos, presentes, RSVP e detalhes do grande dia.'
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.svg`
 
-const INTERNAL_PATHS = ['/login', '/principal', '/dashboard', '/criar-site', '/editor']
+const INTERNAL_PATHS = ['/login', '/principal', '/dashboard', '/criar-site', '/editor', '/templates']
 
 export default function SeoManager() {
   const location = useLocation()
@@ -18,9 +18,9 @@ export default function SeoManager() {
   useEffect(() => {
     const path = location.pathname
     const params = new URLSearchParams(location.search)
-    const isWeddingSite = path.startsWith('/site/')
     const isPreview = params.get('preview') === '1'
     const isInternalView = INTERNAL_PATHS.some(internalPath => path === internalPath || path.startsWith(`${internalPath}/`))
+    const isWeddingSite = path.startsWith('/site/') || (path !== '/' && !isInternalView && path.split('/').filter(Boolean).length === 1)
     const canonicalPath = isWeddingSite ? path : path === '/' ? '/' : path
     const canonicalUrl = `${SITE_URL}${canonicalPath === '/' ? '' : canonicalPath}`
 

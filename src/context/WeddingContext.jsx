@@ -14,10 +14,9 @@ const WeddingContext = createContext(null)
 export function WeddingProvider({ children }) {
   const { user, loading: authLoading } = useAuth()
   const isExampleRoute = typeof window !== 'undefined'
-    && window.location.pathname === '/site/ana-e-pedro'
+    && (window.location.pathname === '/ana-e-pedro' || window.location.pathname === '/site/ana-e-pedro')
     && new URLSearchParams(window.location.search).get('example') === '1'
   const isPreviewRoute = typeof window !== 'undefined'
-    && window.location.pathname.startsWith('/site/')
     && new URLSearchParams(window.location.search).get('preview') === '1'
   const previewStorageKey = (() => {
     if (typeof window === 'undefined') return PREVIEW_STORAGE_KEY
