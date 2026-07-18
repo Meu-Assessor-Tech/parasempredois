@@ -3,7 +3,7 @@ import { Edit3, Eye, HandHeart, Home, Users } from 'lucide-react'
 import { useWedding } from '../../context/WeddingContext'
 import { canSaveWedding } from '../../api/weddings'
 
-export default function MobileNav() {
+export default function MobileNav({ onViewSite }) {
   const location = useLocation()
   const { wedding } = useWedding()
   const hasWedding = canSaveWedding(wedding?.id)
@@ -16,7 +16,7 @@ export default function MobileNav() {
     hasWedding
       ? { icon: Edit3, label: 'Editar', path: '/editor' }
       : { icon: Edit3, label: 'Criar', path: '/criar-site' },
-    ...(hasWedding ? [{ icon: Eye, label: 'Ver site', path: `/${wedding.slug}?from=${siteReturnSource}${siteReturnSource === 'editor' ? `&editorTab=${editorTab}` : ''}` }] : []),
+    ...(hasWedding ? [{ icon: Eye, label: 'Ver site', path: `/${wedding.slug}?from=${siteReturnSource}${siteReturnSource === 'editor' ? `&editorTab=${editorTab}` : ''}`, onClick: siteReturnSource === 'editor' ? onViewSite : undefined }] : []),
     ...(hasWedding ? [{ icon: Users, label: 'Convidados', path: '/principal?tab=convidados' }] : []),
     { icon: HandHeart, label: 'Colaborar', path: '/principal?tab=colaborar' },
   ]
@@ -29,16 +29,21 @@ export default function MobileNav() {
           const isActive = item.path.includes('?')
             ? currentPath === item.path
             : location.pathname === item.path && !location.search
-          return (
+          const itemClassName = `flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[11px] font-medium transition-colors ${
+            isActive ? 'bg-stone-900 text-white' : 'text-stone-500 active:bg-stone-100'
+          }`
+          const content = <><item.icon size={18} /><span className="leading-none">{item.label}</span></>
+          return item.onClick ? (
+            <button key={item.path} type="button" onClick={item.onClick} className={itemClassName}>
+              {content}
+            </button>
+          ) : (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[11px] font-medium transition-colors ${
-                isActive ? 'bg-stone-900 text-white' : 'text-stone-500 active:bg-stone-100'
-              }`}
+              className={itemClassName}
             >
-              <item.icon size={18} />
-              <span className="leading-none">{item.label}</span>
+              {content}
             </Link>
           )
         })}

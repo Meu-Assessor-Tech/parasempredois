@@ -16,6 +16,7 @@ import { giftImagePresetById } from '../../data/giftImagePresets'
 import { formatWeddingDate, parseWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayRsvpMessage, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 import { submitRsvp } from '../../api/rsvps'
 import RsvpFlow from '../../components/shared/RsvpFlow'
+import ClickableQrCode from '../../components/shared/ClickableQrCode'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.9, ease } } }
@@ -380,9 +381,7 @@ export default function IvoryTemplate({ wedding }) {
               <motion.div variants={fadeUp} className="max-w-2xl mx-auto mb-12 bg-white rounded-3xl border border-stone-100 p-5 sm:p-6 shadow-sm">
                 <div className={giftPixQrCode ? 'grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-5 items-center' : ''}>
                   {giftPixQrCode && (
-                    <div className="aspect-square rounded-2xl border border-dashed border-stone-200 bg-stone-50 flex items-center justify-center overflow-hidden">
-                      <img src={mediaUrl(giftPixQrCode)} alt="QR Code Pix dos noivos" className="w-full h-full object-cover" />
-                    </div>
+                    <ClickableQrCode src={giftPixQrCode} alt="QR Code Pix dos noivos" className="aspect-square rounded-2xl border border-dashed border-stone-200 bg-stone-50 overflow-hidden focus:ring-stone-400" imageClassName="w-full h-full object-cover" />
                   )}
 
                   <div>
@@ -420,16 +419,17 @@ export default function IvoryTemplate({ wedding }) {
                       <h3 className="font-medium text-stone-900 text-sm leading-snug mb-0.5">{gift.name}</h3>
                       <div className="mt-4 flex items-center justify-between">
                         <span className="text-sm font-semibold text-stone-800">R$ {gift.price.toLocaleString('pt-BR')}</span>
-                        <button
-                          type="button"
-                          onClick={copyGiftPixKey}
-                          disabled={!canGiftWithPix}
-                          className="flex items-center gap-1 text-[11px] font-medium text-white px-3 py-1.5 rounded-full active:scale-95 transition-all duration-150"
-                          style={{ backgroundColor: canGiftWithPix ? wedding.primaryColor : '#D4D4D4' }}
-                        >
-                          {pixCopied ? <Check size={9} /> : <Copy size={9} />}
-                          {pixCopied ? 'Copiado' : 'Pix'}
-                        </button>
+                        {canGiftWithPix && (
+                          <button
+                            type="button"
+                            onClick={copyGiftPixKey}
+                            className="flex items-center gap-1 text-[11px] font-medium text-white px-3 py-1.5 rounded-full active:scale-95 transition-all duration-150"
+                            style={{ backgroundColor: wedding.primaryColor }}
+                          >
+                            {pixCopied ? <Check size={9} /> : <Copy size={9} />}
+                            {pixCopied ? 'Copiado' : 'Pix'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </motion.div>

@@ -462,6 +462,16 @@ export default function Editor() {
     }
     goToPreviewSection(sectionId)
   }
+  const handleViewSite = async () => {
+    if (activeTabHasChanges) {
+      const shouldSave = window.confirm('Gostaria de salvar as alterações antes de ver o site?')
+      if (shouldSave) {
+        const savedSuccessfully = await handleSave()
+        if (!savedSuccessfully) return
+      }
+    }
+    navigate(`/${wedding.slug}?from=editor&editorTab=${activeTab}`)
+  }
   if (loadingWedding) {
     return (
       <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
@@ -524,7 +534,7 @@ export default function Editor() {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => navigate(`/${wedding.slug}?from=editor&editorTab=${activeTab}`)}
+              onClick={handleViewSite}
               title="Ver site publicado"
               className="hidden shadow-sm ring-2 ring-stone-900/10 md:inline-flex"
             >
@@ -982,7 +992,7 @@ export default function Editor() {
           </div>
         </div>
       </Modal>
-      <MobileNav />
+      <MobileNav onViewSite={handleViewSite} />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { giftImagePresetById } from '../../data/giftImagePresets'
 import { formatWeddingDate, parseWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayRsvpMessage, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 import { submitRsvp } from '../../api/rsvps'
 import RsvpFlow from '../../components/shared/RsvpFlow'
+import ClickableQrCode from '../../components/shared/ClickableQrCode'
 
 const ease = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 28 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease } } }
@@ -226,9 +227,7 @@ export default function CelestialTemplate({ wedding }) {
             {canGiftWithPix && (
               <div className={`max-w-3xl mx-auto mb-12 border border-white/10 bg-white/[0.035] p-5 ${giftPixQrCode ? 'grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-5' : ''}`}>
                 {giftPixQrCode && (
-                  <div className="aspect-square border border-white/10 bg-[#080713] flex items-center justify-center overflow-hidden">
-                    <img src={mediaUrl(giftPixQrCode)} alt="QR Code Pix" className="w-full h-full object-cover" />
-                  </div>
+                  <ClickableQrCode src={giftPixQrCode} className="aspect-square border border-white/10 bg-[#080713] overflow-hidden focus:ring-[var(--accent)]" imageClassName="w-full h-full object-cover" />
                 )}
                 <div className="min-w-0 self-center">
                   <p className="text-xs uppercase tracking-[0.35em] text-[var(--accent)] mb-3">Pix dos noivos</p>
@@ -253,7 +252,9 @@ export default function CelestialTemplate({ wedding }) {
                     <div className="min-w-0">
                       <h3 className="font-medium text-white truncate">{gift.name}</h3>
                       <p className="mt-1 text-sm text-white/45">R$ {gift.price.toLocaleString('pt-BR')}</p>
-                      <button type="button" onClick={copyPix} disabled={!canGiftWithPix} className="mt-3 px-4 py-2 text-xs font-medium text-[#080713] disabled:bg-stone-500" style={{ backgroundColor: canGiftWithPix ? accent : '#737373' }}>{pixCopied ? 'Copiado' : 'Pix'}</button>
+                      {canGiftWithPix && (
+                        <button type="button" onClick={copyPix} className="mt-3 px-4 py-2 text-xs font-medium text-[#080713]" style={{ backgroundColor: accent }}>{pixCopied ? 'Copiado' : 'Pix'}</button>
+                      )}
                     </div>
                   </div>
                 )
