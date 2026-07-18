@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical, ArrowRight, HandHeart, Copy } from 'lucide-react'
+import { Monitor, Smartphone, Save, Upload, Plus, Check, Trash2, Eye, Pencil, X, QrCode, GripVertical, ArrowRight, HandHeart, Copy, Users } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../../components/layout/Sidebar'
 import MobileNav from '../../components/layout/MobileNav'
@@ -21,19 +21,22 @@ const TABS = [
   { id: 'design', label: 'Design' },
   { id: 'content', label: 'Conteúdo' },
   { id: 'gifts', label: 'Presentes' },
+  { id: 'rsvp', label: 'Presença' },
 ]
 
-const SAVEABLE_TABS = new Set(['content', 'design', 'gifts'])
+const SAVEABLE_TABS = new Set(['content', 'design', 'gifts', 'rsvp'])
 const SAVE_TAB_LABELS = {
   content: 'Conteúdo',
   design: 'Design',
   gifts: 'Presentes',
+  rsvp: 'Presença',
 }
 
 const SAVE_BUTTON_LABELS = {
   content: { idle: 'Salvar conteúdo', saved: 'Conteúdo salvo' },
   design: { idle: 'Salvar Design', saved: 'Design salvo' },
   gifts: { idle: 'Salvar presentes', saved: 'Presentes salvos' },
+  rsvp: { idle: 'Salvar presença', saved: 'Presença salva' },
 }
 
 const COLORS = [
@@ -166,6 +169,21 @@ export default function Editor() {
     }, 80)
   }, [])
 
+  const goToPreviewSection = useCallback((sectionId) => {
+    clearTimeout(debounceRef.current)
+    try {
+      const win = previewIframeRef.current?.contentWindow
+      const section = win?.document?.getElementById(sectionId)
+      if (!section) return
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      window.setTimeout(() => {
+        previewScrollRef.current = { top: win.scrollY || 0, left: win.scrollX || 0 }
+      }, 500)
+    } catch {
+      // Same-origin preview should be accessible; ignore browser restrictions.
+    }
+  }, [])
+
   const schedulePreviewReload = useCallback(() => {
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
@@ -232,6 +250,9 @@ export default function Editor() {
           venue: savedWedding.venue ?? '',
           message: savedWedding.message ?? '',
           story: savedWedding.story ?? '',
+          rsvpMessage: savedWedding.rsvpMessage ?? wedding.rsvpMessage ?? '',
+          invitationMessage: savedWedding.invitationMessage ?? wedding.invitationMessage ?? '',
+          rsvpEnabled: savedWedding.rsvpEnabled !== false,
           template: savedWedding.template ?? wedding.template,
           primaryColor: savedWedding.primaryColor ?? wedding.primaryColor,
           sections: savedWedding.sections ?? [],
@@ -267,6 +288,8 @@ export default function Editor() {
           setCompletedSiteSlug(siteSlug)
           setShowContributionPrompt(true)
         }
+      } else if (nextDestination === 'guests') {
+        navigate('/principal?tab=convidados')
       } else if (nextDestination) {
         setActiveTab(nextDestination)
       }
@@ -281,6 +304,7 @@ export default function Editor() {
 
   const saveCurrentTab = async (currentWedding, tab) => {
     if (tab === 'content') return saveWeddingContent(currentWedding)
+    if (tab === 'rsvp') return saveWeddingContent(currentWedding)
     if (tab === 'design') return saveWeddingDesign(currentWedding)
     if (tab === 'gifts') {
       if (currentWedding.giftPixQrCode && !currentWedding.giftPixKey?.trim()) {
@@ -405,12 +429,24 @@ export default function Editor() {
   const saveButtonLabel = saved && savedSection === activeTab
     ? saveButtonCopy?.saved ?? `${activeTabLabel} salvo`
     : saveButtonCopy?.idle ?? `Salvar ${activeTabLabel}`
-  const nextDestination = activeTab === 'design' ? 'content' : activeTab === 'content' ? 'gifts' : 'site'
+  const nextDestination = activeTab === 'design'
+    ? 'content'
+    : activeTab === 'content'
+    ? 'gifts'
+    : activeTab === 'gifts'
+    ? 'rsvp'
+    : wedding.rsvpEnabled === false
+    ? 'site'
+    : 'guests'
   const continueButtonLabel = activeTab === 'design'
     ? 'Salvar e continuar para Conteúdo'
     : activeTab === 'content'
     ? 'Salvar e continuar para Presentes'
-    : 'Salvar e visualizar site'
+    : activeTab === 'gifts'
+    ? 'Salvar e continuar para Presença'
+    : wedding.rsvpEnabled === false
+    ? 'Salvar e visualizar site'
+    : 'Salvar e gerenciar convidados'
   if (loadingWedding) {
     return (
       <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
@@ -522,6 +558,7 @@ export default function Editor() {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="font-medium text-stone-900 text-sm">Informações do casal</h2>
+                    <PreviewJumpButton onClick={() => goToPreviewSection('preview-details')} />
                   </div>
                   <Input
                     label="Nome da noiva"
@@ -548,7 +585,10 @@ export default function Editor() {
                     onChange={e => wrappedUpdate({ venue: e.target.value })}
                   />
                   <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1.5">Mensagem especial</label>
+                    <div className="mb-1.5 flex items-center justify-between gap-3">
+                      <label className="block text-sm font-medium text-stone-700">Mensagem especial</label>
+                      <PreviewJumpButton onClick={() => goToPreviewSection('preview-message')} />
+                    </div>
                     <textarea
                       value={wedding.message}
                       onChange={e => wrappedUpdate({ message: e.target.value })}
@@ -560,6 +600,7 @@ export default function Editor() {
                   <div>
                     <div className="mb-1.5 flex items-center justify-between gap-3">
                       <label className="block text-sm font-medium text-stone-700">Nossa história</label>
+                      <PreviewJumpButton onClick={() => goToPreviewSection('preview-story')} />
                     </div>
                     <textarea
                       value={wedding.story}
@@ -571,7 +612,7 @@ export default function Editor() {
                   </div>
 
                   <div className="pt-2 border-t border-stone-100">
-                    <SectionsEditor wedding={wedding} updateWedding={wrappedUpdate} />
+                    <SectionsEditor wedding={wedding} updateWedding={wrappedUpdate} onGoToPreview={goToPreviewSection} />
                   </div>
                 </motion.div>
               )}
@@ -631,6 +672,7 @@ export default function Editor() {
                   <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <h2 className="font-medium text-stone-900 text-sm">Foto de capa</h2>
+                      <PreviewJumpButton onClick={() => goToPreviewSection('preview-cover')} />
                     </div>
                     <div className="relative aspect-video rounded-xl overflow-hidden mb-3 bg-stone-100">
                       <img src={mediaUrl(wedding.coverImage)} alt="Cover" className="w-full h-full object-cover" />
@@ -660,9 +702,10 @@ export default function Editor() {
                           Adicione até {MAX_GALLERY_IMAGES} fotos. Se não houver fotos, a galeria não aparece no site.
                         </p>
                       </div>
-                      <span className="text-[11px] text-stone-400 flex-shrink-0">
-                        {realGalleryCount}/{MAX_GALLERY_IMAGES}
-                      </span>
+                      <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
+                        <PreviewJumpButton onClick={() => goToPreviewSection('preview-gallery')} />
+                        <span className="text-[11px] text-stone-400">{realGalleryCount}/{MAX_GALLERY_IMAGES}</span>
+                      </div>
                     </div>
                     {realGalleryCount > MAX_GALLERY_IMAGES && (
                       <p className="mb-3 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
@@ -808,7 +851,63 @@ export default function Editor() {
               )}
 
               {activeTab === 'gifts' && (
-                <GiftsTab wedding={wedding} updateWedding={wrappedUpdate} />
+                <GiftsTab wedding={wedding} updateWedding={wrappedUpdate} onGoToPreview={goToPreviewSection} />
+              )}
+              {activeTab === 'rsvp' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-sm font-medium text-stone-900">Presença</h2>
+                      <p className="mt-1 text-xs leading-relaxed text-stone-400">Permite que cada convidado encontre seu convite e informe quem estará presente.</p>
+                    </div>
+                    {wedding.rsvpEnabled !== false && <PreviewJumpButton onClick={() => goToPreviewSection('preview-rsvp')} />}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+                    <div>
+                      <p className="text-sm font-medium text-stone-800">Exibir no site</p>
+                      <p className="mt-1 text-xs leading-relaxed text-stone-500">Ao desligar, a seção é ocultada, mas seus convidados continuam salvos.</p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={wedding.rsvpEnabled !== false}
+                      aria-label="Exibir confirmação de presença no site"
+                      onClick={() => wrappedUpdate({ rsvpEnabled: wedding.rsvpEnabled === false })}
+                      className={`flex flex-shrink-0 items-center gap-2 rounded-full border px-2.5 py-1.5 text-xs font-medium transition-colors ${wedding.rsvpEnabled !== false ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-stone-200 bg-white text-stone-500'}`}
+                    >
+                      <span className={`relative inline-block h-5 w-9 flex-shrink-0 rounded-full transition-colors ${wedding.rsvpEnabled !== false ? 'bg-emerald-600' : 'bg-stone-300'}`}>
+                        <span className={`absolute left-0 top-0.5 block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${wedding.rsvpEnabled !== false ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                      </span>
+                      {wedding.rsvpEnabled !== false ? 'Ativo' : 'Inativo'}
+                    </button>
+                  </div>
+
+                  {wedding.rsvpEnabled !== false ? <>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-stone-700">Texto de confirmação</label>
+                      <textarea
+                        value={wedding.rsvpMessage ?? ''}
+                        onChange={e => wrappedUpdate({ rsvpMessage: e.target.value })}
+                        placeholder="Sugestão: Sua presença tornará esse dia ainda mais especial. Confirme sua participação para celebrarmos juntos."
+                        rows={4}
+                        className="w-full resize-none rounded-xl border border-stone-200 px-4 py-3 text-sm text-stone-900 outline-none transition-all placeholder-stone-400 focus:border-stone-400 focus:ring-2 focus:ring-stone-100"
+                      />
+                    </div>
+                    <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+                      <p className="text-sm font-medium text-stone-800">Lista de convidados</p>
+                      <p className="mt-1 text-xs leading-relaxed text-stone-500">Cadastre os convidados e acompanhe quem confirmou presença.</p>
+                      <Button type="button" variant="outline" fullWidth className="mt-3 justify-center bg-white" onClick={() => navigate('/principal?tab=convidados')}>
+                        <Users size={15} /> Gerenciar convidados
+                      </Button>
+                    </div>
+                  </> : (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                      <p className="text-sm font-medium text-amber-900">A confirmação de presença está inativa</p>
+                      <p className="mt-1 text-xs leading-relaxed text-amber-700">Ative a funcionalidade acima para editar o texto e gerenciar os convidados.</p>
+                    </div>
+                  )}
+                </motion.div>
               )}
               {canSaveActiveTab && (
                 <div className="mt-6 border-t border-stone-100 pt-5">
@@ -821,9 +920,6 @@ export default function Editor() {
                   >
                     {saving ? 'Salvando...' : <>{continueButtonLabel} <ArrowRight size={16} /></>}
                   </Button>
-                  <p className="mt-2 text-center text-[11px] leading-relaxed text-stone-400">
-                    Suas alterações serão salvas antes de avançar.
-                  </p>
                 </div>
               )}
             </div>
@@ -908,7 +1004,15 @@ function giftPresetCategoryId(presetId, fallback = DEFAULT_GIFT_PRESET_CATEGORY)
   )?.id ?? fallback
 }
 
-function SectionsEditor({ wedding, updateWedding }) {
+function PreviewJumpButton({ onClick }) {
+  return (
+    <button type="button" onClick={onClick} className="flex-shrink-0 rounded-lg px-2 py-1 text-[11px] font-medium text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900">
+      Ir para <ArrowRight size={11} className="ml-0.5 inline" />
+    </button>
+  )
+}
+
+function SectionsEditor({ wedding, updateWedding, onGoToPreview }) {
   const sections = wedding.sections ?? []
   const [form, setForm] = useState(null)
   const [errors, setErrors] = useState({})
@@ -1025,6 +1129,7 @@ function SectionsEditor({ wedding, updateWedding }) {
             <p className="text-xs text-stone-400 line-clamp-2 mt-0.5">{s.content}</p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
+            <PreviewJumpButton onClick={() => onGoToPreview(`preview-section-${s.id}`)} />
             <button onClick={() => openEdit(s)} className="p-2 rounded-lg text-stone-500 hover:text-stone-600 hover:bg-stone-100 transition-colors md:p-1.5 md:text-stone-300">
               <Pencil size={13} />
             </button>
@@ -1053,7 +1158,7 @@ function SectionsEditor({ wedding, updateWedding }) {
   )
 }
 
-function GiftsTab({ wedding, updateWedding }) {
+function GiftsTab({ wedding, updateWedding, onGoToPreview }) {
   const { ensureWedding } = useWedding()
   const gifts = wedding.gifts ?? []
   const [form, setForm] = useState(null)
@@ -1181,6 +1286,7 @@ function GiftsTab({ wedding, updateWedding }) {
         <div>
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-medium text-stone-900 text-sm">Pix dos presentes</h2>
+            <PreviewJumpButton onClick={() => onGoToPreview('preview-gifts')} />
           </div>
           <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
             A chave fica pública no site dos noivos. O pagamento acontece fora da plataforma, no app do banco do convidado.
@@ -1221,8 +1327,8 @@ function GiftsTab({ wedding, updateWedding }) {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-stone-700">QR Code opcional</p>
-              <p className="text-[11px] text-stone-400 mb-2">Use apenas uma imagem confiável do QR Code Pix do casal.</p>
+              <p className="text-xs font-medium text-stone-700">[OPCIONAL] QR Code</p>
+              <p className="text-[11px] text-stone-400 mb-2">Caso queira, faça o upload do QR Code do Pix.</p>
               <div className="grid grid-cols-1 gap-2 sm:flex">
                 <button
                   type="button"
@@ -1253,9 +1359,12 @@ function GiftsTab({ wedding, updateWedding }) {
           <h2 className="font-medium text-stone-900 text-sm">Presentes simbólicos</h2>
           <p className="text-[11px] text-stone-400 mt-0.5">Os botões do site copiam a chave Pix configurada acima.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={openNew} fullWidth className="sm:w-auto">
-          <Plus size={14} /> Adicionar
-        </Button>
+        <div className="flex items-center gap-2">
+          <PreviewJumpButton onClick={() => onGoToPreview('preview-gifts')} />
+          <Button variant="outline" size="sm" onClick={openNew} fullWidth className="sm:w-auto">
+            <Plus size={14} /> Adicionar
+          </Button>
+        </div>
       </div>
 
       {form !== null && (

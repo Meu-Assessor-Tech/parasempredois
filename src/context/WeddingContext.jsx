@@ -3,6 +3,7 @@ import { canSaveWedding, createWedding, deleteWedding, getCurrentWedding } from 
 import { useAuth } from './AuthContext'
 import { mockWedding } from '../data/mockWedding'
 import { sampleMedia } from '../utils/media'
+import { DEFAULT_RSVP_MESSAGE } from '../utils/weddingDisplay'
 
 const STORAGE_KEY = 'baitacasamento_wedding'
 const PUBLISHED_STORAGE_KEY = 'baitacasamento_published_wedding'
@@ -247,10 +248,12 @@ function draftWedding() {
     venue: '',
     message: '',
     story: '',
+    rsvpMessage: DEFAULT_RSVP_MESSAGE,
+    invitationMessage: '',
+    rsvpEnabled: true,
     template: mockWedding.template,
     primaryColor: mockWedding.primaryColor,
     guestCount: 0,
-    rsvpEnabled: true,
     sections: [],
     giftPixKey: '',
     giftPixQrCode: '',
@@ -281,6 +284,9 @@ function mergeRemoteWedding(localWedding, remoteWedding) {
     venue: remoteWedding.venue ?? '',
     message: remoteWedding.message ?? '',
     story: remoteWedding.story ?? '',
+    rsvpMessage: remoteWedding.rsvpMessage ?? '',
+    invitationMessage: remoteWedding.invitationMessage ?? localWedding.invitationMessage ?? '',
+    rsvpEnabled: remoteWedding.rsvpEnabled !== false,
     template: normalizeTemplateId(remoteWedding.template ?? localWedding.template),
     primaryColor: remoteWedding.primaryColor ?? localWedding.primaryColor,
     sections: remoteWedding.sections ?? [],
@@ -344,6 +350,9 @@ function stripLegacyExampleDefaults(wedding) {
       venue: '',
       message: '',
       story: '',
+      rsvpMessage: DEFAULT_RSVP_MESSAGE,
+      invitationMessage: '',
+      rsvpEnabled: true,
       sections: [],
       gifts: [],
       giftsCustomized: true,

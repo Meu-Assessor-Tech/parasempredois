@@ -49,8 +49,8 @@ export default function RsvpFlow({ wedding, accent = wedding.primaryColor }) {
     <div className="mx-auto max-w-lg rounded-3xl bg-white p-5 text-left text-stone-900 shadow-sm sm:p-7">
       {step === 'search' && (
         <form onSubmit={search} className="space-y-4">
-          <div><h3 className="font-serif text-2xl">Encontre seu convite</h3><p className="mt-1 text-sm text-stone-500">Digite o nome usado pelos noivos na lista.</p></div>
-          <input className={fieldClass} value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" minLength={2} required />
+          <label htmlFor="rsvp-guest-name" className="sr-only">Nome usado na lista de convidados</label>
+          <input id="rsvp-guest-name" className={fieldClass} value={name} onChange={e => setName(e.target.value)} placeholder="Digite seu nome como está no convite" minLength={2} required />
           <button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-60" style={{ backgroundColor: accent }}><Search size={16} /> {loading ? 'Buscando...' : 'Buscar convite'}</button>
           {results.map(result => <button type="button" key={result.id} onClick={() => { setSelected(result); setStep('code'); setError('') }} className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-left text-sm font-medium hover:border-stone-400">{result.displayName}</button>)}
         </form>

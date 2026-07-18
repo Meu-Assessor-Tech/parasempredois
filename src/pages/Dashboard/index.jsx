@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, Copy, Edit3, Eye, HandHeart, MessageCircle, Plus, Share2, Trash2, Users } from 'lucide-react'
+import { Check, CircleHelp, Copy, Edit3, Eye, HandHeart, MessageCircle, MoreVertical, Plus, Share2, Trash2, Users } from 'lucide-react'
 import Sidebar from '../../components/layout/Sidebar'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import Modal from '../../components/ui/Modal'
 import { useWedding } from '../../context/WeddingContext'
 import { canSaveWedding } from '../../api/weddings'
-import { createInvitation, deleteInvitation, getInvitations } from '../../api/rsvps'
+import { saveWeddingContent } from '../../api/weddings'
+import { createInvitation, deleteInvitation, getInvitations, updateInvitationGuestStatus } from '../../api/rsvps'
 import { ApiError } from '../../api/client'
 import { mediaUrl } from '../../utils/media'
 import { formatWeddingDate, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
@@ -17,6 +18,15 @@ import MobileNav from '../../components/layout/MobileNav'
 import { CONTRIBUTION_PIX_KEY } from '../../data/contribution'
 
 const CONTRIBUTION_PROMPT_KEY_PREFIX = 'baitacasamento_contribution_prompt_seen'
+const DEFAULT_INVITATION_MESSAGE = 'Olá! Nosso grande dia está chegando, e preparamos um site com todos os detalhes do nosso casamento.'
+
+function invitationText(wedding, invitation, customMessage = wedding.invitationMessage, includeLink = true) {
+  const url = `${window.location.origin}/site/${wedding.slug}#preview-rsvp`
+  const couple = weddingDisplayTitle(wedding)
+  const intro = customMessage?.trim() || DEFAULT_INVITATION_MESSAGE
+  const requiredText = `${intro}\n\nCasamento de ${couple}\n\nNo site, procure pelo convite:\n${invitation.displayName}\n\nDepois, informe o código de confirmação:\n${invitation.accessCode}`
+  return includeLink ? `${requiredText}\n\nAcesse:\n${url}` : requiredText
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -88,9 +98,17 @@ function parseInvitationLine(line) {
   }
 }
 
-function GuestsTab({ wedding }) {
+function GuestsTab({ wedding, updateWedding, publishWedding }) {
+  const navigate = useNavigate()
   const [invitations, setInvitations] = useState([])
   const [draft, setDraft] = useState('')
+  const [showAddInvitations, setShowAddInvitations] = useState(false)
+  const [showInvitationHelp, setShowInvitationHelp] = useState(false)
+  const [showMessageEditor, setShowMessageEditor] = useState(false)
+  const [messageDraft, setMessageDraft] = useState(wedding.invitationMessage || DEFAULT_INVITATION_MESSAGE)
+  const [savingMessage, setSavingMessage] = useState(false)
+  const [updatingGuestId, setUpdatingGuestId] = useState(null)
+  const [openGuestMenuId, setOpenGuestMenuId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -105,13 +123,24 @@ function GuestsTab({ wedding }) {
 
   useEffect(load, [wedding.id])
 
+  useEffect(() => {
+    setMessageDraft(wedding.invitationMessage || DEFAULT_INVITATION_MESSAGE)
+  }, [wedding.invitationMessage])
+
+  useEffect(() => {
+    if (!openGuestMenuId) return
+    const closeMenu = () => setOpenGuestMenuId(null)
+    document.addEventListener('pointerdown', closeMenu)
+    return () => document.removeEventListener('pointerdown', closeMenu)
+  }, [openGuestMenuId])
+
   const addInvitations = async () => {
     const parsed = draft.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(parseInvitationLine)
     if (!parsed.length) return
     setSaving(true); setError('')
     try {
       for (const invitation of parsed) await createInvitation(wedding.id, invitation)
-      setDraft(''); load()
+      setDraft(''); setShowAddInvitations(false); load()
     } catch (err) { setError(err.message) } finally { setSaving(false) }
   }
 
@@ -121,11 +150,28 @@ function GuestsTab({ wedding }) {
   }
 
   const copyInvite = async (invitation) => {
-    const url = `${window.location.origin}/site/${wedding.slug}#preview-rsvp`
-    const copied = await copyTextToClipboard(`Oi!\n\nNosso grande dia está chegando, e preparamos um site com todos os detalhes do nosso casamento.\n\nAcesse: ${url}\n\nPara confirmar sua presença, procure seu nome no site e use o código: ${invitation.accessCode}\n\nEsperamos você para celebrar com a gente!`)
+    const copied = await copyTextToClipboard(invitationText(wedding, invitation))
     if (copied) {
       setCopiedInvitationId(invitation.id)
       window.setTimeout(() => setCopiedInvitationId(current => current === invitation.id ? null : current), 2000)
+    }
+  }
+
+  const saveInvitationMessage = async () => {
+    const invitationMessage = messageDraft.trim()
+    if (!invitationMessage) return
+    setSavingMessage(true); setError('')
+    try {
+      const nextWedding = { ...wedding, invitationMessage }
+      const savedWedding = await saveWeddingContent(nextWedding)
+      const updates = { invitationMessage: savedWedding?.invitationMessage ?? invitationMessage }
+      updateWedding(updates)
+      publishWedding(updates)
+      setShowMessageEditor(false)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSavingMessage(false)
     }
   }
 
@@ -134,6 +180,20 @@ function GuestsTab({ wedding }) {
     if (copied) {
       setCopiedCodeId(invitation.id)
       window.setTimeout(() => setCopiedCodeId(current => current === invitation.id ? null : current), 2000)
+    }
+  }
+
+  const updateGuestStatus = async (invitationId, guestId, status) => {
+    if (updatingGuestId) return
+    setUpdatingGuestId(guestId); setError('')
+    try {
+      const updatedInvitation = await updateInvitationGuestStatus(wedding.id, invitationId, guestId, status)
+      setInvitations(current => current.map(item => item.id === invitationId ? updatedInvitation : item))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setUpdatingGuestId(null)
+      setOpenGuestMenuId(null)
     }
   }
 
@@ -155,40 +215,75 @@ function GuestsTab({ wedding }) {
     <p className="mb-1 text-xs uppercase tracking-widest text-stone-400">Organização</p>
     <h1 className="mb-2 font-serif text-3xl text-stone-900 sm:text-4xl">Convidados</h1>
     <p className="mb-7 max-w-2xl text-sm leading-relaxed text-stone-500">Crie um convite por família ou grupo. Cada linha gera um código exclusivo para confirmação.</p>
-    <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {summaryFilters.map(filter => <button key={filter.status} type="button" onClick={() => setStatusFilter(filter.status)} className={`rounded-2xl border p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-stone-300 ${statusFilter === filter.status ? 'border-stone-900 bg-stone-900' : 'border-stone-100 bg-white'}`}><p className={`text-xs ${statusFilter === filter.status ? 'text-white/65' : 'text-stone-400'}`}>{filter.label}</p><p className={`mt-1 font-serif text-3xl ${statusFilter === filter.status ? 'text-white' : 'text-stone-900'}`}>{filter.value}</p><p className={`mt-1 text-[10px] ${statusFilter === filter.status ? 'text-white/55' : 'text-stone-300'}`}>{statusFilter === filter.status ? 'Filtro ativo' : 'Clique para filtrar'}</p></button>)}
+    {wedding.rsvpEnabled === false && (
+      <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div><p className="text-sm font-medium text-amber-900">A confirmação de presença não está visível no site</p><p className="mt-1 text-xs leading-relaxed text-amber-700">Você pode continuar organizando os convites, mas seus convidados não conseguirão confirmar a presença enquanto essa seção estiver desativada.</p></div>
+        <Button variant="primary" size="sm" onClick={() => navigate('/editor?tab=rsvp')} className="flex-shrink-0">Ir para Presença</Button>
+      </div>
+    )}
+    <div className="mb-6 flex flex-col gap-2 sm:flex-row">
+      <Button variant="outline" onClick={() => setShowMessageEditor(true)} className="justify-center sm:justify-start"><Edit3 size={15} /> Editar mensagem de convite</Button>
+      <Button variant="primary" onClick={() => setShowAddInvitations(true)} className="justify-center sm:justify-start"><Plus size={16} /> Adicionar convidados</Button>
     </div>
-    <Card className="mb-6 p-5">
-      <div className="mb-4">
-        <h2 className="font-serif text-2xl text-stone-900">Adicionar convites</h2>
-        <p className="mt-1 text-xs leading-relaxed text-stone-500">Digite um convite por linha. Você pode cadastrar de três maneiras:</p>
+    <Modal isOpen={showAddInvitations} onClose={() => setShowAddInvitations(false)} title="Adicionar convidados">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <p className="text-sm leading-relaxed text-stone-600">Adicione uma pessoa, um casal ou uma família inteira. Digite um convite por linha.</p>
+        <button type="button" onClick={() => { setShowAddInvitations(false); setShowInvitationHelp(true) }} className="inline-flex h-9 flex-shrink-0 items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50"><CircleHelp size={14} /> Ajuda</button>
       </div>
-      <div className="mb-4 grid gap-2 sm:grid-cols-3">
-        <div className="rounded-xl border border-stone-200 bg-stone-50 p-3"><p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">Uma pessoa</p><p className="mt-1 text-sm font-medium text-stone-800">Maria Miranda</p><p className="mt-1 text-[11px] leading-relaxed text-stone-500">Cria um convite individual.</p></div>
-        <div className="rounded-xl border border-stone-200 bg-stone-50 p-3"><p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">Casal ou grupo</p><p className="mt-1 text-sm font-medium text-stone-800">Claudia Pires; José Carlos</p><p className="mt-1 text-[11px] leading-relaxed text-stone-500">Separe os nomes com ponto e vírgula.</p></div>
-        <div className="rounded-xl border border-stone-200 bg-stone-50 p-3"><p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">Com acompanhantes</p><p className="mt-1 text-sm font-medium text-stone-800">Clara +2</p><p className="mt-1 text-[11px] leading-relaxed text-stone-500">Cria Clara e duas vagas de acompanhante.</p></div>
+      <label htmlFor="guest-invitations" className="mb-2 block text-sm font-medium text-stone-800">Adicione seus convidados aqui</label>
+      <textarea id="guest-invitations" value={draft} onChange={e => setDraft(e.target.value)} rows={6} placeholder={'Ana Paula\nClaudia Pires; José Carlos\nFamília Souza +3'} className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 outline-none placeholder:text-stone-300 focus:border-stone-500 focus:ring-2 focus:ring-stone-100" />
+      <Button className="mt-4" fullWidth onClick={addInvitations} disabled={saving || !draft.trim()}><Plus size={15} /> {saving ? 'Adicionando...' : 'Adicionar à lista'}</Button>
+    </Modal>
+    <Modal isOpen={showInvitationHelp} onClose={() => { setShowInvitationHelp(false); setShowAddInvitations(true) }} title="Como adicionar convidados">
+      <p className="mb-4 text-sm leading-relaxed text-stone-600">Você pode criar um convite individual, para um casal ou para uma família inteira. Digite um convite por linha.</p>
+      <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-4"><p className="text-xs font-medium uppercase tracking-wider text-stone-500">Uma pessoa</p><p className="mt-2 text-sm font-medium text-stone-900">Maria Miranda</p><p className="mt-1 text-xs leading-relaxed text-stone-500">Para um convite nominal individual, digite somente o nome da pessoa.</p></div>
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-4"><p className="text-xs font-medium uppercase tracking-wider text-stone-500">Casal no mesmo convite</p><p className="mt-2 text-sm font-medium text-stone-900">Claudia Pires; José Carlos</p><p className="mt-1 text-xs leading-relaxed text-stone-500">Para incluir o casal em um único convite, informe os dois nomes separados por ponto e vírgula.</p></div>
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-4"><p className="text-xs font-medium uppercase tracking-wider text-stone-500">Pessoa com acompanhantes</p><p className="mt-2 text-sm font-medium text-stone-900">Carlos Souza +3</p><p className="mt-1 text-xs leading-relaxed text-stone-500">Não precisa informar o nome de todos. Este exemplo cria um convite para Carlos e mais três acompanhantes.</p></div>
       </div>
-      <textarea value={draft} onChange={e => setDraft(e.target.value)} rows={5} placeholder={'José Santos +3\nCarlos Andrade; Maria de Souza\nAna Paula'} className="w-full resize-none rounded-xl border border-stone-200 px-4 py-3 text-sm outline-none focus:border-stone-400" />
-      <Button className="mt-3" onClick={addInvitations} disabled={saving || !draft.trim()}><Plus size={15} /> {saving ? 'Adicionando...' : 'Adicionar à lista'}</Button>
-    </Card>
+      <Button variant="primary" fullWidth className="mt-5" onClick={() => { setShowInvitationHelp(false); setShowAddInvitations(true) }}>Entendi</Button>
+    </Modal>
+    <Modal isOpen={showMessageEditor} onClose={() => setShowMessageEditor(false)} title="Mensagem padrão do convite">
+      <p className="mb-4 text-sm leading-relaxed text-stone-500">Escreva uma mensagem com o jeitinho de vocês. Ela será usada como base sempre que um convite for compartilhado.</p>
+      <label htmlFor="invitation-message" className="mb-2 block text-sm font-medium text-stone-800">Texto personalizado</label>
+      <textarea id="invitation-message" value={messageDraft} onChange={e => setMessageDraft(e.target.value)} rows={4} maxLength={500} className="w-full resize-none rounded-xl border border-stone-300 px-4 py-3 text-sm text-stone-900 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-100" />
+      <p className="mt-1 text-right text-[11px] text-stone-400">{messageDraft.length}/500</p>
+      <div className="mt-4">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-stone-400">Prévia completa</p>
+        <div className="max-h-[32vh] overflow-y-auto whitespace-pre-line rounded-xl border border-stone-200 bg-stone-50 p-4 text-xs leading-relaxed text-stone-600">{invitationText(wedding, invitations[0] ?? { displayName: 'Família Souza', accessCode: 'ABC123' }, messageDraft, false)}</div>
+      </div>
+      <div className="mt-5 flex gap-2">
+        <Button variant="outline" fullWidth onClick={() => setShowMessageEditor(false)}>Cancelar</Button>
+        <Button variant="primary" fullWidth disabled={savingMessage || !messageDraft.trim()} onClick={saveInvitationMessage}>{savingMessage ? 'Salvando...' : 'Salvar mensagem'}</Button>
+      </div>
+    </Modal>
     {error && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
-    {loading ? <p className="py-8 text-center text-sm text-stone-400">Carregando convidados...</p> : invitations.length === 0 ? <Card className="p-8 text-center"><Users className="mx-auto mb-3 text-stone-300" /><p className="text-sm text-stone-500">Nenhum convite criado ainda.</p></Card> : visibleInvitations.length === 0 ? <Card className="p-8 text-center"><p className="text-sm text-stone-500">Nenhum convidado neste filtro.</p></Card> : <div className="space-y-3">{visibleInvitations.map(invitation => <Card key={invitation.id} className="p-4 sm:p-5">
-      <div className="min-w-0"><h3 className="break-words font-medium text-stone-900">{invitation.displayName}</h3><p className="mt-1 text-xs text-stone-400">{invitation.guests.length} pessoa(s) {statusFilter !== 'ALL' ? 'neste filtro' : ''}</p></div>
-      <div className="mt-4 divide-y divide-stone-100 rounded-xl border border-stone-100">{invitation.guests.map(guest => <div key={guest.id} className="flex items-center justify-between gap-3 px-3 py-2.5"><span className="min-w-0 break-words text-sm text-stone-700">{guest.name}</span><span className={`flex-shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium ${guest.status === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700' : guest.status === 'DECLINED' ? 'bg-red-50 text-red-600' : 'bg-stone-100 text-stone-500'}`}>{guest.status === 'CONFIRMED' ? 'Confirmado' : guest.status === 'DECLINED' ? 'Não irá' : 'Aguardando'}</span></div>)}</div>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button type="button" onClick={() => copyConfirmationCode(invitation)} className="flex flex-shrink-0 items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-left transition-colors hover:border-stone-300 hover:bg-stone-100" title="Copiar código de confirmação">
-          <div><p className="text-[9px] font-medium uppercase tracking-wider text-stone-400">Código</p><p className="font-mono text-sm font-semibold tracking-[0.14em] text-stone-800">{invitation.accessCode}</p></div>
-          {copiedCodeId === invitation.id ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} className="text-stone-400" />}
-        </button>
-        <Button variant={copiedInvitationId === invitation.id ? 'secondary' : 'outline'} size="sm" onClick={() => copyInvite(invitation)} className="min-w-[190px] flex-1 sm:flex-none">{copiedInvitationId === invitation.id ? <Check size={14} /> : <Copy size={14} />} {copiedInvitationId === invitation.id ? 'Mensagem copiada' : 'Copiar mensagem do convite'}</Button>
-        <Button variant="ghost" size="sm" onClick={() => remove(invitation.id)} className="flex-1 !text-red-500 sm:flex-none"><Trash2 size={14} /> Remover convite</Button>
+    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h2 className="font-serif text-2xl text-stone-900">Convites cadastrados</h2>
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="-mx-1 flex min-w-0 gap-1 overflow-x-auto px-1 pb-1">
+          {summaryFilters.map(filter => <button key={filter.status} type="button" onClick={() => setStatusFilter(filter.status)} className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${statusFilter === filter.status ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300'}`}>{filter.label} <span className={statusFilter === filter.status ? 'text-white/70' : 'text-stone-400'}>{filter.value}</span></button>)}
+        </div>
       </div>
+    </div>
+    {loading ? <p className="py-8 text-center text-sm text-stone-400">Carregando convidados...</p> : invitations.length === 0 ? <Card className="p-8 text-center"><Users className="mx-auto mb-3 text-stone-300" /><p className="text-sm text-stone-500">Nenhum convite criado ainda.</p></Card> : visibleInvitations.length === 0 ? <Card className="p-8 text-center"><p className="text-sm text-stone-500">Nenhum convidado neste filtro.</p></Card> : <div className="space-y-2">{visibleInvitations.map(invitation => <Card key={invitation.id} className="p-3 sm:p-4">
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <div className="min-w-0"><h3 className="truncate font-medium text-stone-900" title={invitation.displayName}>{invitation.displayName}</h3><p className="text-[11px] text-stone-400">{invitation.guests.length} pessoa(s) {statusFilter !== 'ALL' ? 'neste filtro' : ''}</p></div>
+        <div className="flex flex-shrink-0 items-center gap-1">
+          <button type="button" onClick={() => copyConfirmationCode(invitation)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-50 px-2 font-mono text-xs font-semibold tracking-wider text-stone-700 transition-colors hover:bg-stone-100" title="Copiar código de confirmação">
+            {invitation.accessCode} {copiedCodeId === invitation.id ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} className="text-stone-400" />}
+          </button>
+          <button type="button" onClick={() => copyInvite(invitation)} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-stone-200 px-2 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50" title={copiedInvitationId === invitation.id ? 'Mensagem copiada' : 'Copiar mensagem'}>{copiedInvitationId === invitation.id ? <Check size={15} className="text-emerald-600" /> : <Copy size={15} />}<span className="hidden sm:inline">{copiedInvitationId === invitation.id ? 'Mensagem copiada' : 'Copiar mensagem'}</span></button>
+          <button type="button" onClick={() => remove(invitation.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50" title="Remover convite"><Trash2 size={15} /></button>
+        </div>
+      </div>
+      <div className="mt-2 divide-y divide-stone-100 rounded-lg border border-stone-100">{invitation.guests.map(guest => <div key={guest.id} className="relative flex items-center justify-between gap-2 px-3 py-2"><span className="min-w-0 truncate text-sm text-stone-700" title={guest.name}>{guest.name}</span><div className="flex flex-shrink-0 items-center gap-1"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${guest.status === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700' : guest.status === 'DECLINED' ? 'bg-red-50 text-red-600' : 'bg-stone-100 text-stone-500'}`}>{guest.status === 'CONFIRMED' ? 'Confirmado' : guest.status === 'DECLINED' ? 'Não irá' : 'Aguardando'}</span><button type="button" disabled={updatingGuestId === guest.id} onPointerDown={e => e.stopPropagation()} onClick={() => setOpenGuestMenuId(current => current === guest.id ? null : guest.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 disabled:opacity-50" aria-label={`Opções para ${guest.name}`} aria-expanded={openGuestMenuId === guest.id}><MoreVertical size={16} /></button></div>{openGuestMenuId === guest.id && <div onPointerDown={e => e.stopPropagation()} className="absolute right-2 top-10 z-20 min-w-44 rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg"><button type="button" onClick={() => updateGuestStatus(invitation.id, guest.id, 'CONFIRMED')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-stone-700 hover:bg-emerald-50 hover:text-emerald-700"><Check size={14} /> Confirmar presença</button><button type="button" onClick={() => updateGuestStatus(invitation.id, guest.id, 'DECLINED')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-stone-700 hover:bg-red-50 hover:text-red-600"><span className="inline-flex h-3.5 w-3.5 items-center justify-center text-base leading-none">×</span> Desconfirmar presença</button></div>}</div>)}</div>
     </Card>)}</div>}
   </div></DashboardShell>
 }
 
 export default function Dashboard() {
-  const { wedding, loadingWedding, deleteWeddingSite } = useWedding()
+  const { wedding, loadingWedding, updateWedding, publishWedding, deleteWeddingSite } = useWedding()
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
   const [copiedSiteLink, setCopiedSiteLink] = useState(false)
@@ -205,7 +300,7 @@ export default function Dashboard() {
   }
 
   if (currentTab === 'convidados' && hasWedding) {
-    return <GuestsTab wedding={wedding} />
+    return <GuestsTab wedding={wedding} updateWedding={updateWedding} publishWedding={publishWedding} />
   }
 
   if (loadingWedding) {

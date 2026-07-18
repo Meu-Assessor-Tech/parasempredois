@@ -7,6 +7,8 @@ export const mockWedding = {
   venue: 'Fazenda Santa Bárbara, São Paulo',
   message: 'Vamos celebrar esse dia tão especial ao lado das pessoas que fazem parte da nossa história.',
   story: 'Nos conhecemos em uma tarde de setembro, em uma pequena livraria no centro da cidade. A conversa começou por acaso, virou café, depois virou rotina, planos e amor. Agora queremos dividir esse novo capítulo com vocês.',
+  rsvpMessage: 'Sua presença tornará esse dia ainda mais especial. Confirme sua participação para celebrarmos juntos.',
+  rsvpEnabled: true,
   coverImage: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200',
   galleryImages: [
     'https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=600',

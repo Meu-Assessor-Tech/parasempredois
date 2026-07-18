@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, MapPin, Calendar, ChevronDown, Copy, Check, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
-import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
+import { formatWeddingDate, parseWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayRsvpMessage, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 import { submitRsvp } from '../../api/rsvps'
 import RsvpFlow from '../../components/shared/RsvpFlow'
 
@@ -88,7 +88,7 @@ export default function IvoryTemplate({ wedding }) {
       return
     }
     const tick = () => {
-      const diff = new Date(wedding.date) - new Date()
+      const diff = parseWeddingDate(wedding.date) - new Date()
       if (diff <= 0) return setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
       setTimeLeft({
         days:    Math.floor(diff / 86400000),
@@ -193,19 +193,25 @@ export default function IvoryTemplate({ wedding }) {
 
       {/* INFO STRIP */}
       <section id="preview-details" className="bg-white border-y border-stone-100">
-        <div className="max-w-3xl mx-auto px-6 py-12 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-0">
+        <div className="max-w-2xl mx-auto px-6 py-12 grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-0">
           {[
             { icon: Calendar, label: 'Data',   value: dateLong },
             { icon: MapPin,   label: 'Local',  value: displayVenue },
-            { icon: Heart,    label: 'Recado', value: displayMessage.length > 58 ? `${displayMessage.slice(0, 58)}...` : displayMessage },
           ].map(({ icon: Icon, label, value }, i) => (
-            <div key={i} className={`flex flex-col items-center text-center gap-3.5 px-6 ${i < 2 ? 'sm:border-r border-stone-100' : ''}`}>
+            <div key={i} className={`flex flex-col items-center text-center gap-3.5 px-6 ${i < 1 ? 'sm:border-r border-stone-100' : ''}`}>
               <Icon size={15} strokeWidth={1.7} className="text-[var(--accent)]" />
               <p className="text-[11px] sm:text-xs uppercase tracking-[0.24em] text-stone-500">{label}</p>
-              <p className="text-[15px] sm:text-base text-stone-700 font-light leading-relaxed capitalize max-w-[220px]">{value}</p>
+              <p className="text-[15px] sm:text-base text-stone-700 font-light leading-relaxed capitalize max-w-[220px] [overflow-wrap:anywhere]">{value}</p>
             </div>
           ))}
         </div>
+      </section>
+
+      <section id="preview-message" className="py-24 px-6 bg-[#FAFAF8]">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger} className="max-w-2xl mx-auto text-center">
+          <motion.div variants={fadeUp}><SectionLabel>Mensagem especial</SectionLabel></motion.div>
+          <motion.p variants={fadeUp} className="font-serif italic text-[1.2rem] sm:text-[1.35rem] text-stone-500 leading-[1.8] [overflow-wrap:anywhere]">{displayMessage}</motion.p>
+        </motion.div>
       </section>
 
       {/* COUNTDOWN */}
@@ -240,7 +246,7 @@ export default function IvoryTemplate({ wedding }) {
           </motion.div>
           <motion.div variants={fadeUp} className="relative px-4 sm:px-10">
             <span className="absolute -top-4 left-0 sm:left-4 font-serif text-[5.5rem] leading-none text-sand-100 select-none pointer-events-none" aria-hidden>"</span>
-            <p className="relative font-serif italic text-[1.2rem] sm:text-[1.35rem] text-stone-500 leading-[1.8] text-center pt-10 pb-4">{displayStory}</p>
+            <p className="relative font-serif italic text-[1.2rem] sm:text-[1.35rem] text-stone-500 leading-[1.8] text-center pt-10 pb-4 [overflow-wrap:anywhere]">{displayStory}</p>
             <span className="absolute -bottom-8 right-0 sm:right-4 font-serif text-[5.5rem] leading-none text-sand-100 select-none pointer-events-none" aria-hidden>"</span>
           </motion.div>
           <motion.div variants={fadeUp} className="mt-20 flex items-center justify-center gap-3">
@@ -435,15 +441,12 @@ export default function IvoryTemplate({ wedding }) {
       )}
 
       {/* RSVP */}
-      <section id="preview-rsvp" className="py-28 px-6 bg-white">
+      {wedding.rsvpEnabled !== false && <section id="preview-rsvp" className="py-28 px-6 bg-white">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger} className="max-w-[400px] mx-auto">
-          <motion.div variants={fadeUp} className="text-center mb-12">
+          <motion.div variants={fadeUp} className={`text-center ${weddingDisplayRsvpMessage(wedding) ? 'mb-8' : 'mb-4'}`}>
             <SectionLabel>Confirmação de presença</SectionLabel>
-            <h2 className="font-serif text-[2.2rem] sm:text-[2.6rem] font-normal text-stone-900 mb-4 leading-tight">Você virá?</h2>
-            <p className="text-stone-400 text-sm font-light leading-relaxed">
-              Sua presença é o maior presente.{' '}
-              <span className="text-stone-500">Confirme até 30 de agosto.</span>
-            </p>
+            <h2 className={`font-serif text-[2.2rem] sm:text-[2.6rem] font-normal text-stone-900 leading-tight ${weddingDisplayRsvpMessage(wedding) ? 'mb-4' : ''}`}>Você virá?</h2>
+            {weddingDisplayRsvpMessage(wedding) && <p className="text-stone-500 text-sm font-light leading-relaxed whitespace-pre-line [overflow-wrap:anywhere]">{weddingDisplayRsvpMessage(wedding)}</p>}
           </motion.div>
           <RsvpFlow wedding={wedding} accent={wedding.primaryColor} />
           {false && <AnimatePresence mode="wait">
@@ -481,7 +484,7 @@ export default function IvoryTemplate({ wedding }) {
             )}
           </AnimatePresence>}
         </motion.div>
-      </section>
+      </section>}
 
       {/* FOOTER */}
       <footer className="relative py-20 px-6 bg-[#FAFAF8] border-t border-stone-100 text-center overflow-hidden">

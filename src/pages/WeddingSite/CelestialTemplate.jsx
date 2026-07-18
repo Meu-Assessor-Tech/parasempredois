@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, MapPin, X } from 'lucide-react'
 import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
-import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
+import { formatWeddingDate, parseWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayRsvpMessage, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 import { submitRsvp } from '../../api/rsvps'
 import RsvpFlow from '../../components/shared/RsvpFlow'
 
@@ -67,7 +67,7 @@ export default function CelestialTemplate({ wedding }) {
       return
     }
     const tick = () => {
-      const diff = new Date(wedding.date) - new Date()
+      const diff = parseWeddingDate(wedding.date) - new Date()
       if (diff <= 0) return setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
       setTimeLeft({
         days: Math.floor(diff / 86400000),
@@ -145,14 +145,21 @@ export default function CelestialTemplate({ wedding }) {
       </section>
 
       <section id="preview-details" className="px-6 py-16 border-y border-white/10 bg-[#0D0B1A]">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[{ icon: Calendar, label: 'Data', value: dateLong }, { icon: MapPin, label: 'Local', value: displayVenue }, { icon: Heart, label: 'Recado', value: displayMessage }].map(({ icon: Icon, label, value }) => (
+        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[{ icon: Calendar, label: 'Data', value: dateLong }, { icon: MapPin, label: 'Local', value: displayVenue }].map(({ icon: Icon, label, value }) => (
             <div key={label} className="border border-white/10 bg-white/[0.035] p-6 text-center">
               <Icon size={18} className="mx-auto mb-4 text-[var(--accent)]" />
               <p className="text-[10px] uppercase tracking-[0.35em] text-white/35 mb-3">{label}</p>
-              <p className="text-sm text-white/70 leading-relaxed capitalize">{value}</p>
+              <p className="text-sm text-white/70 leading-relaxed capitalize [overflow-wrap:anywhere]">{value}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section id="preview-message" className="px-6 py-24 bg-[#13101F]">
+        <div className="max-w-3xl mx-auto text-center">
+          <SectionLabel>Mensagem especial</SectionLabel>
+          <p className="font-serif text-2xl leading-loose text-white/62 italic [overflow-wrap:anywhere]">{displayMessage}</p>
         </div>
       </section>
 
@@ -162,7 +169,7 @@ export default function CelestialTemplate({ wedding }) {
             <SectionLabel>Nossa história</SectionLabel>
             <h2 className="font-serif text-5xl sm:text-6xl leading-tight">Como tudo começou</h2>
           </div>
-          <p className="font-serif text-2xl leading-loose text-white/62 italic">{displayStory}</p>
+          <p className="font-serif text-2xl leading-loose text-white/62 italic [overflow-wrap:anywhere]">{displayStory}</p>
         </div>
       </section>
 
@@ -256,10 +263,11 @@ export default function CelestialTemplate({ wedding }) {
         </section>
       )}
 
-      <section id="preview-rsvp" className="px-6 py-28 bg-[#13101F] border-t border-white/10">
+      {wedding.rsvpEnabled !== false && <section id="preview-rsvp" className="px-6 py-28 bg-[#13101F] border-t border-white/10">
         <div className="max-w-md mx-auto text-center">
           <SectionLabel>Confirmação de presença</SectionLabel>
-          <h2 className="font-serif text-5xl mb-8">Você virá?</h2>
+          <h2 className="mb-4 font-serif text-5xl">Você virá?</h2>
+          {weddingDisplayRsvpMessage(wedding) && <p className="mb-6 text-sm leading-relaxed text-white/60 whitespace-pre-line [overflow-wrap:anywhere]">{weddingDisplayRsvpMessage(wedding)}</p>}
           <RsvpFlow wedding={wedding} accent={accent} />
           {false && <AnimatePresence mode="wait">
             {rsvpSent ? (
@@ -287,7 +295,7 @@ export default function CelestialTemplate({ wedding }) {
             )}
           </AnimatePresence>}
         </div>
-      </section>
+      </section>}
 
       <footer className="px-6 py-16 text-center border-t border-white/10">
         <p className="font-serif text-4xl mb-3">{displayTitle}</p>

@@ -29,6 +29,13 @@ export function deleteInvitation(weddingId, invitationId) {
   return api(`/weddings/${weddingId}/invitations/${invitationId}`, { method: 'DELETE' })
 }
 
+export function updateInvitationGuestStatus(weddingId, invitationId, guestId, status) {
+  return api(`/weddings/${weddingId}/invitations/${invitationId}/guests/${guestId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  })
+}
+
 export function searchInvitations(slug, name) {
   return api(`/weddings/public/${encodeURIComponent(slug)}/invitations/search?name=${encodeURIComponent(name)}`)
 }

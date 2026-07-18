@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, MapPin, X } from 'lucide-react'
 import { giftImageUrl, mediaKey, mediaUrl } from '../../utils/media'
 import { giftImagePresetById } from '../../data/giftImagePresets'
-import { formatWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
+import { formatWeddingDate, parseWeddingDate, weddingDisplayMessage, weddingDisplayNames, weddingDisplayRsvpMessage, weddingDisplayStory, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 import { submitRsvp } from '../../api/rsvps'
 import RsvpFlow from '../../components/shared/RsvpFlow'
 
@@ -67,7 +67,7 @@ export default function BaliTemplate({ wedding }) {
       return
     }
     const tick = () => {
-      const diff = new Date(wedding.date) - new Date()
+      const diff = parseWeddingDate(wedding.date) - new Date()
       if (diff <= 0) return setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
       setTimeLeft({
         days: Math.floor(diff / 86400000),
@@ -144,22 +144,29 @@ export default function BaliTemplate({ wedding }) {
       </section>
 
       <section id="preview-details" className="border-y border-[#E8D8C8] bg-[#FFF9F2]">
-        <div className="max-w-5xl mx-auto px-6 py-10 grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {[{ icon: Calendar, label: 'Data', value: dateLong }, { icon: MapPin, label: 'Local', value: displayVenue }, { icon: Heart, label: 'Recado', value: displayMessage }].map(({ icon: Icon, label, value }) => (
+        <div className="max-w-3xl mx-auto px-6 py-10 grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {[{ icon: Calendar, label: 'Data', value: dateLong }, { icon: MapPin, label: 'Local', value: displayVenue }].map(({ icon: Icon, label, value }) => (
             <div key={label} className="text-center px-4">
               <Icon size={17} className="mx-auto text-[var(--accent)] mb-3" />
               <p className="text-[10px] uppercase tracking-[0.26em] text-[#A6785B] mb-2">{label}</p>
-              <p className="text-sm leading-relaxed text-[#6C3F2B] capitalize">{value}</p>
+              <p className="text-sm leading-relaxed text-[#6C3F2B] capitalize [overflow-wrap:anywhere]">{value}</p>
             </div>
           ))}
         </div>
+      </section>
+
+      <section id="preview-message" className="py-20 px-6 bg-[#FFF9F2]">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger} className="max-w-3xl mx-auto text-center">
+          <motion.div variants={fadeUp}><SectionLabel>Mensagem especial</SectionLabel></motion.div>
+          <motion.p variants={fadeUp} className="font-serif italic text-xl leading-loose text-[#7D5A49] [overflow-wrap:anywhere]">{displayMessage}</motion.p>
+        </motion.div>
       </section>
 
       <section id="preview-story" className="py-24 px-6">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger} className="max-w-3xl mx-auto text-center">
           <motion.div variants={fadeUp}><SectionLabel>Nossa história</SectionLabel></motion.div>
           <motion.h2 variants={fadeUp} className="font-serif italic text-5xl text-[#6C3F2B] mb-8">Como tudo começou</motion.h2>
-          <motion.p variants={fadeUp} className="font-serif italic text-xl leading-loose text-[#7D5A49]">{displayStory}</motion.p>
+          <motion.p variants={fadeUp} className="font-serif italic text-xl leading-loose text-[#7D5A49] [overflow-wrap:anywhere]">{displayStory}</motion.p>
         </motion.div>
       </section>
 
@@ -252,10 +259,11 @@ export default function BaliTemplate({ wedding }) {
         </section>
       )}
 
-      <section id="preview-rsvp" className="py-24 px-6 bg-[#FBF6EF]">
+      {wedding.rsvpEnabled !== false && <section id="preview-rsvp" className="py-24 px-6 bg-[#FBF6EF]">
         <div className="max-w-md mx-auto text-center">
           <SectionLabel>Confirmação de presença</SectionLabel>
-          <h2 className="font-serif italic text-5xl text-[#6C3F2B] mb-8">Você virá?</h2>
+          <h2 className="mb-4 font-serif italic text-5xl text-[#6C3F2B]">Você virá?</h2>
+          {weddingDisplayRsvpMessage(wedding) && <p className="mb-6 text-sm leading-relaxed text-[#7D5A49] whitespace-pre-line [overflow-wrap:anywhere]">{weddingDisplayRsvpMessage(wedding)}</p>}
           <RsvpFlow wedding={wedding} accent={accent} />
           {false && <AnimatePresence mode="wait">
             {rsvpSent ? (
@@ -283,7 +291,7 @@ export default function BaliTemplate({ wedding }) {
             )}
           </AnimatePresence>}
         </div>
-      </section>
+      </section>}
 
       <footer className="py-16 px-6 text-center bg-[#4B3328] text-[#F7EDE4]">
         <p className="font-serif italic text-4xl mb-3">{displayTitle}</p>

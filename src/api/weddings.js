@@ -58,10 +58,23 @@ function saveWeddingSection(wedding, section, payload) {
 
 function saveWeddingPayload(wedding, section, payload) {
   const suffix = section ? `/${section}` : ''
-  return api(`/weddings/${wedding.id}${suffix}`, {
+  const request = (weddingId) => api(`/weddings/${weddingId}${suffix}`, {
     method: section ? 'PATCH' : 'PUT',
     body: JSON.stringify(payload),
-  }).catch(async (err) => {
+  })
+  const legacyRequest = (weddingId) => api(`/weddings/${weddingId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payloadForWedding(wedding)),
+  })
+
+  const requestWithCompatibilityFallback = (weddingId) => request(weddingId).catch(err => {
+    if (section && err instanceof ApiError && (err.status === 404 || err.status === 405)) {
+      return legacyRequest(weddingId)
+    }
+    throw err
+  })
+
+  return requestWithCompatibilityFallback(wedding.id).catch(async (err) => {
     if (!(err instanceof ApiError) || err.status !== 403) {
       throw err
     }
@@ -69,10 +82,7 @@ function saveWeddingPayload(wedding, section, payload) {
     if (!currentWedding?.id || currentWedding.id === wedding.id) {
       throw err
     }
-    return api(`/weddings/${currentWedding.id}${suffix}`, {
-      method: section ? 'PATCH' : 'PUT',
-      body: JSON.stringify(payload),
-    })
+    return requestWithCompatibilityFallback(currentWedding.id)
   })
 }
 
@@ -98,6 +108,9 @@ function contentPayload(wedding) {
     venue: wedding?.venue ?? '',
     message: wedding?.message ?? '',
     story: wedding?.story ?? '',
+    rsvpMessage: wedding?.rsvpMessage ?? '',
+    invitationMessage: wedding?.invitationMessage ?? '',
+    rsvpEnabled: wedding?.rsvpEnabled !== false,
     sections: wedding?.sections ?? [],
   }
 }
