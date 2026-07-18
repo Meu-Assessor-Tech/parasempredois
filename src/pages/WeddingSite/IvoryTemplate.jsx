@@ -487,32 +487,12 @@ export default function IvoryTemplate({ wedding }) {
       </section>}
 
       {/* FOOTER */}
-      <footer className="relative py-20 px-6 bg-[#FAFAF8] border-t border-stone-100 text-center overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" aria-hidden>
-          <span className="font-serif text-[22rem] leading-none text-stone-900" style={{ opacity: 0.018 }}>&</span>
-        </div>
-        <div className="relative">
-          <Heart size={13} className="mx-auto mb-8" style={{ fill: wedding.primaryColor, color: wedding.primaryColor }} strokeWidth={0} />
-          <p className="font-serif text-[1.85rem] sm:text-[2.2rem] font-normal text-stone-900 leading-snug mb-3">
+      <footer className="px-6 py-7 bg-[#FAFAF8] border-t border-stone-100 text-center">
+          <p className="font-serif text-xl font-normal text-stone-700 leading-snug">
             {brideName}{' '}
-            <span className="font-serif italic text-stone-400 text-[1.4rem] sm:text-[1.6rem]">&</span>{' '}
+            <span className="font-serif italic text-stone-400">&</span>{' '}
             {groomName}
           </p>
-          <p className="text-[10px] uppercase tracking-[0.5em] text-stone-400 mb-10 capitalize">{dateShort} · {displayVenue}</p>
-          <div className="flex items-center gap-3 max-w-[120px] mx-auto mb-10">
-            <div className="flex-1 h-px bg-stone-100" />
-            <div className="flex items-center gap-1.5">
-              <div className="w-1 h-1 rounded-full bg-stone-200" />
-              <div className="w-[5px] h-[5px] rounded-full bg-[var(--accent)]" />
-              <div className="w-1 h-1 rounded-full bg-stone-200" />
-            </div>
-            <div className="flex-1 h-px bg-stone-100" />
-          </div>
-          <p className="text-xs text-stone-300 font-light">
-            Site criado com{' '}
-            <a href="/" className="text-stone-400 hover:text-sand-500 transition-colors duration-200">Para sempre dois</a>
-          </p>
-        </div>
       </footer>
     </div>
   )

@@ -439,10 +439,9 @@ export default function Dashboard() {
 
   return (
     <DashboardShell>
-      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8">
-        <div className="mb-8 flex items-start justify-between gap-4">
+      <div className="max-w-5xl mx-auto px-4 py-4 sm:px-8 sm:py-6">
+        <div className="mb-4 flex items-start justify-between gap-4">
           <div><p className="text-xs text-stone-400 uppercase tracking-widest mb-1">Seu site</p><h1 className="font-serif text-3xl sm:text-4xl text-stone-900 mb-2">{weddingTitle}</h1><p className="text-stone-500 text-sm">{formattedDate} · {weddingVenue}</p></div>
-          <button type="button" onClick={() => { logout(); navigate('/') }} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 md:hidden"><LogOut size={14} /> Sair</button>
         </div>
 
         {deleteError && (
@@ -452,7 +451,7 @@ export default function Dashboard() {
         )}
 
         <Card className="overflow-hidden">
-          <div className="relative aspect-video">
+          <div className="relative h-[clamp(180px,34vh,390px)]">
             <img src={mediaUrl(wedding.coverImage)} alt="Preview" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             <div className="absolute bottom-4 left-4 right-4">
@@ -466,7 +465,7 @@ export default function Dashboard() {
                 <Edit3 size={14} /> Editar site
               </Button>
               <Button variant="outline" size="sm" onClick={handleVisualizeSite} fullWidth className="sm:w-auto">
-                <Eye size={14} /> Visualizar
+                <Eye size={14} /> Visualizar prévia
               </Button>
               <Button
                 variant={copiedSiteLink ? 'secondary' : 'outline'}
@@ -493,7 +492,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <button type="button" onClick={() => { logout(); navigate('/') }} className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 md:hidden"><LogOut size={15} /> Sair da conta</button>
+        <button type="button" onClick={() => { logout(); navigate('/') }} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-2 text-sm text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 md:hidden"><LogOut size={15} /> Sair da conta</button>
       </div>
       <Modal
         isOpen={showContributionPrompt}

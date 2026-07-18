@@ -7,6 +7,7 @@ import IvoryTemplate from './IvoryTemplate'
 import BaliTemplate from './BaliTemplate'
 import CelestialTemplate from './CelestialTemplate'
 import { getPublicWedding } from '../../api/weddings'
+import { useAuth } from '../../context/AuthContext'
 
 const TEMPLATE_MAP = {
   ivory: IvoryTemplate,
@@ -30,6 +31,7 @@ export default function WeddingSite() {
   const location = useLocation()
   const { slug } = useParams()
   const navigate = useNavigate()
+  const { user, loading: loadingAuth } = useAuth()
   const { wedding, publishedWedding, loadingWedding } = useWedding()
   const [publicWedding, setPublicWedding] = useState(null)
   const [publicError, setPublicError] = useState('')
@@ -39,6 +41,15 @@ export default function WeddingSite() {
   const [activeReturnTab, setActiveReturnTab] = useState(requestedEditorTab)
   const isExample = slug === 'ana-e-pedro' && params.get('example') === '1'
   const isPreview = params.get('preview') === '1'
+  const requestedReturnSource = params.get('from')
+  useEffect(() => {
+    if (loadingAuth || user || !requestedReturnSource) return
+    const publicParams = new URLSearchParams(location.search)
+    publicParams.delete('from')
+    publicParams.delete('editorTab')
+    const publicSearch = publicParams.toString()
+    navigate(`${location.pathname}${publicSearch ? `?${publicSearch}` : ''}${location.hash}`, { replace: true })
+  }, [loadingAuth, user, requestedReturnSource, location.pathname, location.search, location.hash, navigate])
   useEffect(() => {
     if (isExample || isPreview || !slug) return
     let cancelled = false
@@ -96,7 +107,7 @@ export default function WeddingSite() {
   }
   const renderedWedding = isExample ? mockWedding : isPreview ? wedding : publicWedding ?? publishedWedding
   const Template = TEMPLATE_MAP[renderedWedding.template] ?? FallbackTemplate
-  const returnSource = params.get('from')
+  const returnSource = user ? requestedReturnSource : ''
   const editorTarget = activeReturnTab !== 'design' ? `/editor?tab=${encodeURIComponent(activeReturnTab)}` : '/editor'
   const backTarget = returnSource === 'editor' ? editorTarget : returnSource === 'dashboard' ? '/principal' : ''
   const backLabel = returnSource === 'editor' ? 'Voltar para edição' : 'Voltar para principal'

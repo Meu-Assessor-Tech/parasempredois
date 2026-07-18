@@ -294,9 +294,8 @@ export default function BaliTemplate({ wedding }) {
         </div>
       </section>}
 
-      <footer className="py-16 px-6 text-center bg-[#4B3328] text-[#F7EDE4]">
-        <p className="font-serif italic text-4xl mb-3">{displayTitle}</p>
-        <p className="text-xs uppercase tracking-[0.3em] text-[#F7D8BF]/70 capitalize">{dateShort} · {displayVenue}</p>
+      <footer className="px-6 py-7 text-center bg-[#4B3328] text-[#F7EDE4]">
+        <p className="font-serif italic text-xl">{displayTitle}</p>
       </footer>
 
       <AnimatePresence>

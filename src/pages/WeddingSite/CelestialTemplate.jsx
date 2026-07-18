@@ -298,9 +298,8 @@ export default function CelestialTemplate({ wedding }) {
         </div>
       </section>}
 
-      <footer className="px-6 py-16 text-center border-t border-white/10">
-        <p className="font-serif text-4xl mb-3">{displayTitle}</p>
-        <p className="text-xs uppercase tracking-[0.34em] text-white/35 capitalize">{dateShort} · {displayVenue}</p>
+      <footer className="px-6 py-7 text-center border-t border-white/10">
+        <p className="font-serif text-xl text-white/80">{displayTitle}</p>
       </footer>
 
       <AnimatePresence>
