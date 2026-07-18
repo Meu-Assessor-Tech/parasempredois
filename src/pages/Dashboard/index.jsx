@@ -111,6 +111,7 @@ function GuestsTab({ wedding, updateWedding, publishWedding }) {
   const [savingMessage, setSavingMessage] = useState(false)
   const [updatingGuestId, setUpdatingGuestId] = useState(null)
   const [openGuestMenuId, setOpenGuestMenuId] = useState(null)
+  const [openInvitationMenuId, setOpenInvitationMenuId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -135,6 +136,12 @@ function GuestsTab({ wedding, updateWedding, publishWedding }) {
     document.addEventListener('pointerdown', closeMenu)
     return () => document.removeEventListener('pointerdown', closeMenu)
   }, [openGuestMenuId])
+  useEffect(() => {
+    if (!openInvitationMenuId) return
+    const closeMenu = () => setOpenInvitationMenuId(null)
+    document.addEventListener('pointerdown', closeMenu)
+    return () => document.removeEventListener('pointerdown', closeMenu)
+  }, [openInvitationMenuId])
 
   const addInvitations = async () => {
     const parsed = draft.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(parseInvitationLine)
@@ -147,6 +154,7 @@ function GuestsTab({ wedding, updateWedding, publishWedding }) {
   }
 
   const remove = async (id) => {
+    setOpenInvitationMenuId(null)
     if (!confirm('Remover este convite e suas respostas?')) return
     try { await deleteInvitation(wedding.id, id); setInvitations(current => current.filter(item => item.id !== id)) } catch (err) { setError(err.message) }
   }
@@ -154,6 +162,8 @@ function GuestsTab({ wedding, updateWedding, publishWedding }) {
   const copyInvite = async (invitation) => {
     const copied = await copyTextToClipboard(invitationText(wedding, invitation))
     if (copied) {
+      setOpenInvitationMenuId(null)
+      setCopiedCodeId(null)
       setCopiedInvitationId(invitation.id)
       window.setTimeout(() => setCopiedInvitationId(current => current === invitation.id ? null : current), 2000)
     }
@@ -180,6 +190,8 @@ function GuestsTab({ wedding, updateWedding, publishWedding }) {
   const copyConfirmationCode = async (invitation) => {
     const copied = await copyTextToClipboard(invitation.accessCode)
     if (copied) {
+      setOpenInvitationMenuId(null)
+      setCopiedInvitationId(null)
       setCopiedCodeId(invitation.id)
       window.setTimeout(() => setCopiedCodeId(current => current === invitation.id ? null : current), 2000)
     }
@@ -279,18 +291,14 @@ function GuestsTab({ wedding, updateWedding, publishWedding }) {
         </div>
       </div>
     </div>
+    {(copiedInvitationId || copiedCodeId) && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-x-4 bottom-24 z-[80] mx-auto flex w-fit max-w-[calc(100vw-2rem)] items-center justify-center gap-2 whitespace-nowrap rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white shadow-xl md:bottom-6"><Check size={15} className="text-emerald-300" />{copiedInvitationId ? 'Mensagem de convite copiada' : 'Código copiado'}</motion.div>}
     {loading ? <p className="py-8 text-center text-sm text-stone-400">Carregando convidados...</p> : invitations.length === 0 ? <Card className="p-8 text-center"><Users className="mx-auto mb-3 text-stone-300" /><p className="text-sm text-stone-500">Nenhum convite criado ainda.</p></Card> : visibleInvitations.length === 0 ? <Card className="p-8 text-center"><p className="text-sm text-stone-500">Nenhum convidado neste filtro.</p></Card> : <div className="space-y-2">{visibleInvitations.map(invitation => <Card key={invitation.id} className="p-3 sm:p-4">
-      <div className="flex min-w-0 items-center justify-between gap-2">
+      <div className="relative flex min-w-0 items-center justify-between gap-2">
         <div className="min-w-0"><h3 className="truncate font-medium text-stone-900" title={invitation.displayName}>{invitation.displayName}</h3><p className="text-[11px] text-stone-400">{invitation.guests.length} pessoa(s) {statusFilter !== 'ALL' ? 'neste filtro' : ''}</p></div>
-        <div className="flex flex-shrink-0 items-center gap-1">
-          <button type="button" onClick={() => copyConfirmationCode(invitation)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-50 px-2 font-mono text-xs font-semibold tracking-wider text-stone-700 transition-colors hover:bg-stone-100" title="Copiar código de confirmação">
-            {invitation.accessCode} {copiedCodeId === invitation.id ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} className="text-stone-400" />}
-          </button>
-          <button type="button" onClick={() => copyInvite(invitation)} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-stone-200 px-2 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50" title={copiedInvitationId === invitation.id ? 'Mensagem copiada' : 'Copiar mensagem'}>{copiedInvitationId === invitation.id ? <Check size={15} className="text-emerald-600" /> : <Copy size={15} />}<span className="hidden sm:inline">{copiedInvitationId === invitation.id ? 'Mensagem copiada' : 'Copiar mensagem'}</span></button>
-          <button type="button" onClick={() => remove(invitation.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50" title="Remover convite"><Trash2 size={15} /></button>
-        </div>
+        <div className="flex flex-shrink-0 items-center gap-1"><span className="rounded-lg bg-stone-100 px-2 py-1 text-[11px] font-medium text-stone-500">Código: <strong className="font-mono font-semibold tracking-wider text-stone-700">{invitation.accessCode}</strong></span><button type="button" onPointerDown={event => event.stopPropagation()} onClick={() => setOpenInvitationMenuId(current => current === invitation.id ? null : invitation.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100" aria-label={`Ações do convite ${invitation.displayName}`} aria-expanded={openInvitationMenuId === invitation.id}><MoreVertical size={17} /></button></div>
+        {openInvitationMenuId === invitation.id && <div onPointerDown={event => event.stopPropagation()} className="absolute right-0 top-10 z-30 min-w-52 rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg"><button type="button" onClick={() => copyInvite(invitation)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-medium text-stone-700 hover:bg-stone-50">{copiedInvitationId === invitation.id ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />} {copiedInvitationId === invitation.id ? 'Mensagem copiada' : 'Copiar mensagem de convite'}</button><button type="button" onClick={() => copyConfirmationCode(invitation)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-medium text-stone-700 hover:bg-stone-50">{copiedCodeId === invitation.id ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />} {copiedCodeId === invitation.id ? 'Código copiado' : 'Copiar apenas código'}</button><button type="button" onClick={() => remove(invitation.id)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-medium text-red-500 hover:bg-red-50"><Trash2 size={14} /> Remover convite</button></div>}
       </div>
-      <div className="mt-2 divide-y divide-stone-100 rounded-lg border border-stone-100">{invitation.guests.map(guest => <div key={guest.id} className="relative flex items-center justify-between gap-2 px-3 py-2"><span className="min-w-0 truncate text-sm text-stone-700" title={guest.name}>{guest.name}</span><div className="flex flex-shrink-0 items-center gap-1"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${guest.status === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700' : guest.status === 'DECLINED' ? 'bg-red-50 text-red-600' : 'bg-stone-100 text-stone-500'}`}>{guest.status === 'CONFIRMED' ? 'Confirmado' : guest.status === 'DECLINED' ? 'Não irá' : 'Aguardando'}</span><button type="button" disabled={updatingGuestId === guest.id} onPointerDown={e => e.stopPropagation()} onClick={() => setOpenGuestMenuId(current => current === guest.id ? null : guest.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 disabled:opacity-50" aria-label={`Opções para ${guest.name}`} aria-expanded={openGuestMenuId === guest.id}><MoreVertical size={16} /></button></div>{openGuestMenuId === guest.id && <div onPointerDown={e => e.stopPropagation()} className="absolute right-2 top-10 z-20 min-w-44 rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg"><button type="button" onClick={() => updateGuestStatus(invitation.id, guest.id, 'CONFIRMED')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-stone-700 hover:bg-emerald-50 hover:text-emerald-700"><Check size={14} /> Confirmar presença</button><button type="button" onClick={() => updateGuestStatus(invitation.id, guest.id, 'DECLINED')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-stone-700 hover:bg-red-50 hover:text-red-600"><span className="inline-flex h-3.5 w-3.5 items-center justify-center text-base leading-none">×</span> Desconfirmar presença</button></div>}</div>)}</div>
+      <div className="mt-2 divide-y divide-stone-100 rounded-lg border border-stone-100">{invitation.guests.map(guest => <div key={guest.id} className="relative flex items-center justify-between gap-2 px-3 py-2"><span className="min-w-0 truncate text-sm text-stone-700" title={guest.name}>{guest.name}</span><div className="flex flex-shrink-0 items-center gap-1"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${guest.status === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700' : guest.status === 'DECLINED' ? 'bg-red-50 text-red-600' : 'bg-stone-100 text-stone-500'}`}>{guest.status === 'CONFIRMED' ? 'Confirmado' : guest.status === 'DECLINED' ? 'Não irá' : 'Aguardando'}</span><button type="button" disabled={updatingGuestId === guest.id} onPointerDown={e => e.stopPropagation()} onClick={() => setOpenGuestMenuId(current => current === guest.id ? null : guest.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 disabled:opacity-50" aria-label={`Opções para ${guest.name}`} aria-expanded={openGuestMenuId === guest.id}><MoreVertical size={16} /></button></div>{openGuestMenuId === guest.id && <div onPointerDown={e => e.stopPropagation()} className="absolute right-2 top-10 z-20 min-w-48 rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg"><button type="button" onClick={() => updateGuestStatus(invitation.id, guest.id, 'CONFIRMED')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-stone-700 hover:bg-emerald-50 hover:text-emerald-700"><Check size={14} /> Confirmar presença</button><button type="button" onClick={() => updateGuestStatus(invitation.id, guest.id, 'DECLINED')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-stone-700 hover:bg-red-50 hover:text-red-600"><span className="inline-flex h-3.5 w-3.5 items-center justify-center text-base leading-none">×</span> Desconfirmar presença</button><button type="button" onClick={() => updateGuestStatus(invitation.id, guest.id, 'PENDING')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-stone-700 hover:bg-stone-100"><span className="inline-flex h-3.5 w-3.5 items-center justify-center text-sm leading-none">○</span> Marcar como aguardando</button></div>}</div>)}</div>
     </Card>)}</div>}
   </div></DashboardShell>
 }

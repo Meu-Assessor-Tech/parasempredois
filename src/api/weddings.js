@@ -25,6 +25,10 @@ export function getCurrentWedding() {
   return api('/weddings')
 }
 
+export function getPublicWedding(slug) {
+  return api(`/weddings/public/${encodeURIComponent(slug)}`)
+}
+
 export function createWedding(wedding) {
   return api('/weddings', {
     method: 'POST',
