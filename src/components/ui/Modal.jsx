@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useEffect } from 'react'
 
-export default function Modal({ isOpen, onClose, title, children }) {
+export default function Modal({ isOpen, onClose, title, children, className = '' }) {
   useEffect(() => {
     if (!isOpen) return
     const previousOverflow = document.body.style.overflow
@@ -36,7 +36,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6"
+            className={`relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6 ${className}`}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-serif text-xl text-stone-900">{title}</h3>

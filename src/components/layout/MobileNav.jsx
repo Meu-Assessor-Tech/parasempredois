@@ -9,13 +9,14 @@ export default function MobileNav() {
   const hasWedding = canSaveWedding(wedding?.id)
   const currentPath = `${location.pathname}${location.search}`
   const siteReturnSource = location.pathname === '/editor' ? 'editor' : 'dashboard'
+  const editorTab = new URLSearchParams(location.search).get('tab') || 'design'
 
   const items = [
     { icon: Home, label: 'Principal', path: '/principal' },
     hasWedding
       ? { icon: Edit3, label: 'Editar', path: '/editor' }
       : { icon: Edit3, label: 'Criar', path: '/criar-site' },
-    ...(hasWedding ? [{ icon: Eye, label: 'Ver site', path: `/site/${wedding.slug}?from=${siteReturnSource}` }] : []),
+    ...(hasWedding ? [{ icon: Eye, label: 'Ver site', path: `/site/${wedding.slug}?from=${siteReturnSource}${siteReturnSource === 'editor' ? `&editorTab=${editorTab}` : ''}` }] : []),
     ...(hasWedding ? [{ icon: Users, label: 'Convidados', path: '/principal?tab=convidados' }] : []),
     { icon: HandHeart, label: 'Colaborar', path: '/principal?tab=colaborar' },
   ]

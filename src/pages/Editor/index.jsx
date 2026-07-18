@@ -130,13 +130,13 @@ export default function Editor() {
 
   const continueToPublishedSite = () => {
     markContributionPromptAsSeen()
-    navigate(`/site/${completedSiteSlug || wedding.slug}?from=editor`)
+    navigate(`/site/${completedSiteSlug || wedding.slug}?from=editor&editorTab=${activeTab}`)
   }
 
   const copyPixAndContinue = async () => {
     await copyTextToClipboard(CONTRIBUTION_PIX_KEY)
     markContributionPromptAsSeen()
-    navigate(`/site/${completedSiteSlug || wedding.slug}?from=editor`)
+    navigate(`/site/${completedSiteSlug || wedding.slug}?from=editor&editorTab=${activeTab}`)
   }
 
   useEffect(() => {
@@ -283,7 +283,7 @@ export default function Editor() {
           // Show the optional prompt when local storage is unavailable.
         }
         if (promptWasSeen) {
-          navigate(`/site/${siteSlug}?from=editor`)
+          navigate(`/site/${siteSlug}?from=editor&editorTab=${activeTab}`)
         } else {
           setCompletedSiteSlug(siteSlug)
           setShowContributionPrompt(true)
@@ -447,6 +447,21 @@ export default function Editor() {
     : wedding.rsvpEnabled === false
     ? 'Salvar e visualizar site'
     : 'Salvar e gerenciar convidados'
+  const handlePreviewJump = async (sectionId) => {
+    if (activeTabHasChanges) {
+      const shouldSave = window.confirm('Gostaria de salvar as alterações antes de ir?')
+      if (shouldSave) {
+        const savedSuccessfully = await handleSave()
+        if (!savedSuccessfully) return
+      }
+    }
+
+    if (window.innerWidth < 768) {
+      navigate(`/site/${wedding.slug}?from=editor&editorTab=${activeTab}#${sectionId}`)
+      return
+    }
+    goToPreviewSection(sectionId)
+  }
   if (loadingWedding) {
     return (
       <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
@@ -509,7 +524,7 @@ export default function Editor() {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => navigate(`/site/${wedding.slug}?from=editor`)}
+              onClick={() => navigate(`/site/${wedding.slug}?from=editor&editorTab=${activeTab}`)}
               title="Ver site publicado"
               className="hidden shadow-sm ring-2 ring-stone-900/10 md:inline-flex"
             >
@@ -558,7 +573,7 @@ export default function Editor() {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="font-medium text-stone-900 text-sm">Informações do casal</h2>
-                    <PreviewJumpButton onClick={() => goToPreviewSection('preview-details')} />
+                    <PreviewJumpButton onClick={() => handlePreviewJump('preview-details')} />
                   </div>
                   <Input
                     label="Nome da noiva"
@@ -587,7 +602,7 @@ export default function Editor() {
                   <div>
                     <div className="mb-1.5 flex items-center justify-between gap-3">
                       <label className="block text-sm font-medium text-stone-700">Mensagem especial</label>
-                      <PreviewJumpButton onClick={() => goToPreviewSection('preview-message')} />
+                      <PreviewJumpButton onClick={() => handlePreviewJump('preview-message')} />
                     </div>
                     <textarea
                       value={wedding.message}
@@ -600,7 +615,7 @@ export default function Editor() {
                   <div>
                     <div className="mb-1.5 flex items-center justify-between gap-3">
                       <label className="block text-sm font-medium text-stone-700">Nossa história</label>
-                      <PreviewJumpButton onClick={() => goToPreviewSection('preview-story')} />
+                      <PreviewJumpButton onClick={() => handlePreviewJump('preview-story')} />
                     </div>
                     <textarea
                       value={wedding.story}
@@ -612,7 +627,7 @@ export default function Editor() {
                   </div>
 
                   <div className="pt-2 border-t border-stone-100">
-                    <SectionsEditor wedding={wedding} updateWedding={wrappedUpdate} onGoToPreview={goToPreviewSection} />
+                    <SectionsEditor wedding={wedding} updateWedding={wrappedUpdate} onGoToPreview={handlePreviewJump} />
                   </div>
                 </motion.div>
               )}
@@ -672,7 +687,7 @@ export default function Editor() {
                   <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <h2 className="font-medium text-stone-900 text-sm">Foto de capa</h2>
-                      <PreviewJumpButton onClick={() => goToPreviewSection('preview-cover')} />
+                      <PreviewJumpButton onClick={() => handlePreviewJump('preview-cover')} />
                     </div>
                     <div className="relative aspect-video rounded-xl overflow-hidden mb-3 bg-stone-100">
                       <img src={mediaUrl(wedding.coverImage)} alt="Cover" className="w-full h-full object-cover" />
@@ -703,7 +718,7 @@ export default function Editor() {
                         </p>
                       </div>
                       <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
-                        <PreviewJumpButton onClick={() => goToPreviewSection('preview-gallery')} />
+                        {realMediaItems(wedding.galleryImages ?? []).length > 0 && <PreviewJumpButton onClick={() => handlePreviewJump('preview-gallery')} />}
                         <span className="text-[11px] text-stone-400">{realGalleryCount}/{MAX_GALLERY_IMAGES}</span>
                       </div>
                     </div>
@@ -851,7 +866,7 @@ export default function Editor() {
               )}
 
               {activeTab === 'gifts' && (
-                <GiftsTab wedding={wedding} updateWedding={wrappedUpdate} onGoToPreview={goToPreviewSection} />
+                <GiftsTab wedding={wedding} updateWedding={wrappedUpdate} onGoToPreview={handlePreviewJump} />
               )}
               {activeTab === 'rsvp' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
@@ -860,7 +875,7 @@ export default function Editor() {
                       <h2 className="text-sm font-medium text-stone-900">Presença</h2>
                       <p className="mt-1 text-xs leading-relaxed text-stone-400">Permite que cada convidado encontre seu convite e informe quem estará presente.</p>
                     </div>
-                    {wedding.rsvpEnabled !== false && <PreviewJumpButton onClick={() => goToPreviewSection('preview-rsvp')} />}
+                    {wedding.rsvpEnabled !== false && <PreviewJumpButton onClick={() => handlePreviewJump('preview-rsvp')} />}
                   </div>
 
                   <div className="flex items-center justify-between gap-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
@@ -1006,7 +1021,7 @@ function giftPresetCategoryId(presetId, fallback = DEFAULT_GIFT_PRESET_CATEGORY)
 
 function PreviewJumpButton({ onClick }) {
   return (
-    <button type="button" onClick={onClick} className="hidden flex-shrink-0 rounded-lg px-2 py-1 text-[11px] font-medium text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900 md:inline-flex md:items-center">
+    <button type="button" onClick={onClick} className="inline-flex flex-shrink-0 items-center rounded-lg px-2 py-1 text-[11px] font-medium text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900">
       Ir para <ArrowRight size={11} className="ml-0.5 inline" />
     </button>
   )
@@ -1164,11 +1179,14 @@ function GiftsTab({ wedding, updateWedding, onGoToPreview }) {
   const [form, setForm] = useState(null)
   const [errors, setErrors] = useState({})
   const [selectedPresetCategory, setSelectedPresetCategory] = useState(DEFAULT_GIFT_PRESET_CATEGORY)
+  const [showGiftImagePicker, setShowGiftImagePicker] = useState(false)
+  const [pendingGiftImagePreset, setPendingGiftImagePreset] = useState('')
   const [qrLoading, setQrLoading] = useState(false)
   const [qrError, setQrError] = useState('')
   const qrInputRef = useRef(null)
   const formImageUrl = form ? giftImageUrl(form, giftImagePresetById) : ''
   const selectedGiftPreset = form?.imagePreset ? giftImagePresetById(form.imagePreset) : null
+  const pendingGiftPreset = pendingGiftImagePreset ? giftImagePresetById(pendingGiftImagePreset) : null
 
   const uploadOrPreview = useCallback((file, kind) => {
     if (canUploadMedia(wedding.id)) {
@@ -1223,15 +1241,28 @@ function GiftsTab({ wedding, updateWedding, onGoToPreview }) {
 
   const openNew = () => {
     setSelectedPresetCategory(DEFAULT_GIFT_PRESET_CATEGORY)
+    setShowGiftImagePicker(false)
     setForm({ ...EMPTY_GIFT })
     setErrors({})
   }
   const openEdit = (gift) => {
     setSelectedPresetCategory(giftPresetCategoryId(gift.imagePreset))
+    setShowGiftImagePicker(false)
     setForm({ ...gift, image: '' })
     setErrors({})
   }
   const closeForm = () => { setForm(null); setErrors({}) }
+  const openGiftImagePicker = () => {
+    const presetId = form?.imagePreset ?? ''
+    setPendingGiftImagePreset(presetId)
+    setSelectedPresetCategory(giftPresetCategoryId(presetId))
+    setShowGiftImagePicker(true)
+  }
+  const applyGiftImage = () => {
+    if (!pendingGiftImagePreset) return
+    setForm(current => ({ ...current, image: '', imagePreset: pendingGiftImagePreset }))
+    setShowGiftImagePicker(false)
+  }
 
   const validate = (f) => {
     const e = {}
@@ -1281,12 +1312,12 @@ function GiftsTab({ wedding, updateWedding, onGoToPreview }) {
   const selectedPresetCategoryData = giftImagePresetCategories.find(category => category.id === selectedPresetCategory) ?? giftImagePresetCategories[0]
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-      <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-4">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
+      <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-4" style={{ order: 0 }}>
         <div>
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-medium text-stone-900 text-sm">Pix dos presentes</h2>
-            <PreviewJumpButton onClick={() => onGoToPreview('preview-gifts')} />
+            {wedding.giftPixKey?.trim() && <PreviewJumpButton onClick={() => onGoToPreview('preview-gifts')} />}
           </div>
           <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
             A chave fica pública no site dos noivos. O pagamento acontece fora da plataforma, no app do banco do convidado.
@@ -1354,24 +1385,24 @@ function GiftsTab({ wedding, updateWedding, onGoToPreview }) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-3" style={{ order: 1 }}>
+        <div className="min-w-0">
           <h2 className="font-medium text-stone-900 text-sm">Presentes simbólicos</h2>
           <p className="text-[11px] text-stone-400 mt-0.5">Os botões do site copiam a chave Pix configurada acima.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <PreviewJumpButton onClick={() => onGoToPreview('preview-gifts')} />
-          <Button variant="outline" size="sm" onClick={openNew} fullWidth className="sm:w-auto">
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <Button variant="outline" size="sm" onClick={openNew}>
             <Plus size={14} /> Adicionar
           </Button>
+          {(gifts.length > 0 || wedding.giftPixKey?.trim()) && <PreviewJumpButton onClick={() => onGoToPreview('preview-gifts')} />}
         </div>
       </div>
 
       {form !== null && (
-        <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-3">
-          <div className="flex items-center justify-between mb-1">
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-3" style={{ order: form.id ? 11 + Math.max(0, gifts.findIndex(gift => gift.id === form.id)) * 2 : 2 }}>
+          <div className="flex items-center justify-between gap-2 mb-1">
             <p className="text-xs font-medium text-stone-700">{form.id ? 'Editar presente' : 'Novo presente'}</p>
-            <button onClick={closeForm} className="text-stone-400 hover:text-stone-600"><X size={14} /></button>
+            <div className="flex items-center gap-1.5"><Button variant="primary" size="sm" onClick={saveGift}><Check size={14} /> Salvar</Button><button onClick={closeForm} className="rounded-lg p-2 text-stone-400 hover:bg-stone-100 hover:text-stone-600" aria-label="Fechar"><X size={14} /></button></div>
           </div>
           <div>
             <input
@@ -1394,102 +1425,36 @@ function GiftsTab({ wedding, updateWedding, onGoToPreview }) {
             {errors.price && <p className="text-[11px] text-red-400 mt-0.5">{errors.price}</p>}
           </div>
           <div className="space-y-2">
-            <div>
-              <p className="text-[11px] text-stone-500 font-medium">Foto do presente</p>
-              <p className="text-[10px] text-stone-400 mt-0.5">Use as categorias apenas para filtrar as imagens.</p>
+            <p className="text-[11px] font-medium text-stone-500">Foto do presente</p>
+            <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-2.5">
+              {formImageUrl ? <img src={formImageUrl} alt="Foto selecionada" className="h-12 w-12 flex-shrink-0 rounded-lg object-cover" /> : <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-300"><Upload size={17} /></div>}
+              <div className="min-w-0 flex-1"><p className="truncate text-xs font-medium text-stone-700">{formImageUrl ? selectedGiftPreset?.label ?? 'Imagem selecionada' : 'Nenhuma foto selecionada'}</p><p className="mt-0.5 text-[10px] text-stone-400">Escolha uma imagem de sugestão para o presente.</p></div>
+              <button type="button" onClick={openGiftImagePicker} className="flex-shrink-0 rounded-lg border border-stone-200 px-3 py-2 text-xs font-medium text-stone-600 hover:bg-stone-50">{formImageUrl ? 'Trocar foto' : 'Adicionar foto'}</button>
             </div>
-            <div className="flex flex-wrap gap-1.5 pb-1">
-              {giftImagePresetCategories.map(category => (
-                <button
-                  key={category.id}
-                  type="button"
-                  onClick={() => setSelectedPresetCategory(category.id)}
-                  className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${
-                    selectedPresetCategory === category.id
-                      ? 'border-stone-900 bg-stone-900 text-white'
-                      : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-800'
-                  }`}
-                >
-                  {category.label}
-                </button>
-              ))}
-            </div>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-8">
-              {(selectedPresetCategoryData?.presets ?? []).map(preset => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => {
-                    setForm(f => ({
-                      ...f,
-                      image: '',
-                      imagePreset: preset.id,
-                    }))
-                  }}
-                  className={`relative rounded-lg overflow-hidden aspect-square border-2 transition-all ${
-                    form.imagePreset === preset.id ? 'border-stone-900 scale-[0.97]' : 'border-transparent hover:border-stone-300'
-                  }`}
-                >
-                  <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
-                  <div className="absolute inset-x-0 bottom-0 bg-black/55 py-1">
-                    <span className="text-[9px] text-white font-medium leading-none block text-center px-1 truncate">{preset.label}</span>
-                  </div>
-                  {form.imagePreset === preset.id && (
-                    <div className="absolute inset-0 bg-stone-900/20 flex items-center justify-center">
-                      <Check size={16} className="text-white drop-shadow" />
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {formImageUrl && (
-              <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
-                <div className="relative aspect-square bg-stone-100">
-                <img
-                  src={formImageUrl}
-                  alt="preview"
-                  className="w-full h-full object-cover"
-                  onError={e => { e.target.style.display = 'none' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setForm(f => ({ ...f, image: '', imagePreset: '' }))}
-                  className="absolute top-2 right-2 bg-black/55 text-white rounded-full p-1.5 hover:bg-black/75"
-                  aria-label="Remover foto do presente"
-                >
-                  <X size={13} />
-                </button>
-                </div>
-                <div className="flex items-center justify-between gap-3 px-3 py-2">
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-stone-700 truncate">{selectedGiftPreset?.label ?? 'Imagem selecionada'}</p>
-                    <p className="text-[10px] text-stone-400">Prévia da foto do presente</p>
-                  </div>
-                  <span className="rounded-full bg-stone-100 px-2 py-1 text-[10px] font-medium text-stone-500">
-                    Selecionada
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="flex gap-2 pt-1">
-            <Button variant="primary" size="sm" fullWidth onClick={saveGift}>
-              <Check size={14} /> Salvar
-            </Button>
-            <Button variant="ghost" size="sm" onClick={closeForm}>Cancelar</Button>
           </div>
         </div>
       )}
 
+      <Modal isOpen={showGiftImagePicker} onClose={() => setShowGiftImagePicker(false)} title={formImageUrl ? 'Trocar foto do presente' : 'Adicionar foto ao presente'} className="max-w-3xl">
+        <p className="mb-4 text-sm text-stone-500">Escolha a imagem que melhor representa este presente.</p>
+        <div className="sticky top-0 z-10 -mx-1 mb-4 bg-white px-1 pb-3 pt-1">
+          <label htmlFor="gift-image-category" className="mb-1.5 block text-xs font-medium text-stone-700">Filtrar por categoria</label>
+          <select id="gift-image-category" value={selectedPresetCategory} onChange={event => setSelectedPresetCategory(event.target.value)} className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-100">
+            {giftImagePresetCategories.map(category => <option key={category.id} value={category.id}>{category.label}</option>)}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">{(selectedPresetCategoryData?.presets ?? []).map(preset => <button key={preset.id} type="button" onClick={() => setPendingGiftImagePreset(preset.id)} className={`group overflow-hidden rounded-xl border-2 bg-white text-left transition-all ${pendingGiftImagePreset === preset.id ? 'border-stone-900 shadow-md' : 'border-stone-100 hover:border-stone-300'}`}><div className="relative aspect-square"><img src={preset.url} alt={preset.label} className="h-full w-full object-cover" />{pendingGiftImagePreset === preset.id && <div className="absolute inset-0 flex items-center justify-center bg-stone-900/20"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-900 text-white shadow"><Check size={18} /></span></div>}</div><p className="truncate px-3 py-2 text-xs font-medium text-stone-700">{preset.label}</p></button>)}</div>
+        <div className="sticky bottom-0 -mx-1 mt-5 flex items-center gap-3 border-t border-stone-100 bg-white px-1 pt-4"><div className="min-w-0 flex-1">{pendingGiftPreset && <p className="truncate text-sm font-medium text-stone-700">Selecionada: {pendingGiftPreset.label}</p>}</div><Button variant="outline" onClick={() => setShowGiftImagePicker(false)}>Cancelar</Button><Button variant="primary" disabled={!pendingGiftImagePreset} onClick={applyGiftImage}>Usar esta foto</Button></div>
+      </Modal>
+
       {gifts.length === 0 && form === null && (
-        <p className="text-xs text-stone-400 text-center py-6">Nenhum presente ainda. Clique em "Adicionar".</p>
+        <p className="text-xs text-stone-400 text-center py-6" style={{ order: 3 }}>Nenhum presente ainda. Clique em "Adicionar".</p>
       )}
 
       {gifts.map(gift => {
         const imageUrl = giftImageUrl(gift, giftImagePresetById)
         return (
-          <div key={gift.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 bg-stone-50">
+          <div key={gift.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 bg-stone-50" style={{ order: 10 + gifts.findIndex(item => item.id === gift.id) * 2 }}>
             {imageUrl ? (
               <img src={imageUrl} alt={gift.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
             ) : (
@@ -1519,7 +1484,7 @@ function GiftsTab({ wedding, updateWedding, onGoToPreview }) {
         )
       })}
 
-      <div className="pt-2 border-t border-stone-100">
+      <div className="pt-2 border-t border-stone-100" style={{ order: 100 }}>
         <Button
           variant="ghost"
           size="sm"

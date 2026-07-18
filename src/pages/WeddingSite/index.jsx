@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { useWedding } from '../../context/WeddingContext'
 import { mockWedding } from '../../data/mockWedding'
@@ -17,14 +18,51 @@ const TEMPLATE_MAP = {
 
 const FallbackTemplate = IvoryTemplate
 
+function editorTabForSection(sectionId) {
+  if (sectionId === 'preview-cover' || sectionId === 'preview-gallery') return 'design'
+  if (sectionId === 'preview-gifts') return 'gifts'
+  if (sectionId === 'preview-rsvp') return 'rsvp'
+  return 'content'
+}
+
 export default function WeddingSite() {
   const location = useLocation()
   const navigate = useNavigate()
   const { wedding, publishedWedding, loadingWedding } = useWedding()
   const params = new URLSearchParams(location.search)
+  const requestedEditorTab = params.get('editorTab') || 'design'
+  const [activeReturnTab, setActiveReturnTab] = useState(requestedEditorTab)
   const isExample = location.pathname === '/site/ana-e-pedro'
     && params.get('example') === '1'
   const isPreview = params.get('preview') === '1'
+  useEffect(() => {
+    if (!location.hash || loadingWedding) return
+    const sectionId = decodeURIComponent(location.hash.slice(1))
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(sectionId)?.scrollIntoView({ block: 'start' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [location.hash, loadingWedding])
+  useEffect(() => {
+    if (loadingWedding) return
+    setActiveReturnTab(requestedEditorTab)
+    const frame = window.requestAnimationFrame(() => {
+      const sections = Array.from(document.querySelectorAll('[id^="preview-"]'))
+      const observer = new IntersectionObserver(entries => {
+        const visible = entries
+          .filter(entry => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
+        if (visible) setActiveReturnTab(editorTabForSection(visible.target.id))
+      }, { rootMargin: '-25% 0px -55% 0px', threshold: [0, 0.1, 0.5] })
+      sections.forEach(section => observer.observe(section))
+      window.__weddingSectionObserver = observer
+    })
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.__weddingSectionObserver?.disconnect()
+      delete window.__weddingSectionObserver
+    }
+  }, [loadingWedding, requestedEditorTab, location.pathname])
   if (!isExample && !isPreview && loadingWedding) {
     return (
       <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
@@ -35,7 +73,8 @@ export default function WeddingSite() {
   const renderedWedding = isExample ? mockWedding : isPreview ? wedding : publishedWedding
   const Template = TEMPLATE_MAP[renderedWedding.template] ?? FallbackTemplate
   const returnSource = params.get('from')
-  const backTarget = returnSource === 'editor' ? '/editor' : returnSource === 'dashboard' ? '/principal' : ''
+  const editorTarget = activeReturnTab !== 'design' ? `/editor?tab=${encodeURIComponent(activeReturnTab)}` : '/editor'
+  const backTarget = returnSource === 'editor' ? editorTarget : returnSource === 'dashboard' ? '/principal' : ''
   const backLabel = returnSource === 'editor' ? 'Voltar para edição' : 'Voltar para principal'
 
   return (
