@@ -22,7 +22,7 @@ const CONTRIBUTION_PROMPT_KEY_PREFIX = 'baitacasamento_contribution_prompt_seen'
 const DEFAULT_INVITATION_MESSAGE = 'Olá! Nosso grande dia está chegando, e preparamos um site com todos os detalhes do nosso casamento.'
 
 function invitationText(wedding, invitation, customMessage = wedding.invitationMessage, includeLink = true) {
-  const url = `${window.location.origin}/${wedding.slug}#preview-rsvp`
+  const url = `${window.location.origin}/${wedding.slug}`
   const couple = weddingDisplayTitle(wedding)
   const intro = customMessage?.trim() || DEFAULT_INVITATION_MESSAGE
   const requiredText = `${intro}\n\nCasamento de ${couple}\n\nNo site, procure pelo convite:\n${invitation.displayName}\n\nDepois, informe o código de confirmação:\n${invitation.accessCode}`
