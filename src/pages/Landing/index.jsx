@@ -1,10 +1,11 @@
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowRight, Check, Heart, Sparkles, Globe, Gift } from 'lucide-react'
 import Navbar from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 import Button from '../../components/ui/Button'
 import { mockTemplates } from '../../data/mockTemplates'
+import { useAuth } from '../../context/AuthContext'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -17,8 +18,19 @@ const stagger = {
 }
 
 export default function Landing() {
+  const { user, loading } = useAuth()
   const navigate = useNavigate()
   const startFreePath = `/login?next=${encodeURIComponent('/principal')}&template=ivory`
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-sand-50">
+        <span className="w-8 h-8 border-2 border-sand-300 border-t-sand-600 rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (user) return <Navigate to="/principal" replace />
 
   return (
     <div className="min-h-screen bg-white">
