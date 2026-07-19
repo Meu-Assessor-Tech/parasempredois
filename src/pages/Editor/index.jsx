@@ -695,6 +695,45 @@ export default function Editor() {
                   </div>
 
                   <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
+                    <h2 className="font-medium text-stone-900 text-sm mb-1">Cor de destaque</h2>
+                    <p className="text-[11px] text-stone-400 mb-3 leading-relaxed">
+                      Personaliza detalhes do template, como botões, ícones, labels e destaques.
+                    </p>
+                    <div className="grid grid-cols-6 gap-2 mb-3">
+                      {COLORS.map(color => (
+                        <button
+                          key={color.value}
+                          title={color.label}
+                          onClick={() => wrappedUpdate({ primaryColor: color.value })}
+                          className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                            wedding.primaryColor === color.value ? 'border-stone-900 scale-110' : 'border-transparent'
+                          }`}
+                          style={{ backgroundColor: color.value }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <label className="text-[11px] text-stone-500 flex-1">Cor personalizada</label>
+                      <input
+                        type="color"
+                        value={wedding.primaryColor}
+                        onChange={e => wrappedUpdate({ primaryColor: e.target.value })}
+                        className="w-8 h-8 rounded-full border border-stone-200 cursor-pointer p-0.5 bg-white"
+                        title="Escolher cor"
+                      />
+                      <span className="text-[11px] font-mono text-stone-400">{wedding.primaryColor}</span>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={usesTemplateAccent}
+                      onClick={() => wrappedUpdate({ primaryColor: defaultTemplateAccent })}
+                      className="mt-3 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-600 transition-colors hover:border-stone-300 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      Usar cor padrão do template ({activeTemplate.name})
+                    </button>
+                  </div>
+
+                  <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <h2 className="font-medium text-stone-900 text-sm">Foto de capa</h2>
                       <PreviewJumpButton onClick={() => handlePreviewJump('preview-cover')} />
@@ -820,45 +859,6 @@ export default function Editor() {
                       })}
                     </div>
                     )}
-                  </div>
-
-                  <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
-                    <h2 className="font-medium text-stone-900 text-sm mb-1">Cor de destaque</h2>
-                    <p className="text-[11px] text-stone-400 mb-3 leading-relaxed">
-                      Personaliza detalhes do template, como botões, ícones, labels e destaques.
-                    </p>
-                    <div className="grid grid-cols-6 gap-2 mb-3">
-                      {COLORS.map(color => (
-                        <button
-                          key={color.value}
-                          title={color.label}
-                          onClick={() => wrappedUpdate({ primaryColor: color.value })}
-                          className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                            wedding.primaryColor === color.value ? 'border-stone-900 scale-110' : 'border-transparent'
-                          }`}
-                          style={{ backgroundColor: color.value }}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <label className="text-[11px] text-stone-500 flex-1">Cor personalizada</label>
-                      <input
-                        type="color"
-                        value={wedding.primaryColor}
-                        onChange={e => wrappedUpdate({ primaryColor: e.target.value })}
-                        className="w-8 h-8 rounded-full border border-stone-200 cursor-pointer p-0.5 bg-white"
-                        title="Escolher cor"
-                      />
-                      <span className="text-[11px] font-mono text-stone-400">{wedding.primaryColor}</span>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={usesTemplateAccent}
-                      onClick={() => wrappedUpdate({ primaryColor: defaultTemplateAccent })}
-                      className="mt-3 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-600 transition-colors hover:border-stone-300 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-45"
-                    >
-                      Usar cor padrão do template ({activeTemplate.name})
-                    </button>
                   </div>
 
                   <div className="pt-2 border-t border-stone-100">
