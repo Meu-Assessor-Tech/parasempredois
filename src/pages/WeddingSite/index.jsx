@@ -146,7 +146,7 @@ function mapPublicWedding(remoteWedding) {
     primaryColor: remoteWedding.primaryColor ?? '',
     sections: remoteWedding.sections ?? [],
     giftPixKey: remoteWedding.giftPixKey ?? '',
-    coverImage: remoteWedding.coverImage,
+    coverImage: remoteWedding.coverImage ?? mockWedding.coverImage,
     galleryImages: remoteWedding.galleryImages ?? [],
     giftPixQrCode: remoteWedding.giftPixQrCode,
     gifts: remoteWedding.gifts ?? [],
