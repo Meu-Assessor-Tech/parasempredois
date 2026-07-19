@@ -169,7 +169,9 @@ export default function IvoryTemplate({ wedding }) {
       {/* HERO */}
       <section id="preview-cover" className="relative h-screen min-h-[640px] flex flex-col items-center justify-center overflow-hidden">
         <motion.div initial={{ scale: 1.07 }} animate={{ scale: 1 }} transition={{ duration: 4, ease: [0.25, 0.46, 0.45, 0.94] }} className="absolute inset-0">
-          <img src={mediaUrl(wedding.coverImage)} alt={displayTitle} className="w-full h-full object-cover" />
+          {mediaUrl(wedding.coverImage) && (
+            <img src={mediaUrl(wedding.coverImage)} alt="" aria-hidden="true" onError={event => { event.currentTarget.hidden = true }} className="w-full h-full object-cover" />
+          )}
           <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(14,11,8,0.46) 0%, rgba(14,11,8,0.06) 38%, rgba(14,11,8,0.52) 100%)' }} />
           <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 50%, transparent 50%, rgba(14,11,8,0.18) 100%)' }} />
         </motion.div>

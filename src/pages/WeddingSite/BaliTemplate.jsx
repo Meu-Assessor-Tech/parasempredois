@@ -128,7 +128,9 @@ export default function BaliTemplate({ wedding }) {
   return (
     <div className="min-h-screen bg-[#FBF6EF] text-[#4B3328]" style={{ '--accent': accent }}>
       <section id="preview-cover" className="relative min-h-screen overflow-hidden flex items-center">
-        <img src={mediaUrl(wedding.coverImage)} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover" />
+        {mediaUrl(wedding.coverImage) && (
+          <img src={mediaUrl(wedding.coverImage)} alt="" aria-hidden="true" onError={event => { event.currentTarget.hidden = true }} className="absolute inset-0 w-full h-full object-cover" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-r from-[#5E2F1E]/80 via-[#8F4E2B]/35 to-transparent" />
         <div className="relative z-10 w-full max-w-6xl mx-auto px-6 py-24">
           <motion.div initial="hidden" animate="visible" variants={stagger} className="max-w-xl text-white">

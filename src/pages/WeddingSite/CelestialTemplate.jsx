@@ -128,7 +128,9 @@ export default function CelestialTemplate({ wedding }) {
   return (
     <div className="min-h-screen bg-[#080713] text-white" style={{ '--accent': accent }}>
       <section id="preview-cover" className="relative min-h-screen overflow-hidden flex items-center justify-center text-center px-6">
-        <img src={mediaUrl(wedding.coverImage)} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover opacity-42" />
+        {mediaUrl(wedding.coverImage) && (
+          <img src={mediaUrl(wedding.coverImage)} alt="" aria-hidden="true" onError={event => { event.currentTarget.hidden = true }} className="absolute inset-0 w-full h-full object-cover opacity-42" />
+        )}
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,7,19,0.45),rgba(8,7,19,0.88)_70%,#080713)]" />
         <motion.div initial="hidden" animate="visible" variants={stagger} className="relative z-10 max-w-5xl mx-auto">
           <motion.p variants={fadeUp} className="text-[10px] uppercase tracking-[0.55em] text-[var(--accent)] mb-8">Save the date</motion.p>
