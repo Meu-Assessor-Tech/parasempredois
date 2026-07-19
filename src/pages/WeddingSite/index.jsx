@@ -8,6 +8,7 @@ import BaliTemplate from './BaliTemplate'
 import CelestialTemplate from './CelestialTemplate'
 import { getPublicWedding } from '../../api/weddings'
 import { useAuth } from '../../context/AuthContext'
+import { weddingDisplayTitle } from '../../utils/weddingDisplay'
 
 const TEMPLATE_MAP = {
   ivory: IvoryTemplate,
@@ -75,6 +76,11 @@ export default function WeddingSite() {
     })
     return () => window.cancelAnimationFrame(frame)
   }, [location.hash, loadingWedding, loadingPublicWedding, publicWedding])
+  useEffect(() => {
+    const titleWedding = isExample ? mockWedding : isPreview ? wedding : publicWedding
+    if (!titleWedding) return
+    document.title = weddingDisplayTitle(titleWedding)
+  }, [isExample, isPreview, wedding, publicWedding])
   useEffect(() => {
     if (loadingWedding || loadingPublicWedding) return
     setActiveReturnTab(requestedEditorTab)
