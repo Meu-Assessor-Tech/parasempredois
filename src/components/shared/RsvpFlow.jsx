@@ -59,8 +59,8 @@ export default function RsvpFlow({ wedding, accent = wedding.primaryColor }) {
         <form onSubmit={verify} className="space-y-4">
           <button type="button" className="text-xs text-stone-400" onClick={() => setStep('search')}>Voltar</button>
           <div><h3 className="font-serif text-2xl">Digite seu código</h3><p className="mt-1 text-sm text-stone-500">Use o código de quatro dígitos enviado pelos noivos para {selected?.displayName}.</p></div>
-          <input className={`${fieldClass} text-center text-xl tracking-[0.5em]`} inputMode="numeric" maxLength={4} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} placeholder="0000" required />
-          <button disabled={loading || code.length !== 4} className="w-full rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-60" style={{ backgroundColor: accent }}>{loading ? 'Validando...' : 'Acessar convite'}</button>
+          <input className={`${fieldClass} text-center text-xl tracking-[0.35em]`} inputMode="numeric" maxLength={6} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} placeholder="000000" required />
+          <button disabled={loading || code.length !== 6} className="w-full rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-60" style={{ backgroundColor: accent }}>{loading ? 'Validando...' : 'Acessar convite'}</button>
         </form>
       )}
       {step === 'respond' && invitation && (
