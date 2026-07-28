@@ -4,7 +4,7 @@ import { useWedding } from '../../context/WeddingContext'
 import { formatWeddingDate, weddingDisplayTitle, weddingDisplayVenue } from '../../utils/weddingDisplay'
 import { mediaUrl } from '../../utils/media'
 
-const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://parasempredois-10be9.web.app').replace(/\/$/, '')
+const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://parasempredois.com.br').replace(/\/$/, '')
 const DEFAULT_TITLE = 'Para sempre dois - Site de casamento gratuito'
 const DEFAULT_DESCRIPTION = 'Crie um site de casamento gratuito, elegante e simples para compartilhar fotos, presentes, RSVP e detalhes do grande dia.'
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.svg`
